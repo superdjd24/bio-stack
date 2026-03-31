@@ -1,6 +1,6 @@
 /**
- * BIOSTACK ELITE v3.9
- * Anchor-Logic Engine
+ * BIOSTACK ELITE v4.0
+ * Corrected Handshake & Layout
  */
 
 let bpm = 0, targetHR = 0, currentMusc = "", currentEx = "", currentView = "front";
@@ -21,14 +21,14 @@ const DB = {
     'Calves': ['Calf Raises']
 };
 
+// Start purely with the Hit Map
 window.onload = () => {
-    if (sessionStorage.getItem('biostack_connected') === 'true') {
-        generateHitMap();
-    }
+    generateHitMap();
 };
 
-async function connectHardware() {
+async function startStream() {
     try {
+        // This is THE one and only connection call in app.html
         const device = await navigator.bluetooth.requestDevice({ filters: [{ services: ['heart_rate'] }] });
         const server = await device.gatt.connect();
         const service = await server.getPrimaryService('heart_rate');
@@ -38,10 +38,9 @@ async function connectHardware() {
             bpm = e.target.value.getUint8(1);
             updateEngine();
         });
-        document.getElementById('hr-val').innerText = "--";
-    } catch (e) {
-        alert("Sync Failed: " + e.message);
-    }
+        document.getElementById('hr-pill').style.animation = "none";
+        document.getElementById('hr-pill').style.borderColor = "var(--border)";
+    } catch (e) { alert("Stream Sync Error: " + e.message); }
 }
 
 function updateEngine() {
@@ -73,21 +72,6 @@ function selectMuscle(m) {
     });
 }
 
-function generateHitMap() {
-    const map = document.getElementById('touch-map');
-    map.innerHTML = "";
-    // Adjusted grid for the v3.9 alignment
-    const fG = ["", "", "", "Deltoids", "Pectorals", "Deltoids", "Biceps", "Abdominals", "Biceps", "Forearms", "Trapezoids", "Triceps", "Quads", "Quads", "Quads", "", "", ""];
-    const bG = ["", "", "", "Lats", "Lats", "Lats", "Triceps", "Trapezoids", "Triceps", "Glutes", "Glutes", "Glutes", "Hamstrings", "", "Hamstrings", "Calves", "", "Calves"];
-    const active = (currentView === 'front') ? fG : bG;
-    active.forEach(m => {
-        const div = document.createElement('div');
-        div.className = "hit";
-        if (m !== "") div.onclick = () => selectMuscle(m);
-        map.appendChild(div);
-    });
-}
-
 function switchView(view) {
     currentView = view;
     document.getElementById('btn-front').classList.toggle('toggle-active', view === 'front');
@@ -99,11 +83,24 @@ function switchView(view) {
     generateHitMap();
 }
 
+function generateHitMap() {
+    const map = document.getElementById('touch-map');
+    map.innerHTML = "";
+    const fG = ["", "", "", "Deltoids", "Pectorals", "Deltoids", "Biceps", "Abdominals", "Biceps", "Forearms", "Trapezoids", "Triceps", "Quads", "Quads", "Quads", "", "", ""];
+    const bG = ["", "", "", "Lats", "Lats", "Lats", "Triceps", "Trapezoids", "Triceps", "Glutes", "Glutes", "Glutes", "Hamstrings", "", "Hamstrings", "Calves", "", "Calves"];
+    const active = (currentView === 'front') ? fG : bG;
+    active.forEach(m => {
+        const div = document.createElement('div');
+        div.className = "hit";
+        if (m !== "") div.onclick = () => selectMuscle(m);
+        map.appendChild(div);
+    });
+}
+
 function closeAction() { document.getElementById('menu-action').classList.remove('visible'); }
 
 function drawSparkline() {
     const canvas = document.getElementById('sparkline-canvas');
-    if(!canvas) return;
     const ctx = canvas.getContext('2d');
     canvas.width = 120; canvas.height = 40;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
