@@ -1,6 +1,6 @@
 /**
- * BIOSTACK ELITE v3.7
- * Multi-View Hardware Engine
+ * BIOSTACK ELITE v3.7.1
+ * Hardware & Multi-Anatomy Engine
  */
 
 let bpm = 0, targetHR = 0, currentMusc = "", currentEx = "", currentView = "front";
@@ -10,7 +10,7 @@ let hrHistory = [], sets = [0, 0, 0], currentSetIdx = 0, lastMode = "PUSH";
 const DB = {
     // Front View
     'Trapezoids': ['Dumbbell Shrugs', 'Barbell Shrugs'],
-    'Deltoids': ['Lateral Raises', 'Military Press'],
+    'Deltoids': ['Lateral Raises', 'Military Press', 'Arnold Press'],
     'Pectorals': ['Bench Press', 'Incline Press', 'Chest Flys'],
     'Biceps': ['Barbell Curls', 'Hammer Curls'],
     'Triceps': ['Skull Crushers', 'Pushdowns'],
@@ -27,7 +27,7 @@ const DB = {
 window.onload = async () => {
     if (sessionStorage.getItem('biostack_connected') === 'true') {
         connectHardware();
-        generateHitMap(); // Initialize the touches
+        generateHitMap();
     }
 };
 
@@ -49,55 +49,23 @@ async function connectHardware() {
 }
 
 function switchView(view) {
-    if (isTrain || isCal) return; // Prevent swapping mid-set
+    if (isTrain || isCal) return;
     currentView = view;
-
-    // UI Updates
     document.getElementById('btn-front').classList.toggle('toggle-active', view === 'front');
     document.getElementById('btn-back').classList.toggle('toggle-active', view === 'back');
-
-    // Layer Visibility
     document.querySelectorAll('.stack-layer').forEach(l => l.classList.remove('layer-visible'));
     document.getElementById(`base-${view}`).classList.add('layer-visible');
-    
-    // Show only muscles for current view
-    const viewMuscles = (view === 'front') 
-        ? ['trapezoids','deltoids','pectorals','biceps','triceps','forearms','abdominals','quads']
-        : ['lats','glutes','hamstrings','calves'];
-    
-    viewMuscles.forEach(m => {
-        const el = document.getElementById(`overlay-${m}`);
-        if(el) el.classList.add('layer-visible');
-    });
-
+    const viewMuscles = (view === 'front') ? ['trapezoids','deltoids','pectorals','biceps','triceps','forearms','abdominals','quads'] : ['lats','glutes','hamstrings','calves'];
+    viewMuscles.forEach(m => { const el = document.getElementById(`overlay-${m}`); if(el) el.classList.add('layer-visible'); });
     generateHitMap();
 }
 
 function generateHitMap() {
     const map = document.getElementById('touch-map');
     map.innerHTML = "";
-    
-    // 3x6 Grid Definition
-    const frontGrid = [
-        "", "Trapezoids", "",
-        "Deltoids", "Pectorals", "Deltoids",
-        "Biceps", "Abdominals", "Biceps",
-        "Forearms", "", "Triceps",
-        "Quads", "Quads", "Quads",
-        "", "", ""
-    ];
-
-    const backGrid = [
-        "", "Trapezoids", "",
-        "Lats", "Lats", "Lats",
-        "Triceps", "", "Triceps",
-        "Glutes", "Glutes", "Glutes",
-        "Hamstrings", "", "Hamstrings",
-        "Calves", "", "Calves"
-    ];
-
+    const frontGrid = ["", "", "", "Deltoids", "Pectorals", "Deltoids", "Biceps", "Abdominals", "Biceps", "Forearms", "Trapezoids", "Triceps", "Quads", "Quads", "Quads", "", "", ""];
+    const backGrid = ["", "", "", "Lats", "Lats", "Lats", "Triceps", "Trapezoids", "Triceps", "Glutes", "Glutes", "Glutes", "Hamstrings", "", "Hamstrings", "Calves", "", "Calves"];
     const activeGrid = (currentView === 'front') ? frontGrid : backGrid;
-
     activeGrid.forEach(m => {
         const div = document.createElement('div');
         div.className = "hit";
@@ -112,33 +80,25 @@ function selectMuscle(m) {
     currentMusc = m;
     const overlay = document.getElementById(`overlay-${m.toLowerCase()}`);
     if (overlay) overlay.style.opacity = 0.5;
-
     document.getElementById('musc-header').innerText = m;
     const picker = document.getElementById('exercise-picker');
-    picker.innerHTML = "";
-    picker.style.display = "block";
+    picker.innerHTML = ""; picker.style.display = "block";
     DB[m].forEach(ex => {
         const b = document.createElement('button');
-        b.className = "list-btn";
-        b.innerText = ex;
-        b.onclick = () => showActionMenu(ex);
+        b.className = "list-btn"; b.innerText = ex; b.onclick = () => showActionMenu(ex);
         picker.appendChild(b);
     });
 }
 
-// ... (showActionMenu, closeAction, startTraining, resetToSelection, updateEngine, drawSparkline remain the same) ...
-
 function showActionMenu(ex) {
-    currentEx = ex;
-    document.getElementById('ex-name-modal').innerText = ex;
+    currentEx = ex; document.getElementById('ex-name-modal').innerText = ex;
     document.getElementById('menu-action').classList.add('visible');
 }
 
 function closeAction() { document.getElementById('menu-action').classList.remove('visible'); }
 
 function startTraining() {
-    isTrain = true;
-    document.getElementById('menu-action').classList.remove('visible');
+    isTrain = true; closeAction();
     document.getElementById('exercise-picker').style.display = "none";
     document.getElementById('set-tracker').style.display = "block";
     document.getElementById('nav-controls').style.display = "block";
@@ -159,8 +119,7 @@ function resetToSelection() {
 
 function updateEngine() {
     document.getElementById('hr-val').innerText = bpm;
-    hrHistory.push(bpm);
-    if (hrHistory.length > 30) hrHistory.shift();
+    hrHistory.push(bpm); if (hrHistory.length > 30) hrHistory.shift();
     drawSparkline();
     let currentMode = (bpm >= 110) ? "REST" : "PUSH";
     const mv = document.getElementById('mode-val');
