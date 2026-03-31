@@ -8,7 +8,7 @@
     </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BioStack Elite v3.8</title>
+    <title>BioStack Elite v3.9</title>
     <style>
         :root { --glow-blue: #00f2ff; --glow-red: #ff0044; --bg-dark: #05070a; --glass: rgba(15, 20, 30, 0.95); --border: #30363d; }
         body { margin: 0; background: var(--bg-dark); color: white; font-family: -apple-system, system-ui, sans-serif; overflow: hidden; height: 100vh; }
@@ -16,25 +16,40 @@
         #top-dash { position: fixed; top: 0; width: 100%; height: 120px; display: flex; align-items: center; justify-content: space-between; padding: 40px 20px 0 20px; box-sizing: border-box; z-index: 1000; }
         #hr-pill { background: var(--glass); padding: 10px 20px; border-radius: 50px; border: 1px solid var(--border); display: flex; align-items: baseline; cursor: pointer; }
         #hr-val { font-size: 2.8rem; font-weight: 900; color: var(--glow-blue); margin-right: 5px; }
-        #sparkline-canvas { width: 140px; height: 50px; filter: drop-shadow(0 0 5px var(--glow-blue)); }
+        #sparkline-canvas { width: 120px; height: 40px; filter: drop-shadow(0 0 5px var(--glow-blue)); }
         
         #mid-dash { position: fixed; top: 120px; width: 100%; padding: 0 20px; display: flex; justify-content: space-between; align-items: flex-start; box-sizing: border-box; z-index: 900; }
-        #cal-box { font-size: 1.4rem; font-weight: 800; }
+        #cal-box { font-size: 1.2rem; font-weight: 800; }
         #mode-val { font-size: 1rem; font-weight: 800; text-transform: uppercase; }
 
-        #sidebar { position: fixed; top: 200px; left: 20px; width: 160px; height: 60vh; display: flex; flex-direction: column; z-index: 500; }
-        #musc-header { font-size: 1.2rem; font-weight: 900; color: var(--glow-blue); text-transform: uppercase; margin-bottom: 5px; }
+        /* SIDEBAR - Moved down slightly to avoid dash overlap */
+        #sidebar { position: fixed; top: 220px; left: 20px; width: 150px; height: 55vh; display: flex; flex-direction: column; z-index: 500; }
+        #musc-header { font-size: 1.1rem; font-weight: 900; color: var(--glow-blue); text-transform: uppercase; margin-bottom: 10px; }
         #exercise-picker { flex-grow: 1; overflow-y: auto; display: block; }
-        .list-btn { width: 100%; padding: 12px; margin-bottom: 8px; border-radius: 12px; border: 1px solid var(--border); background: var(--glass); color: white; font-size: 0.75rem; text-align: left; }
+        .list-btn { width: 100%; padding: 12px; margin-bottom: 8px; border-radius: 12px; border: 1px solid var(--border); background: var(--glass); color: white; font-size: 0.7rem; text-align: left; }
         
-        #stage { position: fixed; top: 160px; right: -30px; width: 70vw; height: 75vh; display: flex; justify-content: center; align-items: center; z-index: 10; }
-        #view-toggle { position: absolute; top: 10px; width: 180px; z-index: 1100; display: flex; justify-content: space-between; pointer-events: none; }
-        .toggle-btn { background: var(--glass); border: 1px solid var(--border); color: white; padding: 8px 15px; border-radius: 30px; font-size: 0.65rem; font-weight: 900; text-transform: uppercase; cursor: pointer; pointer-events: auto; }
+        /* THE STAGE - Positioned relative to anchor the buttons */
+        #stage { 
+            position: fixed; top: 160px; right: 0; width: 65vw; height: 75vh; 
+            display: flex; justify-content: center; align-items: flex-start; z-index: 10; 
+        }
+
+        /* THE FIX: Absolute positioning relative to the skeleton shoulders */
+        #view-toggle { 
+            position: absolute; top: -10px; width: 220px; 
+            z-index: 1100; display: flex; justify-content: space-between; 
+            pointer-events: none; 
+        }
+        .toggle-btn { 
+            background: var(--glass); border: 1px solid var(--border); color: white; 
+            padding: 8px 14px; border-radius: 30px; font-size: 0.6rem; font-weight: 900; 
+            text-transform: uppercase; cursor: pointer; pointer-events: auto; 
+        }
         .toggle-active { border-color: var(--glow-blue); color: var(--glow-blue); background: rgba(0, 242, 255, 0.1); }
 
         .stack-layer { position: absolute; height: 100%; width: auto; pointer-events: none; transition: opacity 0.4s ease; display: none; }
         .layer-visible { display: block; }
-        #base-front, #base-back { z-index: 11; opacity: 0.7; }
+        #base-front, #base-back { z-index: 11; opacity: 0.8; }
         .muscle-overlay { z-index: 12; opacity: 0; mix-blend-mode: screen; }
         
         #touch-map { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(6, 1fr); }
@@ -50,7 +65,7 @@
     <div id="top-dash">
         <div id="hr-pill" onclick="connectHardware()">
             <span id="hr-val">TAP</span>
-            <span style="font-size:0.6rem; opacity:0.5; margin-left:5px;">LINK</span>
+            <span style="font-size:0.6rem; opacity:0.4; margin-left:5px;">LINK</span>
         </div>
         <canvas id="sparkline-canvas"></canvas>
     </div>
@@ -60,17 +75,17 @@
         <div id="mode-val" class="mode-push">LINKED</div>
     </div>
 
-    <div id="view-toggle">
-        <button id="btn-front" class="toggle-btn toggle-active" onclick="switchView('front')">Front</button>
-        <button id="btn-back" class="toggle-btn" onclick="switchView('back')">Back</button>
-    </div>
-
     <div id="sidebar">
         <div id="musc-header">SELECT TARGET</div>
         <div id="exercise-picker"></div>
     </div>
 
     <div id="stage">
+        <div id="view-toggle">
+            <button id="btn-front" class="toggle-btn toggle-active" onclick="switchView('front')">Front</button>
+            <button id="btn-back" class="toggle-btn" onclick="switchView('back')">Back</button>
+        </div>
+
         <img src="assets/base_front.png" id="base-front" class="stack-layer layer-visible">
         <img src="assets/trapezoids.png" id="overlay-trapezoids" class="muscle-overlay stack-layer layer-visible">
         <img src="assets/deltoids.png" id="overlay-deltoids" class="muscle-overlay stack-layer layer-visible">
