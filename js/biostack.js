@@ -1,39 +1,39 @@
 /**
- * BIOSTACK ELITE v3.6
- * Shared Dashboard Engine
+ * BIOSTACK ELITE v3.7
+ * Multi-View Hardware Engine
  */
 
-let bpm = 0, targetHR = 0, currentMusc = "", currentEx = "";
+let bpm = 0, targetHR = 0, currentMusc = "", currentEx = "", currentView = "front";
 let isTrain = false, isCal = false, totalCal = 0;
-let hrHistory = [];
-let sets = [0, 0, 0];
-let currentSetIdx = 0;
-let lastMode = "PUSH";
+let hrHistory = [], sets = [0, 0, 0], currentSetIdx = 0, lastMode = "PUSH";
 
 const DB = {
+    // Front View
     'Trapezoids': ['Dumbbell Shrugs', 'Barbell Shrugs'],
-    'Deltoids': ['Lateral Raises', 'Military Press', 'Arnold Press'],
+    'Deltoids': ['Lateral Raises', 'Military Press'],
     'Pectorals': ['Bench Press', 'Incline Press', 'Chest Flys'],
     'Biceps': ['Barbell Curls', 'Hammer Curls'],
-    'Triceps': ['Skull Crushers', 'Pushdowns', 'Dips'],
-    'Forearms': ['Wrist Curls', 'Reverse Curls'],
+    'Triceps': ['Skull Crushers', 'Pushdowns'],
+    'Forearms': ['Wrist Curls'],
     'Abdominals': ['Leg Raises', 'Weighted Crunches'],
-    'Quads': ['Barbell Squats', 'Leg Press']
+    'Quads': ['Barbell Squats', 'Leg Press'],
+    // Back View
+    'Lats': ['Lat Pulldowns', 'Bent Over Rows', 'Pull Ups'],
+    'Glutes': ['Hip Thrusts', 'Glute Bridges'],
+    'Hamstrings': ['Deadlifts', 'Leg Curls'],
+    'Calves': ['Calf Raises', 'Seated Calf Raises']
 };
 
-// AUTO-LINK ON LOAD
 window.onload = async () => {
     if (sessionStorage.getItem('biostack_connected') === 'true') {
         connectHardware();
+        generateHitMap(); // Initialize the touches
     }
 };
 
 async function connectHardware() {
     try {
-        // Re-requesting device to finalize the GATT stream
-        const device = await navigator.bluetooth.requestDevice({
-            filters: [{ services: ['heart_rate'] }]
-        });
+        const device = await navigator.bluetooth.requestDevice({ filters: [{ services: ['heart_rate'] }] });
         const server = await device.gatt.connect();
         const service = await server.getPrimaryService('heart_rate');
         const char = await service.getCharacteristic('heart_rate_measurement');
@@ -48,46 +48,62 @@ async function connectHardware() {
     }
 }
 
-function updateEngine() {
-    const hrDisplay = document.getElementById('hr-val');
-    if (hrDisplay) hrDisplay.innerText = bpm;
+function switchView(view) {
+    if (isTrain || isCal) return; // Prevent swapping mid-set
+    currentView = view;
 
-    hrHistory.push(bpm);
-    if (hrHistory.length > 30) hrHistory.shift();
-    drawSparkline();
+    // UI Updates
+    document.getElementById('btn-front').classList.toggle('toggle-active', view === 'front');
+    document.getElementById('btn-back').classList.toggle('toggle-active', view === 'back');
 
-    let currentMode = (bpm >= 110) ? "REST" : "PUSH";
-    const mv = document.getElementById('mode-val');
-    if (mv) {
-        mv.innerText = (currentMode === "REST") ? "REST / RECOVER" : "PUSH - GO!";
-        mv.className = (currentMode === "REST") ? "mode-rest" : "mode-push";
-    }
+    // Layer Visibility
+    document.querySelectorAll('.stack-layer').forEach(l => l.classList.remove('layer-visible'));
+    document.getElementById(`base-${view}`).classList.add('layer-visible');
+    
+    // Show only muscles for current view
+    const viewMuscles = (view === 'front') 
+        ? ['trapezoids','deltoids','pectorals','biceps','triceps','forearms','abdominals','quads']
+        : ['lats','glutes','hamstrings','calves'];
+    
+    viewMuscles.forEach(m => {
+        const el = document.getElementById(`overlay-${m}`);
+        if(el) el.classList.add('layer-visible');
+    });
 
-    if (lastMode === "PUSH" && currentMode === "REST") { 
-        if (currentSetIdx < 2) currentSetIdx++; 
-    }
-    lastMode = currentMode;
+    generateHitMap();
+}
 
-    if (isTrain) {
-        totalCal += (bpm * 0.012); 
-        const calDisplay = document.getElementById('total-cal');
-        if (calDisplay) calDisplay.innerText = Math.floor(totalCal);
+function generateHitMap() {
+    const map = document.getElementById('touch-map');
+    map.innerHTML = "";
+    
+    // 3x6 Grid Definition
+    const frontGrid = [
+        "", "Trapezoids", "",
+        "Deltoids", "Pectorals", "Deltoids",
+        "Biceps", "Abdominals", "Biceps",
+        "Forearms", "", "Triceps",
+        "Quads", "Quads", "Quads",
+        "", "", ""
+    ];
 
-        const overlay = document.getElementById(`overlay-${currentMusc.toLowerCase()}`);
-        if (overlay) { 
-            const factor = Math.min(Math.max((bpm - 70) / (targetHR - 70), 0), 1); 
-            overlay.style.opacity = factor; 
-        }
+    const backGrid = [
+        "", "Trapezoids", "",
+        "Lats", "Lats", "Lats",
+        "Triceps", "", "Triceps",
+        "Glutes", "Glutes", "Glutes",
+        "Hamstrings", "", "Hamstrings",
+        "Calves", "", "Calves"
+    ];
 
-        if (currentSetIdx < 3) { 
-            if (bpm > sets[currentSetIdx]) { 
-                sets[currentSetIdx] = bpm; 
-                const pct = Math.min((bpm / targetHR) * 100, 100); 
-                const bar = document.getElementById(`set-${currentSetIdx + 1}-bar`);
-                if (bar) bar.style.width = pct + "%"; 
-            } 
-        }
-    }
+    const activeGrid = (currentView === 'front') ? frontGrid : backGrid;
+
+    activeGrid.forEach(m => {
+        const div = document.createElement('div');
+        div.className = "hit";
+        if (m !== "") div.onclick = () => selectMuscle(m);
+        map.appendChild(div);
+    });
 }
 
 function selectMuscle(m) {
@@ -97,44 +113,36 @@ function selectMuscle(m) {
     const overlay = document.getElementById(`overlay-${m.toLowerCase()}`);
     if (overlay) overlay.style.opacity = 0.5;
 
-    const header = document.getElementById('musc-header');
-    if (header) header.innerText = m;
-
+    document.getElementById('musc-header').innerText = m;
     const picker = document.getElementById('exercise-picker');
-    if (picker) {
-        picker.innerHTML = "";
-        picker.style.display = "block";
-        DB[m].forEach(ex => {
-            const b = document.createElement('button');
-            b.className = "list-btn";
-            b.innerText = ex;
-            b.onclick = () => showActionMenu(ex);
-            picker.appendChild(b);
-        });
-    }
+    picker.innerHTML = "";
+    picker.style.display = "block";
+    DB[m].forEach(ex => {
+        const b = document.createElement('button');
+        b.className = "list-btn";
+        b.innerText = ex;
+        b.onclick = () => showActionMenu(ex);
+        picker.appendChild(b);
+    });
 }
+
+// ... (showActionMenu, closeAction, startTraining, resetToSelection, updateEngine, drawSparkline remain the same) ...
 
 function showActionMenu(ex) {
     currentEx = ex;
-    const modalName = document.getElementById('ex-name-modal');
-    if (modalName) modalName.innerText = ex;
-    const modal = document.getElementById('menu-action');
-    if (modal) modal.classList.add('visible');
+    document.getElementById('ex-name-modal').innerText = ex;
+    document.getElementById('menu-action').classList.add('visible');
 }
 
-function closeAction() { 
-    const modal = document.getElementById('menu-action');
-    if (modal) modal.classList.remove('visible'); 
-}
+function closeAction() { document.getElementById('menu-action').classList.remove('visible'); }
 
 function startTraining() {
     isTrain = true;
-    closeAction();
+    document.getElementById('menu-action').classList.remove('visible');
     document.getElementById('exercise-picker').style.display = "none";
     document.getElementById('set-tracker').style.display = "block";
     document.getElementById('nav-controls').style.display = "block";
-    const exHeader = document.getElementById('ex-header');
-    if (exHeader) exHeader.innerText = currentEx;
+    document.getElementById('ex-header').innerText = currentEx;
     const saved = localStorage.getItem('biostack_max_' + currentEx) || 150;
     targetHR = parseInt(saved);
 }
@@ -145,8 +153,27 @@ function resetToSelection() {
     document.getElementById('nav-controls').style.display = "none";
     document.getElementById('exercise-picker').style.display = "block";
     document.querySelectorAll('.progress-bar').forEach(b => b.style.width = '0%');
-    const header = document.getElementById('musc-header');
-    if (header) header.innerText = "SELECT TARGET";
+    document.querySelectorAll('.muscle-overlay').forEach(img => img.style.opacity = 0);
+    document.getElementById('musc-header').innerText = "SELECT TARGET";
+}
+
+function updateEngine() {
+    document.getElementById('hr-val').innerText = bpm;
+    hrHistory.push(bpm);
+    if (hrHistory.length > 30) hrHistory.shift();
+    drawSparkline();
+    let currentMode = (bpm >= 110) ? "REST" : "PUSH";
+    const mv = document.getElementById('mode-val');
+    mv.innerText = (currentMode === "REST") ? "REST / RECOVER" : "PUSH - GO!";
+    mv.className = (currentMode === "REST") ? "mode-rest" : "mode-push";
+    if (lastMode === "PUSH" && currentMode === "REST") { if (currentSetIdx < 2) currentSetIdx++; }
+    lastMode = currentMode;
+    if (isTrain) {
+        totalCal += (bpm * 0.012); document.getElementById('total-cal').innerText = Math.floor(totalCal);
+        const overlay = document.getElementById(`overlay-${currentMusc.toLowerCase()}`);
+        if (overlay) { const factor = Math.min(Math.max((bpm - 70) / (targetHR - 70), 0), 1); overlay.style.opacity = factor; }
+        if (currentSetIdx < 3) { if (bpm > sets[currentSetIdx]) { sets[currentSetIdx] = bpm; const pct = Math.min((bpm / targetHR) * 100, 100); document.getElementById(`set-${currentSetIdx + 1}-bar`).style.width = pct + "%"; } }
+    }
 }
 
 function drawSparkline() {
