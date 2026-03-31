@@ -3,83 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BioStack Elite v3.4</title>
+    <title>BioStack Elite v3.5</title>
     <style>
-        :root {
-            --glow-blue: #00f2ff;
-            --glow-red: #ff0044;
-            --bg-dark: #05070a;
-            --glass: rgba(15, 20, 30, 0.95);
-            --border: #30363d;
-        }
-
-        body { 
-            margin: 0; background: var(--bg-dark); color: white; 
-            font-family: -apple-system, system-ui, sans-serif; 
-            overflow: hidden; height: 100vh; 
-        }
-
-        /* DASHBOARD HEADER */
-        #top-dash {
-            position: fixed; top: 0; width: 100%; height: 120px;
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 40px 20px 0 20px; box-sizing: border-box; z-index: 1000;
-        }
+        :root { --glow-blue: #00f2ff; --glow-red: #ff0044; --bg-dark: #05070a; --glass: rgba(15, 20, 30, 0.95); --border: #30363d; }
+        body { margin: 0; background: var(--bg-dark); color: white; font-family: -apple-system, system-ui, sans-serif; overflow: hidden; height: 100vh; }
+        #top-dash { position: fixed; top: 0; width: 100%; height: 120px; display: flex; align-items: center; justify-content: space-between; padding: 40px 20px 0 20px; box-sizing: border-box; z-index: 1000; }
         #hr-pill { background: var(--glass); padding: 10px 20px; border-radius: 50px; border: 1px solid var(--border); display: flex; align-items: baseline; }
         #hr-val { font-size: 2.8rem; font-weight: 900; color: var(--glow-blue); margin-right: 5px; }
         #sparkline-canvas { width: 140px; height: 50px; filter: drop-shadow(0 0 5px var(--glow-blue)); }
-
-        /* TELEMETRY */
-        #mid-dash {
-            position: fixed; top: 120px; width: 100%; padding: 0 20px;
-            display: flex; justify-content: space-between; align-items: flex-start;
-            box-sizing: border-box; z-index: 900;
-        }
+        #mid-dash { position: fixed; top: 120px; width: 100%; padding: 0 20px; display: flex; justify-content: space-between; align-items: flex-start; box-sizing: border-box; z-index: 900; }
         #cal-box { font-size: 1.4rem; font-weight: 800; }
         #mode-box { text-align: right; }
         #mode-val { font-size: 1rem; font-weight: 800; text-transform: uppercase; }
         .mode-rest { color: var(--glow-red); }
         .mode-push { color: var(--glow-blue); }
-
-        /* SIDEBAR AREA */
-        #sidebar {
-            position: fixed; top: 200px; left: 20px; width: 160px; height: 60vh;
-            display: flex; flex-direction: column; z-index: 500;
-        }
+        #sidebar { position: fixed; top: 200px; left: 20px; width: 160px; height: 60vh; display: flex; flex-direction: column; z-index: 500; }
         #musc-header { font-size: 1.2rem; font-weight: 900; color: var(--glow-blue); text-transform: uppercase; margin-bottom: 5px; }
-        
-        #exercise-picker { flex-grow: 1; overflow-y: auto; display: none; }
-        .list-btn {
-            width: 100%; padding: 12px; margin-bottom: 8px; border-radius: 12px;
-            border: 1px solid var(--border); background: var(--glass);
-            color: white; font-size: 0.75rem; text-align: left; cursor: pointer;
-        }
-
+        #exercise-picker { flex-grow: 1; overflow-y: auto; display: block; }
+        .list-btn { width: 100%; padding: 12px; margin-bottom: 8px; border-radius: 12px; border: 1px solid var(--border); background: var(--glass); color: white; font-size: 0.75rem; text-align: left; cursor: pointer; }
         #set-tracker { margin-bottom: 25px; display: none; }
         .set-row { margin-bottom: 10px; }
         .progress-bg { width: 120px; height: 4px; background: rgba(255,255,255,0.05); border-radius: 10px; margin-top: 4px; }
         .progress-bar { height: 100%; background: var(--glow-blue); width: 0%; transition: width 0.4s ease; }
-
-        /* STAGE */
-        #stage {
-            position: fixed; top: 160px; right: -30px; width: 70vw; height: 75vh;
-            display: flex; justify-content: center; align-items: center; z-index: 10;
-        }
+        #stage { position: fixed; top: 160px; right: -30px; width: 70vw; height: 75vh; display: flex; justify-content: center; align-items: center; z-index: 10; }
         .stack-layer { position: absolute; height: 100%; width: auto; pointer-events: none; transition: opacity 0.4s ease; }
         #base-layer { z-index: 11; opacity: 0.7; }
         .muscle-overlay { z-index: 12; opacity: 0; mix-blend-mode: screen; }
-
-        /* TOUCH MAP */
-        #touch-map { 
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-            z-index: 100; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(6, 1fr); 
-        }
+        #touch-map { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(6, 1fr); }
         .hit { pointer-events: auto; }
-
-        /* OVERLAYS */
         #nav-controls { position: fixed; bottom: 40px; left: 20px; z-index: 1000; display: none; }
         .link-btn { color: #8b949e; text-decoration: underline; font-size: 0.8rem; background: none; border: none; cursor: pointer; }
-
         .overlay { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); width: 92%; max-width: 400px; background: var(--glass); border-radius: 35px; padding: 30px; border: 1px solid var(--border); backdrop-filter: blur(25px); display: none; text-align: center; z-index: 2000; }
         .btn { width: 100%; padding: 18px; margin: 8px 0; border-radius: 50px; border: 2px solid var(--glow-blue); background: transparent; color: var(--glow-blue); font-weight: 800; text-transform: uppercase; cursor: pointer; }
         .btn-solid { background: var(--glow-blue); color: black; }
@@ -94,13 +47,11 @@
 
     <div id="mid-dash">
         <div id="cal-box"><span id="total-cal">0</span> <span style="font-size:0.7rem; opacity:0.5;">total cal</span></div>
-        <div id="mode-box">
-            <div id="mode-val" class="mode-push">LINK READY</div>
-        </div>
+        <div id="mode-box"><div id="mode-val" class="mode-push">LINKED</div></div>
     </div>
 
     <div id="sidebar">
-        <div id="musc-header">INITIALIZE</div>
+        <div id="musc-header">SELECT TARGET</div>
         <div id="exercise-picker"></div>
         <div id="set-tracker">
             <div id="ex-header" style="font-size: 0.7rem; color: #8b949e; margin-bottom: 15px;">--</div>
@@ -120,7 +71,6 @@
         <img src="assets/forearms.png" id="overlay-forearms" class="muscle-overlay stack-layer">
         <img src="assets/abdominals.png" id="overlay-abdominals" class="muscle-overlay stack-layer">
         <img src="assets/quads.png" id="overlay-quads" class="muscle-overlay stack-layer">
-
         <div id="touch-map">
             <div class="hit"></div><div class="hit" onclick="selectMuscle('Trapezoids')"></div><div class="hit"></div>
             <div class="hit" onclick="selectMuscle('Deltoids')"></div><div class="hit" onclick="selectMuscle('Pectorals')"></div><div class="hit" onclick="selectMuscle('Deltoids')"></div>
@@ -131,11 +81,6 @@
     </div>
 
     <div id="nav-controls"><button class="link-btn" onclick="resetToSelection()">done / change</button></div>
-
-    <div id="menu-init" class="overlay visible">
-        <h2 style="color: var(--glow-blue); letter-spacing: 2px;">BIOSTACK ELITE</h2>
-        <button class="btn btn-solid" onclick="initBluetooth()">CONNECT COOSPO</button>
-    </div>
 
     <div id="menu-action" class="overlay">
         <h2 id="ex-name-modal" style="margin-top: 0; font-size: 1.2rem;">EXERCISE</h2>
