@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Coospo Bio-Engine Pro</title>
+    <title>BioStack Pro</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
@@ -20,28 +20,49 @@
             color: var(--dynamic-color);
             font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
             display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
-            min-height: 100vh; margin: 0; padding: 20px; transition: color 0.5s ease;
+            min-height: 100vh; margin: 0; padding: 15px; transition: color 0.5s ease;
         }
+
+        /* 1. BUTTON AT THE TOP */
+        #initBtn { 
+            margin-bottom: 25px; 
+            padding: 18px 0; 
+            background: transparent; 
+            border: 2px solid var(--dynamic-color); 
+            color: var(--dynamic-color); 
+            border-radius: 50px; 
+            cursor: pointer; 
+            font-weight: bold; 
+            width: 100%;
+            max-width: 400px;
+            transition: 0.2s; 
+            text-transform: uppercase;
+            font-size: 1.1rem;
+            letter-spacing: 2px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+        }
+        #initBtn:active { transform: scale(0.98); }
+        #initBtn:hover { background: var(--dynamic-color); color: var(--bg-dark); }
 
         .stats-grid { 
             display: grid; 
             grid-template-columns: 1fr 1fr; 
-            gap: 15px; 
+            gap: 12px; 
             width: 100%; 
             max-width: 950px; 
-            margin-bottom: 20px; 
+            margin-bottom: 15px; 
         }
 
         @media (max-width: 600px) {
             .stats-grid { grid-template-columns: 1fr; }
-            #bpm-val, #cal-val { font-size: 6rem !important; }
+            #bpm-val, #cal-val { font-size: 6.5rem !important; }
         }
 
         .stat-card { 
             background: var(--panel-bg); 
             border: 1px solid var(--border-color); 
-            border-radius: 20px; 
-            padding: 20px; 
+            border-radius: 24px; 
+            padding: 25px; 
             text-align: center; 
         }
         
@@ -55,16 +76,16 @@
 
         .label { 
             letter-spacing: 0.2rem; 
-            font-size: 0.7rem; 
+            font-size: 0.75rem; 
             color: #8b949e; 
             text-transform: uppercase; 
-            margin-top: 8px; 
+            margin-top: 10px; 
         }
 
         .chart-container { 
             background: var(--panel-bg); 
             border: 1px solid var(--border-color); 
-            border-radius: 24px; 
+            border-radius: 28px; 
             padding: 15px; 
             height: 35vh; 
             width: 100%; 
@@ -82,7 +103,6 @@
             padding: 15px 25px; 
             border-radius: 50px; 
             border: 1px solid var(--border-color);
-            margin-bottom: 20px;
         }
 
         .switch { position: relative; display: inline-block; width: 50px; height: 26px; }
@@ -94,34 +114,20 @@
 
         @keyframes alertPulse { 0% { transform: scale(1); } 50% { transform: scale(1.03); opacity: 0.8; } 100% { transform: scale(1); } }
         .alert-pulse { animation: alertPulse 0.6s infinite ease-in-out; }
-        
-        #initBtn { 
-            padding: 16px 45px; 
-            background: transparent; 
-            border: 2px solid var(--dynamic-color); 
-            color: var(--dynamic-color); 
-            border-radius: 50px; 
-            cursor: pointer; 
-            font-weight: bold; 
-            width: 100%;
-            max-width: 300px;
-            transition: 0.2s; 
-            text-transform: uppercase;
-            font-size: 1rem;
-        }
-        #initBtn:hover { background: var(--dynamic-color); color: var(--bg-dark); }
     </style>
 </head>
 <body>
 
+    <button id="initBtn">Start Bio-Stream</button>
+
     <div class="stats-grid">
         <div class="stat-card" id="bpm-card">
             <div id="bpm-val">--</div>
-            <div class="label">Heart Rate <span style="opacity: 0.5;">BPM</span></div>
+            <div class="label">Heart Rate <span style="opacity: 0.4;">BPM</span></div>
         </div>
         <div class="stat-card">
             <div id="cal-val">0</div>
-            <div class="label">Burned <span style="opacity: 0.5;">CAL</span></div>
+            <div class="label">Burned <span style="opacity: 0.4;">CAL</span></div>
         </div>
     </div>
 
@@ -130,14 +136,12 @@
     </div>
 
     <div class="controls">
-        <span style="font-size: 0.8rem; font-weight: bold; color: #f0f6fc;">WALKING MEETING MODE</span>
+        <span style="font-size: 0.85rem; font-weight: bold; color: #f0f6fc;">WALKING MEETING</span>
         <label class="switch">
             <input type="checkbox" id="meetingToggle">
             <span class="slider"></span>
         </label>
     </div>
-
-    <button id="initBtn">Start Stream</button>
 
     <script>
         let hrChart;
@@ -146,6 +150,7 @@
         let totalCalories = 0, meetingMode = false;
         let lastUpdateTime = Date.now();
 
+        // David, 42 - hardcoded for BioStack v1.2
         const USER_AGE = 42, USER_WEIGHT_KG = 85; 
         const floorValue = 100, ceilingValue = 115;
         const samplesPerSecond = 15, maxPoints = 60 * samplesPerSecond;
@@ -221,6 +226,8 @@
                     if (meetingMode && (val < floorValue || val > ceilingValue)) card.classList.add('alert-pulse');
                     else card.classList.remove('alert-pulse');
                 });
+
+                // Hide button after sync
                 document.getElementById('initBtn').style.display = 'none';
                 lastUpdateTime = Date.now();
                 requestAnimationFrame(renderLoop);
