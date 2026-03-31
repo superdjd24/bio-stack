@@ -1,5 +1,5 @@
 /**
- * BIOSTACK ELITE v1.8 (Final Naming Sync)
+ * BIOSTACK ELITE v2.0 (State-Aware Engine)
  */
 
 let bpm = 0, targetHR = 0, currentMusc = "", currentEx = "";
@@ -18,7 +18,18 @@ const DB = {
 
 function selectMuscle(m) {
     if (isTrain || isCal) return;
+    
+    // 1. Reset any previous previews
+    document.querySelectorAll('.muscle-overlay').forEach(img => img.style.opacity = 0);
+    
+    // 2. Set State
     currentMusc = m.toLowerCase();
+    
+    // 3. THE FIX: Activate 50% opacity for the selected muscle immediately
+    const overlay = document.getElementById(`overlay-${currentMusc}`);
+    if (overlay) overlay.style.opacity = 0.5;
+
+    // 4. Update UI
     document.getElementById('musc-name').innerText = m;
     const container = document.getElementById('list-container');
     container.innerHTML = "";
@@ -46,10 +57,15 @@ function startTraining() {
     isTrain = true;
     document.getElementById('menu-action').classList.remove('visible');
     document.getElementById('status-bar').innerText = "LIVE BIO-TELEMETRY ACTIVE";
+    
+    // Reset opacity to 0 so it can climb from HR 70
+    const overlay = document.getElementById(`overlay-${currentMusc}`);
+    if (overlay) overlay.style.opacity = 0;
 }
 
 function closeAll() {
     document.querySelectorAll('.overlay').forEach(o => o.classList.remove('visible'));
+    // Reset all layers to invisible
     document.querySelectorAll('.muscle-overlay').forEach(img => {
         img.style.opacity = 0;
         img.classList.remove('throbbing');
@@ -61,11 +77,12 @@ function closeAll() {
 function runEngine() {
     if (isCal && bpm > sMax) sMax = bpm;
 
+    // HEART RATE OPACITY LOGIC
     if (isTrain && currentMusc && targetHR > 0) {
-        // Points to the ID defined in index.html (e.g., overlay-abdominals)
         const overlay = document.getElementById(`overlay-${currentMusc}`);
         if (!overlay) return;
 
+        // Proximity Factor: 70bpm (rest) to targetHR (peak)
         const factor = Math.min(Math.max((bpm - 70) / (targetHR - 70), 0), 1);
         overlay.style.opacity = factor;
 
@@ -100,13 +117,13 @@ async function initBluetooth() {
         });
         document.getElementById('conn-btn').style.display = "none";
         document.getElementById('status-bar').innerText = "BODY SCAN COMPLETE";
-    } catch (e) { alert("Bluetooth connection failed."); }
+    } catch (e) { console.log("Link failed."); }
 }
 
 function startCalibration() {
     isCal = true; sMax = 0;
     document.getElementById('menu-action').classList.remove('visible');
-    document.getElementById('status-bar').innerText = "CALIBRATING MAX HR FAILURE POINT...";
+    document.getElementById('status-bar').innerText = "CALIBRATING FAILURE POINT...";
 }
 
 document.getElementById('conn-btn').onclick = initBluetooth;
