@@ -8,15 +8,14 @@
     </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BioStack Elite v4.0</title>
+    <title>BioStack Elite v4.1</title>
     <style>
         :root { --glow-blue: #00f2ff; --glow-red: #ff0044; --bg-dark: #05070a; --glass: rgba(15, 20, 30, 0.95); --border: #30363d; }
         body { margin: 0; background: var(--bg-dark); color: white; font-family: -apple-system, system-ui, sans-serif; overflow: hidden; height: 100vh; }
         
         /* TELEMETRY BAR */
-        #top-dash { position: fixed; top: 0; width: 100%; height: 120px; display: flex; align-items: center; justify-content: space-between; padding: 40px 20px 0 20px; box-sizing: border-box; z-index: 1000; background: linear-gradient(to bottom, var(--bg-dark), transparent); }
-        #hr-pill { background: var(--glass); padding: 10px 20px; border-radius: 50px; border: 1px solid var(--border); display: flex; align-items: baseline; cursor: pointer; animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { border-color: var(--border); } 50% { border-color: var(--glow-blue); } 100% { border-color: var(--border); } }
+        #top-dash { position: fixed; top: 0; width: 100%; height: 120px; display: flex; align-items: center; justify-content: space-between; padding: 40px 20px 0 20px; box-sizing: border-box; z-index: 1000; }
+        #hr-pill { background: var(--glass); padding: 10px 20px; border-radius: 50px; border: 1px solid var(--border); display: flex; align-items: baseline; cursor: pointer; }
         #hr-val { font-size: 2.8rem; font-weight: 900; color: var(--glow-blue); margin-right: 5px; }
         #sparkline-canvas { width: 120px; height: 40px; }
         
@@ -28,21 +27,38 @@
         #musc-header { font-size: 1rem; font-weight: 900; color: var(--glow-blue); text-transform: uppercase; margin-bottom: 10px; }
         .list-btn { width: 100%; padding: 12px; margin-bottom: 8px; border-radius: 12px; border: 1px solid var(--border); background: var(--glass); color: white; font-size: 0.7rem; text-align: left; }
 
-        /* THE STAGE AREA (Pinned to Right) */
+        /* THE STAGE AREA - FIXED TO RIGHT SIDE */
         #stage-area { 
-            position: fixed; top: 130px; right: 0; width: 65vw; height: 80vh; 
-            display: flex; flex-direction: column; align-items: center; z-index: 10; 
+            position: fixed; 
+            top: 140px; 
+            right: 20px; 
+            width: 60vw; /* Takes up the right 60% of the screen */
+            height: 75vh; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; /* Centers children (toggle and image) within the 60vw */
+            z-index: 10; 
         }
 
-        /* VIEW TOGGLE - Now just a flex item at the top of the stack */
+        /* VIEW TOGGLE - Centered over the skeleton */
         #view-toggle { 
-            width: 200px; display: flex; justify-content: space-between; margin-bottom: 10px; 
+            width: 220px; 
+            display: flex; 
+            justify-content: space-between; 
+            margin-bottom: 20px;
+            z-index: 1100;
         }
-        .toggle-btn { background: var(--glass); border: 1px solid var(--border); color: white; padding: 10px 18px; border-radius: 30px; font-size: 0.7rem; font-weight: 900; text-transform: uppercase; cursor: pointer; }
-        .toggle-active { border-color: var(--glow-blue); color: var(--glow-blue); background: rgba(0, 242, 255, 0.1); }
+        .toggle-btn { background: var(--glass); border: 1px solid var(--border); color: white; padding: 10px 20px; border-radius: 30px; font-size: 0.7rem; font-weight: 900; text-transform: uppercase; cursor: pointer; transition: 0.3s; }
+        .toggle-active { border-color: var(--glow-blue); color: var(--glow-blue); background: rgba(0, 242, 255, 0.1); box-shadow: 0 0 15px rgba(0, 242, 255, 0.2); }
 
-        /* IMAGE CONTAINER */
-        #image-stack { position: relative; height: 85%; width: 100%; display: flex; justify-content: center; }
+        /* IMAGE STACK - Centered under the toggle */
+        #image-stack { 
+            position: relative; 
+            height: 90%; 
+            width: 100%; 
+            display: flex; 
+            justify-content: center; 
+        }
         .stack-layer { position: absolute; height: 100%; width: auto; pointer-events: none; transition: opacity 0.4s ease; display: none; }
         .layer-visible { display: block; }
         #base-front, #base-back { z-index: 11; opacity: 0.8; }
