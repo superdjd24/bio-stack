@@ -2,51 +2,47 @@
 <html lang="en">
 <head>
     <script>
-        if (sessionStorage.getItem('biostack_connected') !== 'true') {
+        if (sessionStorage.getItem('biostack_paired') !== 'true') {
             window.location.href = 'index.html';
         }
     </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BioStack Elite v3.9</title>
+    <title>BioStack Elite v4.0</title>
     <style>
         :root { --glow-blue: #00f2ff; --glow-red: #ff0044; --bg-dark: #05070a; --glass: rgba(15, 20, 30, 0.95); --border: #30363d; }
         body { margin: 0; background: var(--bg-dark); color: white; font-family: -apple-system, system-ui, sans-serif; overflow: hidden; height: 100vh; }
         
-        #top-dash { position: fixed; top: 0; width: 100%; height: 120px; display: flex; align-items: center; justify-content: space-between; padding: 40px 20px 0 20px; box-sizing: border-box; z-index: 1000; }
-        #hr-pill { background: var(--glass); padding: 10px 20px; border-radius: 50px; border: 1px solid var(--border); display: flex; align-items: baseline; cursor: pointer; }
+        /* TELEMETRY BAR */
+        #top-dash { position: fixed; top: 0; width: 100%; height: 120px; display: flex; align-items: center; justify-content: space-between; padding: 40px 20px 0 20px; box-sizing: border-box; z-index: 1000; background: linear-gradient(to bottom, var(--bg-dark), transparent); }
+        #hr-pill { background: var(--glass); padding: 10px 20px; border-radius: 50px; border: 1px solid var(--border); display: flex; align-items: baseline; cursor: pointer; animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { border-color: var(--border); } 50% { border-color: var(--glow-blue); } 100% { border-color: var(--border); } }
         #hr-val { font-size: 2.8rem; font-weight: 900; color: var(--glow-blue); margin-right: 5px; }
-        #sparkline-canvas { width: 120px; height: 40px; filter: drop-shadow(0 0 5px var(--glow-blue)); }
+        #sparkline-canvas { width: 120px; height: 40px; }
         
-        #mid-dash { position: fixed; top: 120px; width: 100%; padding: 0 20px; display: flex; justify-content: space-between; align-items: flex-start; box-sizing: border-box; z-index: 900; }
+        #mid-dash { position: fixed; top: 120px; left: 20px; z-index: 900; }
         #cal-box { font-size: 1.2rem; font-weight: 800; }
-        #mode-val { font-size: 1rem; font-weight: 800; text-transform: uppercase; }
 
-        /* SIDEBAR - Moved down slightly to avoid dash overlap */
-        #sidebar { position: fixed; top: 220px; left: 20px; width: 150px; height: 55vh; display: flex; flex-direction: column; z-index: 500; }
-        #musc-header { font-size: 1.1rem; font-weight: 900; color: var(--glow-blue); text-transform: uppercase; margin-bottom: 10px; }
-        #exercise-picker { flex-grow: 1; overflow-y: auto; display: block; }
+        /* SIDEBAR */
+        #sidebar { position: fixed; top: 220px; left: 20px; width: 150px; height: 50vh; z-index: 500; }
+        #musc-header { font-size: 1rem; font-weight: 900; color: var(--glow-blue); text-transform: uppercase; margin-bottom: 10px; }
         .list-btn { width: 100%; padding: 12px; margin-bottom: 8px; border-radius: 12px; border: 1px solid var(--border); background: var(--glass); color: white; font-size: 0.7rem; text-align: left; }
-        
-        /* THE STAGE - Positioned relative to anchor the buttons */
-        #stage { 
-            position: fixed; top: 160px; right: 0; width: 65vw; height: 75vh; 
-            display: flex; justify-content: center; align-items: flex-start; z-index: 10; 
+
+        /* THE STAGE AREA (Pinned to Right) */
+        #stage-area { 
+            position: fixed; top: 130px; right: 0; width: 65vw; height: 80vh; 
+            display: flex; flex-direction: column; align-items: center; z-index: 10; 
         }
 
-        /* THE FIX: Absolute positioning relative to the skeleton shoulders */
+        /* VIEW TOGGLE - Now just a flex item at the top of the stack */
         #view-toggle { 
-            position: absolute; top: -10px; width: 220px; 
-            z-index: 1100; display: flex; justify-content: space-between; 
-            pointer-events: none; 
+            width: 200px; display: flex; justify-content: space-between; margin-bottom: 10px; 
         }
-        .toggle-btn { 
-            background: var(--glass); border: 1px solid var(--border); color: white; 
-            padding: 8px 14px; border-radius: 30px; font-size: 0.6rem; font-weight: 900; 
-            text-transform: uppercase; cursor: pointer; pointer-events: auto; 
-        }
+        .toggle-btn { background: var(--glass); border: 1px solid var(--border); color: white; padding: 10px 18px; border-radius: 30px; font-size: 0.7rem; font-weight: 900; text-transform: uppercase; cursor: pointer; }
         .toggle-active { border-color: var(--glow-blue); color: var(--glow-blue); background: rgba(0, 242, 255, 0.1); }
 
+        /* IMAGE CONTAINER */
+        #image-stack { position: relative; height: 85%; width: 100%; display: flex; justify-content: center; }
         .stack-layer { position: absolute; height: 100%; width: auto; pointer-events: none; transition: opacity 0.4s ease; display: none; }
         .layer-visible { display: block; }
         #base-front, #base-back { z-index: 11; opacity: 0.8; }
@@ -56,23 +52,22 @@
         .hit { pointer-events: auto; }
 
         .overlay { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); width: 92%; max-width: 400px; background: var(--glass); border-radius: 35px; padding: 30px; border: 1px solid var(--border); backdrop-filter: blur(25px); display: none; text-align: center; z-index: 2000; }
-        .btn { width: 100%; padding: 18px; margin: 8px 0; border-radius: 50px; border: 2px solid var(--glow-blue); background: transparent; color: var(--glow-blue); font-weight: 800; text-transform: uppercase; cursor: pointer; }
+        .btn { width: 100%; padding: 18px; margin: 8px 0; border-radius: 50px; border: 2px solid var(--glow-blue); background: transparent; color: var(--glow-blue); font-weight: 800; text-transform: uppercase; }
         .btn-solid { background: var(--glow-blue); color: black; }
     </style>
 </head>
 <body>
 
     <div id="top-dash">
-        <div id="hr-pill" onclick="connectHardware()">
-            <span id="hr-val">TAP</span>
-            <span style="font-size:0.6rem; opacity:0.4; margin-left:5px;">LINK</span>
+        <div id="hr-pill" onclick="startStream()">
+            <span id="hr-val">SYNC</span>
+            <span style="font-size:0.6rem; opacity:0.4; margin-left:5px;">COOSPO</span>
         </div>
         <canvas id="sparkline-canvas"></canvas>
     </div>
 
     <div id="mid-dash">
         <div id="cal-box"><span id="total-cal">0</span> <span style="font-size:0.7rem; opacity:0.5;">total cal</span></div>
-        <div id="mode-val" class="mode-push">LINKED</div>
     </div>
 
     <div id="sidebar">
@@ -80,29 +75,31 @@
         <div id="exercise-picker"></div>
     </div>
 
-    <div id="stage">
+    <div id="stage-area">
         <div id="view-toggle">
             <button id="btn-front" class="toggle-btn toggle-active" onclick="switchView('front')">Front</button>
             <button id="btn-back" class="toggle-btn" onclick="switchView('back')">Back</button>
         </div>
 
-        <img src="assets/base_front.png" id="base-front" class="stack-layer layer-visible">
-        <img src="assets/trapezoids.png" id="overlay-trapezoids" class="muscle-overlay stack-layer layer-visible">
-        <img src="assets/deltoids.png" id="overlay-deltoids" class="muscle-overlay stack-layer layer-visible">
-        <img src="assets/pectorals.png" id="overlay-pectorals" class="muscle-overlay stack-layer layer-visible">
-        <img src="assets/biceps.png" id="overlay-biceps" class="muscle-overlay stack-layer layer-visible">
-        <img src="assets/triceps.png" id="overlay-triceps" class="muscle-overlay stack-layer layer-visible">
-        <img src="assets/forearms.png" id="overlay-forearms" class="muscle-overlay stack-layer layer-visible">
-        <img src="assets/abdominals.png" id="overlay-abdominals" class="muscle-overlay stack-layer layer-visible">
-        <img src="assets/quads.png" id="overlay-quads" class="muscle-overlay stack-layer layer-visible">
+        <div id="image-stack">
+            <img src="assets/base_front.png" id="base-front" class="stack-layer layer-visible">
+            <img src="assets/trapezoids.png" id="overlay-trapezoids" class="muscle-overlay stack-layer layer-visible">
+            <img src="assets/deltoids.png" id="overlay-deltoids" class="muscle-overlay stack-layer layer-visible">
+            <img src="assets/pectorals.png" id="overlay-pectorals" class="muscle-overlay stack-layer layer-visible">
+            <img src="assets/biceps.png" id="overlay-biceps" class="muscle-overlay stack-layer layer-visible">
+            <img src="assets/triceps.png" id="overlay-triceps" class="muscle-overlay stack-layer layer-visible">
+            <img src="assets/forearms.png" id="overlay-forearms" class="muscle-overlay stack-layer layer-visible">
+            <img src="assets/abdominals.png" id="overlay-abdominals" class="muscle-overlay stack-layer layer-visible">
+            <img src="assets/quads.png" id="overlay-quads" class="muscle-overlay stack-layer layer-visible">
 
-        <img src="assets/base_back.png" id="base-back" class="stack-layer">
-        <img src="assets/lats.png" id="overlay-lats" class="muscle-overlay stack-layer">
-        <img src="assets/glutes.png" id="overlay-glutes" class="muscle-overlay stack-layer">
-        <img src="assets/hamstrings.png" id="overlay-hamstrings" class="muscle-overlay stack-layer">
-        <img src="assets/calves.png" id="overlay-calves" class="muscle-overlay stack-layer">
+            <img src="assets/base_back.png" id="base-back" class="stack-layer">
+            <img src="assets/lats.png" id="overlay-lats" class="muscle-overlay stack-layer">
+            <img src="assets/glutes.png" id="overlay-glutes" class="muscle-overlay stack-layer">
+            <img src="assets/hamstrings.png" id="overlay-hamstrings" class="muscle-overlay stack-layer">
+            <img src="assets/calves.png" id="overlay-calves" class="muscle-overlay stack-layer">
 
-        <div id="touch-map"></div>
+            <div id="touch-map"></div>
+        </div>
     </div>
 
     <div id="menu-action" class="overlay">
