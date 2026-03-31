@@ -1,24 +1,24 @@
 /**
- * BIOSTACK ELITE v3.1
- * Anatomy-First & Set Tracking Engine
+ * BIOSTACK ELITE v3.2
+ * Sidebar Interaction Engine
  */
 
 let bpm = 0, targetHR = 0, currentMusc = "", currentEx = "";
 let isTrain = false, isCal = false, totalCal = 0;
 let hrHistory = [];
-let sets = [0, 0, 0, 0, 0];
+let sets = [0, 0, 0];
 let currentSetIdx = 0;
 let lastMode = "PUSH";
 
 const DB = {
-    'Trapezoids': ['Dumbbell Shrugs', 'Barbell Shrugs'],
+    'Trapezoids': ['Dumbbell Shrugs', 'Barbell Shrugs', 'Face Pulls'],
     'Deltoids': ['Lateral Raises', 'Military Press', 'Arnold Press'],
-    'Pectorals': ['Bench Press', 'Incline Press', 'Chest Flys'],
-    'Biceps': ['Barbell Curls', 'Hammer Curls'],
+    'Pectorals': ['Bench Press', 'Incline Press', 'Chest Flys', 'Pushups'],
+    'Biceps': ['Barbell Curls', 'Hammer Curls', 'Preacher Curls'],
     'Triceps': ['Skull Crushers', 'Pushdowns', 'Dips'],
     'Forearms': ['Wrist Curls', 'Reverse Curls'],
-    'Abdominals': ['Leg Raises', 'Weighted Crunches'],
-    'Quads': ['Barbell Squats', 'Leg Press']
+    'Abdominals': ['Leg Raises', 'Weighted Crunches', 'Plank'],
+    'Quads': ['Barbell Squats', 'Leg Press', 'Hack Squat']
 };
 
 // --- CONNECT ---
@@ -35,123 +35,105 @@ document.getElementById('conn-btn').onclick = async () => {
             updateEngine();
         });
         document.getElementById('menu-init').classList.remove('visible');
-        document.getElementById('mode-val').innerText = "SELECT TARGET";
     } catch (e) { alert("Enable Bluetooth in Bluefy."); }
 };
 
-// --- NAVIGATION ---
+// --- ANATOMY INTERACTION ---
 
 function selectMuscle(m) {
     if (isTrain || isCal) return;
     
-    // Clear any previous previews
+    // 1. Heatmap Toggle
     document.querySelectorAll('.muscle-overlay').forEach(img => img.style.opacity = 0);
-    
     currentMusc = m;
     const overlay = document.getElementById(`overlay-${m.toLowerCase()}`);
     if (overlay) overlay.style.opacity = 0.5;
 
-    document.getElementById('musc-name-modal').innerText = m.toUpperCase();
-    const list = document.getElementById('list-container');
-    list.innerHTML = "";
+    // 2. Sidebar Update
+    document.getElementById('musc-header').innerText = m;
+    const picker = document.getElementById('exercise-picker');
+    picker.innerHTML = "";
+    picker.style.display = "block";
     
     DB[m].forEach(ex => {
         const b = document.createElement('button');
-        b.className = "btn";
+        b.className = "list-btn";
         b.innerText = ex;
         b.onclick = () => showActionMenu(ex);
-        list.appendChild(b);
+        picker.appendChild(b);
     });
-    
-    document.getElementById('menu-ex').classList.add('visible');
 }
 
 function showActionMenu(ex) {
     currentEx = ex;
     document.getElementById('ex-name-modal').innerText = ex;
-    const saved = localStorage.getItem('biostack_max_' + ex) || 150;
-    targetHR = parseInt(saved);
-    
-    document.getElementById('menu-ex').classList.remove('visible');
     document.getElementById('menu-action').classList.add('visible');
+}
+
+function closeAction() {
+    document.getElementById('menu-action').classList.remove('visible');
 }
 
 function startTraining() {
     isTrain = true;
     document.getElementById('menu-action').classList.remove('visible');
+    document.getElementById('exercise-picker').style.display = "none";
     document.getElementById('set-tracker').style.display = "block";
     document.getElementById('nav-controls').style.display = "block";
-    
-    document.getElementById('musc-header').innerText = currentMusc;
     document.getElementById('ex-header').innerText = currentEx;
-    document.getElementById('target-val').innerText = targetHR;
-}
-
-function closeModals() {
-    document.querySelectorAll('.overlay').forEach(o => o.classList.remove('visible'));
-    if (!isTrain) document.querySelectorAll('.muscle-overlay').forEach(img => img.style.opacity = 0);
+    
+    const saved = localStorage.getItem('biostack_max_' + currentEx) || 150;
+    targetHR = parseInt(saved);
 }
 
 function resetToSelection() {
     isTrain = false;
     currentSetIdx = 0;
-    sets = [0,0,0,0,0];
+    sets = [0,0,0];
     document.getElementById('set-tracker').style.display = "none";
     document.getElementById('nav-controls').style.display = "none";
+    document.getElementById('exercise-picker').style.display = "block";
     document.querySelectorAll('.progress-bar').forEach(b => b.style.width = '0%');
-    document.querySelectorAll('.muscle-overlay').forEach(img => img.style.opacity = 0);
-    document.getElementById('mode-val').innerText = "SELECT TARGET";
+    document.getElementById('musc-header').innerText = "SELECT TARGET";
 }
 
-// --- CORE ENGINE ---
+// --- ENGINE ---
 
 function updateEngine() {
     document.getElementById('hr-val').innerText = bpm;
 
-    // 1. Sparkline (30s Rolling)
+    // 1. Sparkline
     hrHistory.push(bpm);
     if (hrHistory.length > 30) hrHistory.shift();
     drawSparkline();
 
-    // 2. Mode & Set Logic
-    const modeVal = document.getElementById('mode-val');
-    // We treat >110 as REST (Recovery) and <110 as PUSH (Intensity)
+    // 2. Mode Detection
     let currentMode = (bpm >= 110) ? "REST" : "PUSH";
+    const mv = document.getElementById('mode-val');
+    mv.innerText = (currentMode === "REST") ? "REST / RECOVER" : "PUSH - GO!";
+    mv.className = (currentMode === "REST") ? "mode-rest" : "mode-push";
 
-    if (currentMode === "REST") {
-        modeVal.innerText = "REST / RECOVER";
-        modeVal.className = "mode-rest";
-    } else {
-        modeVal.innerText = "PUSH - GO!";
-        modeVal.className = "mode-push";
-    }
-
-    // Auto-Set Advance: Transition from PUSH back to REST signals set completion
     if (lastMode === "PUSH" && currentMode === "REST") {
-        if (currentSetIdx < 4) currentSetIdx++;
+        if (currentSetIdx < 2) currentSetIdx++;
     }
     lastMode = currentMode;
 
-    // 3. Telemetry Updates
+    // 3. Telemetry
     if (isTrain) {
-        // Calorie Burn (Approx 42yo Male)
         totalCal += (bpm * 0.012); 
         document.getElementById('total-cal').innerText = Math.floor(totalCal);
 
-        // Update Heatmap Opacity
         const overlay = document.getElementById(`overlay-${currentMusc.toLowerCase()}`);
         if (overlay) {
             const factor = Math.min(Math.max((bpm - 70) / (targetHR - 70), 0), 1);
             overlay.style.opacity = factor;
         }
 
-        // Update Active Set Bar
-        if (currentSetIdx < 5) {
+        if (currentSetIdx < 3) {
             if (bpm > sets[currentSetIdx]) {
                 sets[currentSetIdx] = bpm;
                 const pct = Math.min((bpm / targetHR) * 100, 100);
-                const bar = document.getElementById(`set-${currentSetIdx + 1}-bar`);
-                if (bar) bar.style.width = pct + "%";
+                document.getElementById(`set-${currentSetIdx + 1}-bar`).style.width = pct + "%";
             }
         }
     }
