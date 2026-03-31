@@ -1,6 +1,6 @@
 /**
- * BIOSTACK ELITE v3.2
- * Sidebar Interaction Engine
+ * BIOSTACK ELITE v3.3
+ * Bluetooth & UI Sync
  */
 
 let bpm = 0, targetHR = 0, currentMusc = "", currentEx = "";
@@ -21,35 +21,42 @@ const DB = {
     'Quads': ['Barbell Squats', 'Leg Press', 'Hack Squat']
 };
 
-// --- CONNECT ---
-
-document.getElementById('conn-btn').onclick = async () => {
+// --- CORE BLUETOOTH FUNCTION ---
+async function connectBluetooth() {
     try {
-        const device = await navigator.bluetooth.requestDevice({ filters: [{ services: ['heart_rate'] }] });
+        console.log("Requesting Coospo device...");
+        const device = await navigator.bluetooth.requestDevice({
+            filters: [{ services: ['heart_rate'] }]
+        });
+
         const server = await device.gatt.connect();
         const service = await server.getPrimaryService('heart_rate');
         const char = await service.getCharacteristic('heart_rate_measurement');
+        
         await char.startNotifications();
         char.addEventListener('characteristicvaluechanged', (e) => {
-            bpm = e.target.value.getUint8(1);
+            const value = e.target.value;
+            bpm = value.getUint8(1);
             updateEngine();
         });
+
+        console.log("Coospo Synced.");
         document.getElementById('menu-init').classList.remove('visible');
-    } catch (e) { alert("Enable Bluetooth in Bluefy."); }
-};
+        document.getElementById('musc-header').innerText = "SELECT TARGET";
+    } catch (error) {
+        console.error("Link Error: ", error);
+        alert("Connection failed. Ensure Coospo is on and you are using Bluefy.");
+    }
+}
 
-// --- ANATOMY INTERACTION ---
-
+// --- INTERACTION LOGIC ---
 function selectMuscle(m) {
     if (isTrain || isCal) return;
-    
-    // 1. Heatmap Toggle
     document.querySelectorAll('.muscle-overlay').forEach(img => img.style.opacity = 0);
     currentMusc = m;
     const overlay = document.getElementById(`overlay-${m.toLowerCase()}`);
     if (overlay) overlay.style.opacity = 0.5;
 
-    // 2. Sidebar Update
     document.getElementById('musc-header').innerText = m;
     const picker = document.getElementById('exercise-picker');
     picker.innerHTML = "";
@@ -98,16 +105,13 @@ function resetToSelection() {
 }
 
 // --- ENGINE ---
-
 function updateEngine() {
     document.getElementById('hr-val').innerText = bpm;
 
-    // 1. Sparkline
     hrHistory.push(bpm);
     if (hrHistory.length > 30) hrHistory.shift();
     drawSparkline();
 
-    // 2. Mode Detection
     let currentMode = (bpm >= 110) ? "REST" : "PUSH";
     const mv = document.getElementById('mode-val');
     mv.innerText = (currentMode === "REST") ? "REST / RECOVER" : "PUSH - GO!";
@@ -118,17 +122,14 @@ function updateEngine() {
     }
     lastMode = currentMode;
 
-    // 3. Telemetry
     if (isTrain) {
         totalCal += (bpm * 0.012); 
         document.getElementById('total-cal').innerText = Math.floor(totalCal);
-
         const overlay = document.getElementById(`overlay-${currentMusc.toLowerCase()}`);
         if (overlay) {
             const factor = Math.min(Math.max((bpm - 70) / (targetHR - 70), 0), 1);
             overlay.style.opacity = factor;
         }
-
         if (currentSetIdx < 3) {
             if (bpm > sets[currentSetIdx]) {
                 sets[currentSetIdx] = bpm;
@@ -144,9 +145,7 @@ function drawSparkline() {
     const ctx = canvas.getContext('2d');
     canvas.width = 140; canvas.height = 50;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.beginPath();
-    ctx.strokeStyle = '#00f2ff';
-    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.strokeStyle = '#00f2ff'; ctx.lineWidth = 2;
     const step = canvas.width / 30;
     hrHistory.forEach((val, i) => {
         const x = i * step;
