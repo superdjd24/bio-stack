@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BioStack Elite v3.0</title>
+    <title>BioStack Elite v3.1</title>
     <style>
         :root {
             --glow-blue: #00f2ff;
             --glow-red: #ff0044;
             --bg-dark: #05070a;
-            --glass: rgba(15, 20, 30, 0.9);
+            --glass: rgba(15, 20, 30, 0.95);
             --border: #30363d;
         }
 
@@ -19,7 +19,7 @@
             overflow: hidden; height: 100vh; 
         }
 
-        /* TOP DASHBOARD (HR & SPARKLINE) */
+        /* DASHBOARD HEADER */
         #top-dash {
             position: fixed; top: 0; width: 100%; height: 120px;
             display: flex; align-items: center; justify-content: space-between;
@@ -29,64 +29,74 @@
         #hr-pill { 
             background: var(--glass); padding: 10px 20px; border-radius: 50px;
             border: 1px solid var(--border); display: flex; align-items: baseline;
-            box-shadow: 0 0 25px rgba(0, 242, 255, 0.2);
+            box-shadow: 0 0 20px rgba(0, 242, 255, 0.15);
         }
-        #hr-val { font-size: 3rem; font-weight: 900; color: var(--glow-blue); margin-right: 5px; }
+        #hr-val { font-size: 2.8rem; font-weight: 900; color: var(--glow-blue); margin-right: 5px; }
         .unit { font-size: 0.8rem; opacity: 0.6; font-weight: bold; }
 
-        #sparkline-canvas { width: 150px; height: 60px; filter: drop-shadow(0 0 5px var(--glow-blue)); }
+        #sparkline-canvas { width: 140px; height: 50px; filter: drop-shadow(0 0 5px var(--glow-blue)); }
 
-        /* MID DASH (CALORIES & MODE) */
+        /* TELEMETRY & MODE */
         #mid-dash {
             position: fixed; top: 130px; width: 100%; padding: 0 20px;
             display: flex; justify-content: space-between; align-items: flex-start;
             box-sizing: border-box; z-index: 900;
         }
-        #cal-box { font-size: 1.8rem; font-weight: 800; }
-        #cal-box span { font-size: 0.9rem; font-weight: 400; opacity: 0.6; }
+        #cal-box { font-size: 1.6rem; font-weight: 800; }
+        #cal-box span { font-size: 0.8rem; font-weight: 400; opacity: 0.5; }
 
         #mode-box { text-align: right; }
-        #mode-box div { font-size: 0.8rem; letter-spacing: 1px; color: #8b949e; }
-        #mode-val { font-size: 1.2rem; font-weight: 800; text-transform: uppercase; }
+        #mode-box div { font-size: 0.7rem; letter-spacing: 1px; color: #8b949e; }
+        #mode-val { font-size: 1.1rem; font-weight: 800; text-transform: uppercase; }
         .mode-rest { color: var(--glow-red); }
         .mode-push { color: var(--glow-blue); }
 
-        /* BODY VISUALIZER (Right Aligned) */
+        /* ANATOMY STAGE (Right Aligned) */
         #stage {
-            position: fixed; top: 180px; right: -20px; width: 60vw; height: 75vh;
+            position: fixed; top: 180px; right: -30px; width: 65vw; height: 70vh;
             display: flex; justify-content: center; align-items: center; z-index: 10;
         }
         .stack-layer { position: absolute; height: 100%; width: auto; pointer-events: none; transition: opacity 0.4s ease; }
-        #base-layer { z-index: 11; opacity: 0.6; }
+        #base-layer { z-index: 11; opacity: 0.7; }
         .muscle-overlay { z-index: 12; opacity: 0; mix-blend-mode: screen; }
+
+        /* TOUCH MAP (Mapped to Stage) */
+        #touch-map { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            z-index: 100; display: grid; 
+            grid-template-columns: repeat(3, 1fr); 
+            grid-template-rows: repeat(6, 1fr); 
+        }
+        .hit { pointer-events: auto; }
 
         /* SET TRACKER (Left Aligned) */
         #set-tracker {
-            position: fixed; top: 320px; left: 20px; width: 140px; z-index: 500;
+            position: fixed; top: 300px; left: 20px; width: 150px; z-index: 500;
+            display: none; /* Only show once training starts */
         }
-        #musc-header { font-size: 1.6rem; font-weight: 800; margin-bottom: 2px; }
-        #ex-header { font-size: 0.9rem; opacity: 0.7; margin-bottom: 20px; }
+        #musc-header { font-size: 1.5rem; font-weight: 900; margin-bottom: 2px; text-transform: uppercase; }
+        #ex-header { font-size: 0.8rem; color: #8b949e; margin-bottom: 15px; }
+        #target-marker { color: var(--glow-blue); font-weight: bold; margin-bottom: 20px; }
         
-        #target-marker { color: var(--glow-blue); font-weight: bold; margin-bottom: 10px; display: flex; align-items: center; }
-        
-        .set-row { margin-bottom: 12px; }
-        .set-label { font-size: 0.8rem; font-weight: bold; margin-bottom: 4px; }
-        .progress-bg { width: 100px; height: 8px; background: rgba(255,255,255,0.1); border-radius: 10px; }
-        .progress-bar { height: 100%; background: var(--glow-blue); border-radius: 10px; width: 0%; transition: width 0.5s ease; }
+        .set-row { margin-bottom: 15px; }
+        .set-label { font-size: 0.7rem; font-weight: bold; margin-bottom: 5px; opacity: 0.7; }
+        .progress-bg { width: 120px; height: 6px; background: rgba(255,255,255,0.05); border-radius: 10px; }
+        .progress-bar { height: 100%; background: var(--glow-blue); border-radius: 10px; width: 0%; transition: width 0.4s ease; }
 
-        /* NAVIGATION BUTTONS */
-        #nav-controls { position: fixed; bottom: 80px; left: 20px; z-index: 1000; }
-        .link-btn { color: #8b949e; text-decoration: underline; font-size: 0.9rem; border: none; background: none; cursor: pointer; }
-
-        /* TOGGLE BUTTONS */
-        #toggle-box { position: fixed; top: 220px; right: 20px; z-index: 1100; display: flex; gap: 5px; }
-        .toggle-btn { background: var(--glass); border: 1px solid var(--border); color: white; padding: 8px 15px; border-radius: 15px; font-size: 0.8rem; }
-        .toggle-active { border-color: var(--glow-blue); color: var(--glow-blue); }
+        /* NAVIGATION */
+        #nav-controls { position: fixed; bottom: 60px; left: 20px; z-index: 1000; display: none; }
+        .link-btn { color: #8b949e; text-decoration: underline; font-size: 0.8rem; border: none; background: none; cursor: pointer; }
 
         /* MODALS */
-        .overlay { position: fixed; bottom: 50px; left: 50%; transform: translateX(-50%); width: 92%; background: var(--glass); border-radius: 35px; padding: 30px; border: 1px solid var(--border); backdrop-filter: blur(25px); display: none; text-align: center; z-index: 2000; }
+        .overlay { 
+            position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); 
+            width: 92%; max-width: 400px; background: var(--glass); 
+            border-radius: 35px; padding: 30px; border: 1px solid var(--border); 
+            backdrop-filter: blur(25px); display: none; text-align: center; z-index: 2000;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        }
         .overlay.visible { display: block; }
-        .btn { width: 100%; padding: 20px; margin: 10px 0; border-radius: 50px; border: 2px solid var(--glow-blue); background: transparent; color: var(--glow-blue); font-weight: 800; text-transform: uppercase; cursor: pointer; }
+        .btn { width: 100%; padding: 18px; margin: 8px 0; border-radius: 50px; border: 2px solid var(--glow-blue); background: transparent; color: var(--glow-blue); font-weight: 800; text-transform: uppercase; cursor: pointer; }
         .btn-solid { background: var(--glow-blue); color: black; }
     </style>
 </head>
@@ -104,13 +114,8 @@
         <div id="cal-box"><span id="total-cal">0</span> <span>total cal</span></div>
         <div id="mode-box">
             <div>MODE:</div>
-            <div id="mode-val" class="mode-push">SCANNING...</div>
+            <div id="mode-val" class="mode-push">LINK READY</div>
         </div>
-    </div>
-
-    <div id="toggle-box">
-        <button class="toggle-btn toggle-active" onclick="setView('front')">Front</button>
-        <button class="toggle-btn" onclick="setView('back')">Back</button>
     </div>
 
     <div id="stage">
@@ -123,26 +128,24 @@
         <img src="assets/forearms.png" id="overlay-forearms" class="muscle-overlay stack-layer">
         <img src="assets/abdominals.png" id="overlay-abdominals" class="muscle-overlay stack-layer">
         <img src="assets/quads.png" id="overlay-quads" class="muscle-overlay stack-layer">
+
+        <div id="touch-map">
+            <div class="hit"></div><div class="hit" onclick="selectMuscle('Trapezoids')"></div><div class="hit"></div>
+            <div class="hit" onclick="selectMuscle('Deltoids')"></div><div class="hit" onclick="selectMuscle('Pectorals')"></div><div class="hit" onclick="selectMuscle('Deltoids')"></div>
+            <div class="hit" onclick="selectMuscle('Biceps')"></div><div class="hit" onclick="selectMuscle('Abdominals')"></div><div class="hit" onclick="selectMuscle('Biceps')"></div>
+            <div class="hit" onclick="selectMuscle('Forearms')"></div><div class="hit"></div><div class="hit" onclick="selectMuscle('Triceps')"></div>
+            <div class="hit" onclick="selectMuscle('Quads')"></div><div class="hit" onclick="selectMuscle('Quads')"></div><div class="hit" onclick="selectMuscle('Quads')"></div>
+        </div>
     </div>
 
     <div id="set-tracker">
-        <div id="musc-header">Pectorals</div>
-        <div id="ex-header">Bench Press</div>
+        <div id="musc-header">--</div>
+        <div id="ex-header">--</div>
         <div id="target-marker">🎯 <span id="target-val">--</span></div>
-        
         <div id="set-rows-container">
-            <div class="set-row">
-                <div class="set-label">Set 1</div>
-                <div class="progress-bg"><div id="set-1-bar" class="progress-bar"></div></div>
-            </div>
-            <div class="set-row">
-                <div class="set-label">Set 2</div>
-                <div class="progress-bg"><div id="set-2-bar" class="progress-bar"></div></div>
-            </div>
-            <div class="set-row">
-                <div class="set-label">Set 3</div>
-                <div class="progress-bg"><div id="set-3-bar" class="progress-bar"></div></div>
-            </div>
+            <div class="set-row"><div class="set-label">SET 1</div><div class="progress-bg"><div id="set-1-bar" class="progress-bar"></div></div></div>
+            <div class="set-row"><div class="set-label">SET 2</div><div class="progress-bg"><div id="set-2-bar" class="progress-bar"></div></div></div>
+            <div class="set-row"><div class="set-label">SET 3</div><div class="progress-bg"><div id="set-3-bar" class="progress-bar"></div></div></div>
         </div>
     </div>
 
@@ -151,19 +154,22 @@
     </div>
 
     <div id="menu-init" class="overlay visible">
-        <h2 style="color: var(--glow-blue);">BIOSTACK ELITE</h2>
+        <h2 style="color: var(--glow-blue); letter-spacing: 2px;">BIOSTACK ELITE</h2>
+        <p style="font-size: 0.8rem; color: #8b949e; margin-bottom: 25px;">INITIALIZE LINK TO SKELETON</p>
         <button class="btn btn-solid" id="conn-btn">CONNECT COOSPO</button>
     </div>
 
     <div id="menu-ex" class="overlay">
-        <h2 id="musc-name-modal">SELECT TARGET</h2>
+        <h2 id="musc-name-modal" style="color: var(--glow-blue); margin-top: 0;">MUSCLE</h2>
         <div id="list-container"></div>
+        <button class="btn" style="border:none; color:#8b949e; font-size: 0.8rem;" onclick="closeModals()">CANCEL</button>
     </div>
 
     <div id="menu-action" class="overlay">
-        <h2 id="ex-name-modal">EXERCISE</h2>
+        <h2 id="ex-name-modal" style="margin-top: 0;">EXERCISE</h2>
         <button class="btn" onclick="startCalibration()">CALIBRATE PEAK</button>
         <button class="btn btn-solid" onclick="startTraining()">START WORKOUT</button>
+        <button class="btn" style="border:none; color:#8b949e; font-size: 0.8rem;" onclick="closeModals()">BACK</button>
     </div>
 
     <script src="js/biostack.js"></script>
