@@ -1,35 +1,29 @@
 /**
- * BIOSTACK ELITE v2.0 (State-Aware Engine)
+ * BIOSTACK ELITE v2.2
+ * Latency-Aware Buffer Engine
  */
 
 let bpm = 0, targetHR = 0, currentMusc = "", currentEx = "";
 let isTrain = false, isCal = false, sMax = 0;
+let bufferInterval = null;
 
 const DB = {
-    'Trapezoids': ['Dumbbell Shrugs', 'Barbell Shrugs'],
-    'Deltoids': ['Lateral Raises', 'Front Raises'],
-    'Pectorals': ['Bench Press', 'Chest Flys'],
-    'Biceps': ['Hammer Curls', 'EZ Bar Curls'],
-    'Triceps': ['Skull Crushers', 'Tricep Pushdowns'],
+    'Trapezoids': ['Dumbbell Shrugs', 'Barbell Shrugs', 'Upright Rows'],
+    'Deltoids': ['Lateral Raises', 'Military Press', 'Arnold Press'],
+    'Pectorals': ['Bench Press', 'Incline Press', 'Cable Flys'],
+    'Biceps': ['Barbell Curls', 'Hammer Curls', 'Preacher Curls'],
+    'Triceps': ['Skull Crushers', 'Pushdowns', 'Dips'],
     'Forearms': ['Wrist Curls', 'Reverse Curls'],
-    'Abdominals': ['Weighted Crunches', 'Leg Raises'],
-    'Quads': ['Barbell Squats', 'Leg Press']
+    'Abdominals': ['Leg Raises', 'Weighted Crunches', 'Plank'],
+    'Quads': ['Barbell Squats', 'Leg Press', 'Hack Squats']
 };
 
 function selectMuscle(m) {
     if (isTrain || isCal) return;
-    
-    // 1. Reset any previous previews
     document.querySelectorAll('.muscle-overlay').forEach(img => img.style.opacity = 0);
-    
-    // 2. Set State
     currentMusc = m.toLowerCase();
-    
-    // 3. THE FIX: Activate 50% opacity for the selected muscle immediately
     const overlay = document.getElementById(`overlay-${currentMusc}`);
     if (overlay) overlay.style.opacity = 0.5;
-
-    // 4. Update UI
     document.getElementById('musc-name').innerText = m;
     const container = document.getElementById('list-container');
     container.innerHTML = "";
@@ -56,48 +50,89 @@ function openAction(ex) {
 function startTraining() {
     isTrain = true;
     document.getElementById('menu-action').classList.remove('visible');
-    document.getElementById('status-bar').innerText = "LIVE BIO-TELEMETRY ACTIVE";
-    
-    // Reset opacity to 0 so it can climb from HR 70
+    document.getElementById('status-bar').innerText = "MONITORING LIVE BIO-METRICS...";
+    document.getElementById('status-bar').style.color = "#00f2ff";
     const overlay = document.getElementById(`overlay-${currentMusc}`);
     if (overlay) overlay.style.opacity = 0;
 }
 
 function closeAll() {
     document.querySelectorAll('.overlay').forEach(o => o.classList.remove('visible'));
-    // Reset all layers to invisible
     document.querySelectorAll('.muscle-overlay').forEach(img => {
         img.style.opacity = 0;
         img.classList.remove('throbbing');
     });
     isTrain = false; isCal = false;
+    if(bufferInterval) clearInterval(bufferInterval);
     document.getElementById('status-bar').innerText = "Biometric Link Ready";
+    document.getElementById('status-bar').style.color = "#8b949e";
+}
+
+// CALIBRATION PHASE 1: Tracking the work
+function startCalibration() {
+    isCal = true; 
+    sMax = 0;
+    document.getElementById('menu-action').classList.remove('visible');
+    document.getElementById('menu-cal').classList.add('visible');
+    document.getElementById('cal-live-max').innerText = "--";
+    document.getElementById('cal-action-btn').style.display = "block";
+    document.getElementById('cal-timer-box').style.display = "none";
+    document.getElementById('cal-instruction').innerText = "Push to absolute failure. System will hold for 20s lag after you finish.";
+}
+
+// CALIBRATION PHASE 2: Waiting for the lag peak
+function startBuffer() {
+    document.getElementById('cal-action-btn').style.display = "none";
+    document.getElementById('cal-timer-box').style.display = "block";
+    document.getElementById('cal-instruction').innerText = "Reps complete. Capturing physiological peak...";
+    
+    let timeLeft = 20;
+    const timerText = document.getElementById('cal-timer');
+    
+    bufferInterval = setInterval(() => {
+        timeLeft--;
+        timerText.innerText = `BUFFERING LAG: ${timeLeft}s`;
+        
+        if (timeLeft <= 0) {
+            clearInterval(bufferInterval);
+            finishCalibration();
+        }
+    }, 1000);
+}
+
+function finishCalibration() {
+    if (sMax > 0) {
+        localStorage.setItem('biostack_max_' + currentEx, sMax);
+        document.getElementById('status-bar').innerText = `PEAK CALIBRATED: ${sMax} BPM`;
+    }
+    isCal = false;
+    document.getElementById('menu-cal').classList.remove('visible');
+    openAction(currentEx); 
 }
 
 function runEngine() {
-    if (isCal && bpm > sMax) sMax = bpm;
+    // Continuous peak tracking during calibration + buffer window
+    if (isCal) {
+        if (bpm > sMax) {
+            sMax = bpm;
+            document.getElementById('cal-live-max').innerText = sMax;
+        }
+    }
 
-    // HEART RATE OPACITY LOGIC
     if (isTrain && currentMusc && targetHR > 0) {
         const overlay = document.getElementById(`overlay-${currentMusc}`);
         if (!overlay) return;
-
-        // Proximity Factor: 70bpm (rest) to targetHR (peak)
         const factor = Math.min(Math.max((bpm - 70) / (targetHR - 70), 0), 1);
         overlay.style.opacity = factor;
-
-        if (factor > 0.92) {
-            overlay.classList.add('throbbing');
-        } else {
-            overlay.classList.remove('throbbing');
-        }
+        if (factor > 0.92) overlay.classList.add('throbbing');
+        else overlay.classList.remove('throbbing');
 
         const sb = document.getElementById('status-bar');
         if (bpm >= 110) {
             sb.innerText = "REST / RECOVERY DETECTED";
             sb.style.color = "#58a6ff";
         } else {
-            sb.innerText = "MUSCLE PRIMED - START NEXT SET";
+            sb.innerText = "READY - START NEXT SET";
             sb.style.color = "#00f2ff";
         }
     }
@@ -117,13 +152,7 @@ async function initBluetooth() {
         });
         document.getElementById('conn-btn').style.display = "none";
         document.getElementById('status-bar').innerText = "BODY SCAN COMPLETE";
-    } catch (e) { console.log("Link failed."); }
-}
-
-function startCalibration() {
-    isCal = true; sMax = 0;
-    document.getElementById('menu-action').classList.remove('visible');
-    document.getElementById('status-bar').innerText = "CALIBRATING FAILURE POINT...";
+    } catch (e) { alert("Bluetooth connection failed."); }
 }
 
 document.getElementById('conn-btn').onclick = initBluetooth;
