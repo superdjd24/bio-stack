@@ -1,144 +1,29 @@
 /**
- * BIOSTACK ELITE v2.2
- * Latency-Aware Buffer Engine
+ * BIOSTACK ELITE v3.0
+ * Mission Control Engine
  */
 
 let bpm = 0, targetHR = 0, currentMusc = "", currentEx = "";
-let isTrain = false, isCal = false, sMax = 0;
-let bufferInterval = null;
+let isTrain = false, isCal = false, totalCal = 0;
+let hrHistory = []; // For 30s Sparkline
+let sets = [0, 0, 0, 0, 0]; // Max HR achieved per set
+let currentSetIdx = 0;
+let lastMode = "REST"; // To detect transitions
 
 const DB = {
-    'Trapezoids': ['Dumbbell Shrugs', 'Barbell Shrugs', 'Upright Rows'],
-    'Deltoids': ['Lateral Raises', 'Military Press', 'Arnold Press'],
-    'Pectorals': ['Bench Press', 'Incline Press', 'Cable Flys'],
-    'Biceps': ['Barbell Curls', 'Hammer Curls', 'Preacher Curls'],
-    'Triceps': ['Skull Crushers', 'Pushdowns', 'Dips'],
-    'Forearms': ['Wrist Curls', 'Reverse Curls'],
-    'Abdominals': ['Leg Raises', 'Weighted Crunches', 'Plank'],
-    'Quads': ['Barbell Squats', 'Leg Press', 'Hack Squats']
+    'Trapezoids': ['Dumbbell Shrugs', 'Barbell Shrugs'],
+    'Deltoids': ['Lateral Raises', 'Military Press'],
+    'Pectorals': ['Bench Press', 'Chest Flys'],
+    'Biceps': ['Barbell Curls', 'Hammer Curls'],
+    'Triceps': ['Pushdowns', 'Dips'],
+    'Forearms': ['Wrist Curls'],
+    'Abdominals': ['Leg Raises', 'Crunches'],
+    'Quads': ['Squats', 'Leg Press']
 };
 
-function selectMuscle(m) {
-    if (isTrain || isCal) return;
-    document.querySelectorAll('.muscle-overlay').forEach(img => img.style.opacity = 0);
-    currentMusc = m.toLowerCase();
-    const overlay = document.getElementById(`overlay-${currentMusc}`);
-    if (overlay) overlay.style.opacity = 0.5;
-    document.getElementById('musc-name').innerText = m;
-    const container = document.getElementById('list-container');
-    container.innerHTML = "";
-    DB[m].forEach(ex => {
-        const b = document.createElement('button');
-        b.className = "btn";
-        b.innerText = ex;
-        b.onclick = () => openAction(ex);
-        container.appendChild(b);
-    });
-    document.getElementById('menu-ex').classList.add('visible');
-}
+// --- INITIALIZATION ---
 
-function openAction(ex) {
-    currentEx = ex;
-    document.getElementById('ex-name').innerText = ex;
-    const saved = localStorage.getItem('biostack_max_' + ex) || "--";
-    document.getElementById('max-bpm').innerText = saved + " BPM";
-    targetHR = parseInt(saved) || 0;
-    document.getElementById('menu-ex').classList.remove('visible');
-    document.getElementById('menu-action').classList.add('visible');
-}
-
-function startTraining() {
-    isTrain = true;
-    document.getElementById('menu-action').classList.remove('visible');
-    document.getElementById('status-bar').innerText = "MONITORING LIVE BIO-METRICS...";
-    document.getElementById('status-bar').style.color = "#00f2ff";
-    const overlay = document.getElementById(`overlay-${currentMusc}`);
-    if (overlay) overlay.style.opacity = 0;
-}
-
-function closeAll() {
-    document.querySelectorAll('.overlay').forEach(o => o.classList.remove('visible'));
-    document.querySelectorAll('.muscle-overlay').forEach(img => {
-        img.style.opacity = 0;
-        img.classList.remove('throbbing');
-    });
-    isTrain = false; isCal = false;
-    if(bufferInterval) clearInterval(bufferInterval);
-    document.getElementById('status-bar').innerText = "Biometric Link Ready";
-    document.getElementById('status-bar').style.color = "#8b949e";
-}
-
-// CALIBRATION PHASE 1: Tracking the work
-function startCalibration() {
-    isCal = true; 
-    sMax = 0;
-    document.getElementById('menu-action').classList.remove('visible');
-    document.getElementById('menu-cal').classList.add('visible');
-    document.getElementById('cal-live-max').innerText = "--";
-    document.getElementById('cal-action-btn').style.display = "block";
-    document.getElementById('cal-timer-box').style.display = "none";
-    document.getElementById('cal-instruction').innerText = "Push to absolute failure. System will hold for 20s lag after you finish.";
-}
-
-// CALIBRATION PHASE 2: Waiting for the lag peak
-function startBuffer() {
-    document.getElementById('cal-action-btn').style.display = "none";
-    document.getElementById('cal-timer-box').style.display = "block";
-    document.getElementById('cal-instruction').innerText = "Reps complete. Capturing physiological peak...";
-    
-    let timeLeft = 20;
-    const timerText = document.getElementById('cal-timer');
-    
-    bufferInterval = setInterval(() => {
-        timeLeft--;
-        timerText.innerText = `BUFFERING LAG: ${timeLeft}s`;
-        
-        if (timeLeft <= 0) {
-            clearInterval(bufferInterval);
-            finishCalibration();
-        }
-    }, 1000);
-}
-
-function finishCalibration() {
-    if (sMax > 0) {
-        localStorage.setItem('biostack_max_' + currentEx, sMax);
-        document.getElementById('status-bar').innerText = `PEAK CALIBRATED: ${sMax} BPM`;
-    }
-    isCal = false;
-    document.getElementById('menu-cal').classList.remove('visible');
-    openAction(currentEx); 
-}
-
-function runEngine() {
-    // Continuous peak tracking during calibration + buffer window
-    if (isCal) {
-        if (bpm > sMax) {
-            sMax = bpm;
-            document.getElementById('cal-live-max').innerText = sMax;
-        }
-    }
-
-    if (isTrain && currentMusc && targetHR > 0) {
-        const overlay = document.getElementById(`overlay-${currentMusc}`);
-        if (!overlay) return;
-        const factor = Math.min(Math.max((bpm - 70) / (targetHR - 70), 0), 1);
-        overlay.style.opacity = factor;
-        if (factor > 0.92) overlay.classList.add('throbbing');
-        else overlay.classList.remove('throbbing');
-
-        const sb = document.getElementById('status-bar');
-        if (bpm >= 110) {
-            sb.innerText = "REST / RECOVERY DETECTED";
-            sb.style.color = "#58a6ff";
-        } else {
-            sb.innerText = "READY - START NEXT SET";
-            sb.style.color = "#00f2ff";
-        }
-    }
-}
-
-async function initBluetooth() {
+document.getElementById('conn-btn').onclick = async () => {
     try {
         const device = await navigator.bluetooth.requestDevice({ filters: [{ services: ['heart_rate'] }] });
         const server = await device.gatt.connect();
@@ -147,12 +32,141 @@ async function initBluetooth() {
         await char.startNotifications();
         char.addEventListener('characteristicvaluechanged', (e) => {
             bpm = e.target.value.getUint8(1);
-            document.getElementById('hr-val').innerText = bpm;
-            runEngine();
+            updateUI();
         });
-        document.getElementById('conn-btn').style.display = "none";
-        document.getElementById('status-bar').innerText = "BODY SCAN COMPLETE";
-    } catch (e) { alert("Bluetooth connection failed."); }
+        document.getElementById('menu-init').classList.remove('visible');
+        showMuscleSelection();
+    } catch (e) { alert("Connect Coospo in Bluefy."); }
+};
+
+function showMuscleSelection() {
+    const list = document.getElementById('list-container');
+    list.innerHTML = "";
+    Object.keys(DB).forEach(m => {
+        const b = document.createElement('button');
+        b.className = "btn";
+        b.innerText = m;
+        b.onclick = () => {
+            currentMusc = m;
+            document.getElementById('musc-header').innerText = m;
+            showExerciseSelection(m);
+        };
+        list.appendChild(b);
+    });
+    document.getElementById('menu-ex').classList.add('visible');
 }
 
-document.getElementById('conn-btn').onclick = initBluetooth;
+function showExerciseSelection(m) {
+    const list = document.getElementById('list-container');
+    list.innerHTML = "";
+    DB[m].forEach(ex => {
+        const b = document.createElement('button');
+        b.className = "btn";
+        b.innerText = ex;
+        b.onclick = () => {
+            currentEx = ex;
+            document.getElementById('ex-header').innerText = ex;
+            const saved = localStorage.getItem('biostack_max_' + ex) || 150;
+            targetHR = parseInt(saved);
+            document.getElementById('target-val').innerText = targetHR;
+            document.getElementById('menu-ex').classList.remove('visible');
+            document.getElementById('menu-action').classList.add('visible');
+        };
+        list.appendChild(b);
+    });
+}
+
+function startTraining() {
+    isTrain = true;
+    document.getElementById('menu-action').classList.remove('visible');
+    // Set initial preview glow
+    const overlay = document.getElementById(`overlay-${currentMusc.toLowerCase()}`);
+    if (overlay) overlay.style.opacity = 0.5;
+}
+
+function resetToSelection() {
+    isTrain = false;
+    currentSetIdx = 0;
+    sets = [0,0,0,0,0];
+    document.querySelectorAll('.progress-bar').forEach(b => b.style.width = '0%');
+    showMuscleSelection();
+}
+
+// --- CORE ENGINE LOGIC ---
+
+function updateUI() {
+    document.getElementById('hr-val').innerText = bpm;
+    
+    // 1. Update Sparkline
+    hrHistory.push(bpm);
+    if (hrHistory.length > 30) hrHistory.shift();
+    drawSparkline();
+
+    // 2. Calorie Estimation (Rough: 42yo Male approx)
+    if (isTrain) {
+        totalCal += (bpm * 0.015); // Simple iterative burner
+        document.getElementById('total-cal').innerText = Math.floor(totalCal);
+    }
+
+    // 3. Mode Detection & Set Logic
+    const modeVal = document.getElementById('mode-val');
+    let currentMode = (bpm >= 110) ? "REST" : "PUSH";
+
+    if (currentMode === "REST") {
+        modeVal.innerText = "REST / RECOVER";
+        modeVal.className = "mode-rest";
+    } else {
+        modeVal.innerText = "PUSH - GO!";
+        modeVal.className = "mode-push";
+    }
+
+    // Detect Transition: PUSH -> REST (End of set)
+    if (lastMode === "PUSH" && currentMode === "REST") {
+        currentSetIdx++;
+    }
+    lastMode = currentMode;
+
+    // 4. Update Set Bars
+    if (isTrain && currentSetIdx < 5) {
+        // Track the highest HR hit in the current set
+        if (bpm > sets[currentSetIdx]) {
+            sets[currentSetIdx] = bpm;
+            const pct = Math.min((bpm / targetHR) * 100, 100);
+            document.getElementById(`set-${currentSetIdx + 1}-bar`).style.width = pct + "%";
+        }
+    }
+
+    // 5. Heatmap Logic
+    if (isTrain && currentMusc) {
+        const overlay = document.getElementById(`overlay-${currentMusc.toLowerCase()}`);
+        if (overlay) {
+            const factor = Math.min(Math.max((bpm - 70) / (targetHR - 70), 0), 1);
+            overlay.style.opacity = factor;
+        }
+    }
+}
+
+function drawSparkline() {
+    const canvas = document.getElementById('sparkline-canvas');
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    ctx.beginPath();
+    ctx.strokeStyle = '#00f2ff';
+    ctx.lineWidth = 2;
+    
+    const step = canvas.width / 30;
+    hrHistory.forEach((val, i) => {
+        const x = i * step;
+        const y = canvas.height - ((val - 60) / 140) * canvas.height;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+}
+
+function setView(side) {
+    document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('toggle-active'));
+    event.target.classList.add('toggle-active');
+    // Logic for asset swap will go here when Back assets ready
+}
