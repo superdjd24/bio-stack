@@ -1,28 +1,20 @@
-// --- BIOSTACK 3D ENGINE & LOGIC ---
-
+// --- BIOSTACK STANDALONE 3D ENGINE ---
 let scene, camera, renderer, raycaster, mouse;
-let muscles = {}; // Stores 3D mesh objects
+let muscles = {}; 
 let selectedMuscle = null;
-let currentExercise = "";
-let isCalibrating = false;
-let isTraining = false;
-let targetMaxHR = 0;
-let sessionMax = 0;
 let liveBPM = 0;
+let targetMaxHR = 0;
+let isTraining = false;
 
-const EXERCISES = {
-    'Chest': ['Bench Press', 'Dumbbell Flys'],
-    'Biceps': ['Barbell Curls', 'Hammer Curls'],
-    'Quads': ['Squats', 'Leg Press'],
-    'Back': ['Lat Pulldown', 'Deadlift']
-};
-
-init3D();
+// Initialize Scene
+init();
 animate();
 
-function init3D() {
+function init() {
     scene = new THREE.Scene();
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(0, 1.6, 4);
+
     renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
@@ -30,156 +22,71 @@ function init3D() {
     raycaster = new THREE.Raycaster();
     mouse = new THREE.Vector2();
 
-    // Create Procedural Wireframe Human
-    createMuscle('Chest', [0, 1.2, 0.3], [0.8, 0.5, 0.2]);
-    createMuscle('Biceps', [0.6, 0.8, 0], [0.2, 0.6, 0.2]);
-    createMuscle('Biceps', [-0.6, 0.8, 0], [0.2, 0.6, 0.2]);
-    createMuscle('Quads', [0.3, -0.5, 0], [0.3, 1, 0.3]);
-    createMuscle('Quads', [-0.3, -0.5, 0], [0.3, 1, 0.3]);
-    createMuscle('Back', [0, 1.2, -0.3], [0.9, 0.8, 0.2]);
+    // BUILD THE "BIO-STACK" BODY (Procedural Replacement for anatomy.glb)
+    // Head
+    createBox('Head', [0, 2.3, 0], [0.4, 0.5, 0.4]);
+    // Torso (Chest/Abs)
+    createBox('Chest', [0, 1.5, 0], [0.9, 1.1, 0.5]);
+    // Arms (Biceps/Triceps)
+    createBox('Biceps', [0.7, 1.5, 0], [0.3, 0.8, 0.3]);
+    createBox('Biceps', [-0.7, 1.5, 0], [0.3, 0.8, 0.3]);
+    // Legs (Quads)
+    createBox('Quads', [0.3, 0.4, 0], [0.4, 1.2, 0.4]);
+    createBox('Quads', [-0.3, 0.4, 0], [0.4, 1.2, 0.4]);
 
-    camera.position.z = 4;
-    camera.position.y = 0.5;
-
-    window.addEventListener('click', onDocumentMouseDown, false);
-    window.addEventListener('touchstart', (e) => {
-        mouse.x = (e.touches[0].clientX / window.innerWidth) * 2 - 1;
-        mouse.y = -(e.touches[0].clientY / window.innerHeight) * 2 + 1;
-        checkIntersection();
-    });
+    window.addEventListener('click', onTouch);
+    window.addEventListener('touchstart', onTouch);
 }
 
-function createMuscle(name, pos, size) {
-    const geo = new THREE.BoxGeometry(size[0], size[1], size[2]);
-    const wire = new THREE.WireframeGeometry(geo);
-    const mat = new THREE.LineBasicMaterial({ color: 0x00f2ff, transparent: true, opacity: 0.5 });
-    const mesh = new THREE.LineSegments(wire, mat);
+function createBox(name, pos, size) {
+    const geometry = new THREE.BoxGeometry(size[0], size[1], size[2]);
+    const wireframe = new THREE.WireframeGeometry(geometry);
+    const material = new THREE.LineBasicMaterial({ color: 0x00f2ff, transparent: true, opacity: 0.6 });
+    const line = new THREE.LineSegments(wireframe, material);
     
-    mesh.position.set(pos[0], pos[1], pos[2]);
-    mesh.userData = { name: name, baseColor: 0x00f2ff };
+    line.position.set(pos[0], pos[1], pos[2]);
+    line.userData = { name: name };
     
-    scene.add(mesh);
+    scene.add(line);
     if (!muscles[name]) muscles[name] = [];
-    muscles[name].push(mesh);
+    muscles[name].push(line);
 }
 
-function onDocumentMouseDown(event) {
-    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-    checkIntersection();
-}
+function onTouch(event) {
+    const clientX = event.clientX || (event.touches ? event.touches[0].clientX : 0);
+    const clientY = event.clientY || (event.touches ? event.touches[0].clientY : 0);
+    
+    mouse.x = (clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(clientY / window.innerHeight) * 2 + 1;
 
-function checkIntersection() {
-    if (isTraining || isCalibrating) return;
     raycaster.setFromCamera(mouse, camera);
     const intersects = raycaster.intersectObjects(scene.children);
-    
+
     if (intersects.length > 0) {
-        const name = intersects[0].object.userData.name;
-        openMuscleMenu(name);
+        const muscleName = intersects[0].object.userData.name;
+        // Logic to trigger your Exercise Menu from the previous version
+        if (typeof openMuscleMenu === "function") openMuscleMenu(muscleName);
     }
-}
-
-function openMuscleMenu(name) {
-    selectedMuscle = name;
-    document.getElementById('target-title').innerText = "Target: " + name;
-    const list = document.getElementById('exercise-list');
-    list.innerHTML = "";
-    EXERCISES[name].forEach(ex => {
-        const b = document.createElement('button');
-        b.className = "btn";
-        b.innerText = ex;
-        b.onclick = () => openActionMenu(ex);
-        list.appendChild(b);
-    });
-    document.getElementById('exercise-menu').classList.add('active');
-}
-
-function openActionMenu(ex) {
-    currentExercise = ex;
-    document.getElementById('action-title').innerText = ex;
-    const saved = localStorage.getItem('biostack_max_' + ex) || "--";
-    document.getElementById('target-max').innerText = saved;
-    targetMaxHR = parseInt(saved) || 0;
-    
-    document.getElementById('exercise-menu').classList.remove('active');
-    document.getElementById('action-menu').classList.add('active');
-}
-
-// --- BIOMETRIC HANDLERS ---
-
-async function connect() {
-    try {
-        const device = await navigator.bluetooth.requestDevice({ filters: [{ services: ['heart_rate'] }] });
-        const server = await device.gatt.connect();
-        const service = await server.getPrimaryService('heart_rate');
-        const char = await service.getCharacteristic('heart_rate_measurement');
-        await char.startNotifications();
-        char.addEventListener('characteristicvaluechanged', (e) => {
-            liveBPM = e.target.value.getUint8(1);
-            updateUI();
-        });
-        document.getElementById('initBtn').style.display = 'none';
-    } catch (e) { alert("Use Bluefy on iOS!"); }
-}
-
-function updateUI() {
-    document.getElementById('hr-display').innerText = liveBPM;
-    
-    if (isCalibrating && liveBPM > sessionMax) sessionMax = liveBPM;
-
-    if (isTraining && targetMaxHR > 0) {
-        // THE GRADIENT MATH: Blue (0x00f2ff) to Red (0xff0044)
-        const factor = Math.min(Math.max((liveBPM - 70) / (targetMaxHR - 70), 0), 1);
-        const r = Math.floor(0 + (255 - 0) * factor);
-        const g = Math.floor(242 + (0 - 242) * factor);
-        const b = Math.floor(255 + (68 - 255) * factor);
-        const colorStr = `rgb(${r},${g},${b})`;
-
-        muscles[selectedMuscle].forEach(m => {
-            m.material.color.set(colorStr);
-            m.material.opacity = 0.5 + (factor * 0.5);
-        });
-
-        const status = document.getElementById('status-indicator');
-        if (liveBPM >= 110) {
-            status.innerText = "Rest / Recovery Mode";
-            status.className = "recovery";
-        } else {
-            status.innerText = "Muscle Primed - Start Next Set";
-            status.className = "";
-        }
-    }
-}
-
-// Button Events
-document.getElementById('initBtn').onclick = connect;
-document.getElementById('cal-btn').onclick = () => {
-    isCalibrating = true; sessionMax = 0;
-    document.getElementById('action-menu').classList.remove('active');
-    document.getElementById('status-indicator').innerText = "PUSH TO FAILURE...";
-    // In a real app, add a "Finish" button here
-    setTimeout(() => {
-        localStorage.setItem('biostack_max_' + currentExercise, sessionMax);
-        alert("Calibrated at " + sessionMax);
-        isCalibrating = false;
-        backToExercises();
-    }, 10000); // 10s test window
-};
-
-document.getElementById('start-btn').onclick = () => {
-    isTraining = true;
-    document.getElementById('action-menu').classList.remove('active');
-};
-
-function closeMenu() { document.getElementById('exercise-menu').classList.remove('active'); }
-function backToExercises() { 
-    document.getElementById('action-menu').classList.remove('active');
-    openMuscleMenu(selectedMuscle);
 }
 
 function animate() {
     requestAnimationFrame(animate);
-    scene.rotation.y += 0.005; // Gentle rotation
+    scene.rotation.y += 0.005; // Slow rotation like the image you shared
+    
+    // THE DYNAMIC GLOW LOGIC
+    if (isTraining && selectedMuscle && targetMaxHR > 0) {
+        const factor = Math.min(Math.max((liveBPM - 70) / (targetMaxHR - 70), 0), 1);
+        
+        // Interpolate Cyan (0, 242, 255) to Red (255, 0, 68)
+        const r = Math.floor(0 + (255 - 0) * factor);
+        const g = Math.floor(242 + (0 - 242) * factor);
+        const b = Math.floor(255 + (68 - 255) * factor);
+        
+        muscles[selectedMuscle].forEach(mesh => {
+            mesh.material.color.set(`rgb(${r},${g},${b})`);
+            mesh.material.opacity = 0.6 + (factor * 0.4);
+        });
+    }
+    
     renderer.render(scene, camera);
 }
