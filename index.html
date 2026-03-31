@@ -8,21 +8,18 @@
         body { margin: 0; background: #05070a; color: white; font-family: -apple-system, system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; text-align: center; }
         .logo { font-size: 2.5rem; font-weight: 900; color: #00f2ff; letter-spacing: 4px; margin-bottom: 10px; }
         .btn { width: 85%; max-width: 320px; padding: 22px; border-radius: 50px; border: 2px solid #00f2ff; background: #00f2ff; color: #05070a; font-weight: 900; text-transform: uppercase; cursor: pointer; box-shadow: 0 0 20px rgba(0, 242, 255, 0.3); }
+        #v { position: fixed; bottom: 10px; opacity: 0.2; font-size: 0.6rem; }
     </style>
 </head>
 <body>
     <div class="logo">BIOSTACK</div>
-    <div class="sub" style="color:#8b949e; margin-bottom:40px;">HARDWARE LINK REQUIRED</div>
+    <div id="v">v4.5_STABLE</div>
     <button class="btn" onclick="pairDevice()">PAIR COOSPO</button>
-
     <script>
         async function pairDevice() {
             try {
-                // Step 1: Pair the device
                 await navigator.bluetooth.requestDevice({ filters: [{ services: ['heart_rate'] }] });
-                // Step 2: Mark as paired
                 sessionStorage.setItem('biostack_paired', 'true');
-                // Step 3: Go to App
                 window.location.href = 'app.html';
             } catch (err) { alert("Pairing Error: " + err.message); }
         }
