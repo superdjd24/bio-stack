@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Coospo Bio-Engine Pro</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-dark: #0b0e14;
+            --panel-bg: #161b22;
+            --border-color: #30363d;
+            --dynamic-color: hsl(180, 100%, 50%);
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--dynamic-color);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+            min-height: 100vh; margin: 0; padding: 20px; transition: color 0.5s ease;
+        }
+
+        .stats-grid { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 15px; 
+            width: 100%; 
+            max-width: 950px; 
+            margin-bottom: 20px; 
+        }
+
+        @media (max-width: 600px) {
+            .stats-grid { grid-template-columns: 1fr; }
+            #bpm-val, #cal-val { font-size: 6rem !important; }
+        }
+
+        .stat-card { 
+            background: var(--panel-bg); 
+            border: 1px solid var(--border-color); 
+            border-radius: 20px; 
+            padding: 20px; 
+            text-align: center; 
+        }
+        
+        #bpm-val, #cal-val { 
+            font-size: 5.5rem; 
+            font-weight: 800; 
+            line-height: 1; 
+            margin: 0; 
+            text-shadow: 0 0 15px currentColor; 
+        }
+
+        .label { 
+            letter-spacing: 0.2rem; 
+            font-size: 0.7rem; 
+            color: #8b949e; 
+            text-transform: uppercase; 
+            margin-top: 8px; 
+        }
+
+        .chart-container { 
+            background: var(--panel-bg); 
+            border: 1px solid var(--border-color); 
+            border-radius: 24px; 
+            padding: 15px; 
+            height: 35vh; 
+            width: 100%; 
+            max-width: 950px;
+            margin-bottom: 20px;
+        }
+
+        .controls { 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between;
+            width: 100%;
+            max-width: 400px;
+            background: var(--panel-bg); 
+            padding: 15px 25px; 
+            border-radius: 50px; 
+            border: 1px solid var(--border-color);
+            margin-bottom: 20px;
+        }
+
+        .switch { position: relative; display: inline-block; width: 50px; height: 26px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #30363d; transition: .4s; border-radius: 30px; }
+        .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--dynamic-color); }
+        input:checked + .slider:before { transform: translateX(24px); }
+
+        @keyframes alertPulse { 0% { transform: scale(1); } 50% { transform: scale(1.03); opacity: 0.8; } 100% { transform: scale(1); } }
+        .alert-pulse { animation: alertPulse 0.6s infinite ease-in-out; }
+        
+        #initBtn { 
+            padding: 16px 45px; 
+            background: transparent; 
+            border: 2px solid var(--dynamic-color); 
+            color: var(--dynamic-color); 
+            border-radius: 50px; 
+            cursor: pointer; 
+            font-weight: bold; 
+            width: 100%;
+            max-width: 300px;
+            transition: 0.2s; 
+            text-transform: uppercase;
+            font-size: 1rem;
+        }
+        #initBtn:hover { background: var(--dynamic-color); color: var(--bg-dark); }
+    </style>
+</head>
+<body>
+
+    <div class="stats-grid">
+        <div class="stat-card" id="bpm-card">
+            <div id="bpm-val">--</div>
+            <div class="label">Heart Rate <span style="opacity: 0.5;">BPM</span></div>
+        </div>
+        <div class="stat-card">
+            <div id="cal-val">0</div>
+            <div class="label">Burned <span style="opacity: 0.5;">CAL</span></div>
+        </div>
+    </div>
+
+    <div class="chart-container">
+        <canvas id="hrChart"></canvas>
+    </div>
+
+    <div class="controls">
+        <span style="font-size: 0.8rem; font-weight: bold; color: #f0f6fc;">WALKING MEETING MODE</span>
+        <label class="switch">
+            <input type="checkbox" id="meetingToggle">
+            <span class="slider"></span>
+        </label>
+    </div>
+
+    <button id="initBtn">Start Stream</button>
+
+    <script>
+        let hrChart;
+        let targetBPM = 70, smoothedBPM = 70;
+        let currentYMin = 60, currentYMax = 120;
+        let totalCalories = 0, meetingMode = false;
+        let lastUpdateTime = Date.now();
+
+        const USER_AGE = 42, USER_WEIGHT_KG = 85; 
+        const floorValue = 100, ceilingValue = 115;
+        const samplesPerSecond = 15, maxPoints = 60 * samplesPerSecond;
+
+        function getHRColor(bpm) {
+            const percentage = Math.min(Math.max((bpm - 60) / 100, 0), 1);
+            return `hsl(${220 - (percentage * 220)}, 100%, 50%)`;
+        }
+
+        const ctx = document.getElementById('hrChart').getContext('2d');
+
+        function getLineGradient(chart) {
+            const {ctx, chartArea, data} = chart;
+            if (!chartArea) return null;
+            const gradient = ctx.createLinearGradient(chartArea.left, 0, chartArea.right, 0);
+            const dataPoints = data.datasets[0].data;
+            const step = 20; 
+            for (let i = 0; i < dataPoints.length; i += step) {
+                if (dataPoints[i] !== null) {
+                    gradient.addColorStop(i / (dataPoints.length - 1), getHRColor(dataPoints[i]));
+                }
+            }
+            return gradient;
+        }
+
+        hrChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: Array(maxPoints).fill(''),
+                datasets: [{
+                    data: Array(maxPoints).fill(null),
+                    borderColor: (c) => getLineGradient(c.chart) || 'cyan',
+                    borderWidth: 4, pointRadius: 0, tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false, animation: false,
+                scales: {
+                    x: { display: false },
+                    y: { 
+                        grid: { color: '#21262d' }, 
+                        ticks: { color: '#8b949e', callback: (v) => Math.floor(v) === v ? v : null } 
+                    }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+
+        function updateCalories(currentBPM) {
+            const now = Date.now();
+            const durationMinutes = (now - lastUpdateTime) / 60000;
+            lastUpdateTime = now;
+            let cpm = ((-55.0969 + (0.6309 * currentBPM) + (0.1988 * USER_WEIGHT_KG) + (0.2017 * USER_AGE)) / 4.184);
+            totalCalories += Math.max(0, cpm) * durationMinutes;
+            document.getElementById('cal-val').innerText = Math.floor(totalCalories);
+        }
+
+        async function initBluetooth() {
+            try {
+                const device = await navigator.bluetooth.requestDevice({ filters: [{ services: ['heart_rate'] }] });
+                const server = await device.gatt.connect();
+                const service = await server.getPrimaryService('heart_rate');
+                const char = await service.getCharacteristic('heart_rate_measurement');
+                await char.startNotifications();
+                
+                char.addEventListener('characteristicvaluechanged', (e) => {
+                    const val = e.target.value.getUint8(1);
+                    targetBPM = val;
+                    document.getElementById('bpm-val').innerText = val;
+                    document.body.style.setProperty('--dynamic-color', getHRColor(val));
+                    updateCalories(val);
+                    const card = document.getElementById('bpm-card');
+                    if (meetingMode && (val < floorValue || val > ceilingValue)) card.classList.add('alert-pulse');
+                    else card.classList.remove('alert-pulse');
+                });
+                document.getElementById('initBtn').style.display = 'none';
+                lastUpdateTime = Date.now();
+                requestAnimationFrame(renderLoop);
+            } catch (err) { console.error(err); }
+        }
+
+        let lastTick = 0;
+        function renderLoop(now) {
+            smoothedBPM += (targetBPM - smoothedBPM) * 0.05;
+            if (now - lastTick > (1000 / samplesPerSecond)) {
+                const dataSet = hrChart.data.datasets[0].data;
+                dataSet.push(smoothedBPM);
+                if (dataSet.length > maxPoints) dataSet.shift();
+                let tMin, tMax;
+                if (meetingMode) { tMin = 95; tMax = 120; } 
+                else {
+                    const active = dataSet.filter(v => v !== null);
+                    tMin = Math.floor(Math.min(...active) - 5);
+                    tMax = Math.ceil(Math.max(...active) + 5);
+                }
+                currentYMin += (tMin - currentYMin) * 0.05;
+                currentYMax += (tMax - currentYMax) * 0.05;
+                hrChart.options.scales.y.min = Math.floor(currentYMin);
+                hrChart.options.scales.y.max = Math.ceil(currentYMax);
+                hrChart.update('none');
+                lastTick = now;
+            }
+            requestAnimationFrame(renderLoop);
+        }
+
+        document.getElementById('initBtn').addEventListener('click', initBluetooth);
+        document.getElementById('meetingToggle').addEventListener('change', (e) => { meetingMode = e.target.checked; });
+    </script>
+</body>
+</html>
