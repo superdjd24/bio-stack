@@ -8,7 +8,7 @@
     </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BioStack Elite v4.1</title>
+    <title>BioStack Elite v4.2</title>
     <style>
         :root { --glow-blue: #00f2ff; --glow-red: #ff0044; --bg-dark: #05070a; --glass: rgba(15, 20, 30, 0.95); --border: #30363d; }
         body { margin: 0; background: var(--bg-dark); color: white; font-family: -apple-system, system-ui, sans-serif; overflow: hidden; height: 100vh; }
@@ -32,33 +32,34 @@
             position: fixed; 
             top: 140px; 
             right: 20px; 
-            width: 60vw; /* Takes up the right 60% of the screen */
-            height: 75vh; 
+            width: 60vw; 
+            height: 80vh; 
             display: flex; 
             flex-direction: column; 
-            align-items: center; /* Centers children (toggle and image) within the 60vw */
+            align-items: center; 
             z-index: 10; 
         }
 
-        /* VIEW TOGGLE - Centered over the skeleton */
-        #view-toggle { 
-            width: 220px; 
-            display: flex; 
-            justify-content: space-between; 
-            margin-bottom: 20px;
+        /* THE TABLE FIX: 1 Row, 2 Columns */
+        #toggle-table { 
+            width: 240px; /* Constrained to the approximate width of the skeleton shoulders */
+            border-collapse: collapse;
+            margin-bottom: 15px;
             z-index: 1100;
         }
-        .toggle-btn { background: var(--glass); border: 1px solid var(--border); color: white; padding: 10px 20px; border-radius: 30px; font-size: 0.7rem; font-weight: 900; text-transform: uppercase; cursor: pointer; transition: 0.3s; }
-        .toggle-active { border-color: var(--glow-blue); color: var(--glow-blue); background: rgba(0, 242, 255, 0.1); box-shadow: 0 0 15px rgba(0, 242, 255, 0.2); }
+        #toggle-table td { padding: 0; width: 50%; }
+        #toggle-table td:first-child { text-align: left; }
+        #toggle-table td:last-child { text-align: right; }
 
-        /* IMAGE STACK - Centered under the toggle */
-        #image-stack { 
-            position: relative; 
-            height: 90%; 
-            width: 100%; 
-            display: flex; 
-            justify-content: center; 
+        .toggle-btn { 
+            background: var(--glass); border: 1px solid var(--border); color: white; 
+            padding: 8px 16px; border-radius: 30px; font-size: 0.65rem; font-weight: 900; 
+            text-transform: uppercase; cursor: pointer; transition: 0.3s;
         }
+        .toggle-active { border-color: var(--glow-blue); color: var(--glow-blue); background: rgba(0, 242, 255, 0.1); }
+
+        /* IMAGE STACK */
+        #image-stack { position: relative; height: 85%; width: 100%; display: flex; justify-content: center; }
         .stack-layer { position: absolute; height: 100%; width: auto; pointer-events: none; transition: opacity 0.4s ease; display: none; }
         .layer-visible { display: block; }
         #base-front, #base-back { z-index: 11; opacity: 0.8; }
@@ -92,10 +93,12 @@
     </div>
 
     <div id="stage-area">
-        <div id="view-toggle">
-            <button id="btn-front" class="toggle-btn toggle-active" onclick="switchView('front')">Front</button>
-            <button id="btn-back" class="toggle-btn" onclick="switchView('back')">Back</button>
-        </div>
+        <table id="toggle-table">
+            <tr>
+                <td><button id="btn-front" class="toggle-btn toggle-active" onclick="switchView('front')">Front</button></td>
+                <td><button id="btn-back" class="toggle-btn" onclick="switchView('back')">Back</button></td>
+            </tr>
+        </table>
 
         <div id="image-stack">
             <img src="assets/base_front.png" id="base-front" class="stack-layer layer-visible">
