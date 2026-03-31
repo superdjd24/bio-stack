@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BioStack Elite v3.2</title>
+    <title>BioStack Elite v3.3</title>
     <style>
         :root {
             --glow-blue: #00f2ff;
@@ -29,7 +29,7 @@
         #hr-val { font-size: 2.8rem; font-weight: 900; color: var(--glow-blue); margin-right: 5px; }
         #sparkline-canvas { width: 140px; height: 50px; filter: drop-shadow(0 0 5px var(--glow-blue)); }
 
-        /* MID DASH (CALORIES & MODE) */
+        /* TELEMETRY */
         #mid-dash {
             position: fixed; top: 120px; width: 100%; padding: 0 20px;
             display: flex; justify-content: space-between; align-items: flex-start;
@@ -41,31 +41,26 @@
         .mode-rest { color: var(--glow-red); }
         .mode-push { color: var(--glow-blue); }
 
-        /* THE LEFT SIDEBAR (The "Empty Area") */
+        /* SIDEBAR AREA */
         #sidebar {
             position: fixed; top: 200px; left: 20px; width: 160px; height: 60vh;
             display: flex; flex-direction: column; z-index: 500;
         }
-
-        #set-tracker { margin-bottom: 25px; display: none; }
         #musc-header { font-size: 1.2rem; font-weight: 900; color: var(--glow-blue); text-transform: uppercase; margin-bottom: 5px; }
         
-        /* THE SCROLLABLE EXERCISE BOX */
-        #exercise-picker {
-            flex-grow: 1; overflow-y: auto; display: none;
-            scrollbar-width: none; -ms-overflow-style: none; /* Hide scrollbar for clean UI */
-        }
-        #exercise-picker::-webkit-scrollbar { display: none; }
-        
+        #exercise-picker { flex-grow: 1; overflow-y: auto; display: none; }
         .list-btn {
             width: 100%; padding: 12px; margin-bottom: 8px; border-radius: 12px;
             border: 1px solid var(--border); background: var(--glass);
             color: white; font-size: 0.75rem; text-align: left; cursor: pointer;
-            transition: 0.2s;
         }
-        .list-btn:active { border-color: var(--glow-blue); color: var(--glow-blue); }
 
-        /* ANATOMY STAGE (Right Aligned) */
+        #set-tracker { margin-bottom: 25px; display: none; }
+        .set-row { margin-bottom: 10px; }
+        .progress-bg { width: 120px; height: 4px; background: rgba(255,255,255,0.05); border-radius: 10px; margin-top: 4px; }
+        .progress-bar { height: 100%; background: var(--glow-blue); width: 0%; transition: width 0.4s ease; }
+
+        /* STAGE */
         #stage {
             position: fixed; top: 160px; right: -30px; width: 70vw; height: 75vh;
             display: flex; justify-content: center; align-items: center; z-index: 10;
@@ -81,18 +76,13 @@
         }
         .hit { pointer-events: auto; }
 
-        /* NAVIGATION & MODALS */
+        /* OVERLAYS */
         #nav-controls { position: fixed; bottom: 40px; left: 20px; z-index: 1000; display: none; }
         .link-btn { color: #8b949e; text-decoration: underline; font-size: 0.8rem; background: none; border: none; cursor: pointer; }
 
         .overlay { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); width: 92%; max-width: 400px; background: var(--glass); border-radius: 35px; padding: 30px; border: 1px solid var(--border); backdrop-filter: blur(25px); display: none; text-align: center; z-index: 2000; }
         .btn { width: 100%; padding: 18px; margin: 8px 0; border-radius: 50px; border: 2px solid var(--glow-blue); background: transparent; color: var(--glow-blue); font-weight: 800; text-transform: uppercase; cursor: pointer; }
         .btn-solid { background: var(--glow-blue); color: black; }
-        
-        /* SET UI */
-        .set-row { margin-bottom: 10px; }
-        .progress-bg { width: 120px; height: 4px; background: rgba(255,255,255,0.05); border-radius: 10px; margin-top: 4px; }
-        .progress-bar { height: 100%; background: var(--glow-blue); width: 0%; transition: width 0.4s ease; }
     </style>
 </head>
 <body>
@@ -110,10 +100,8 @@
     </div>
 
     <div id="sidebar">
-        <div id="musc-header">SELECT TARGET</div>
-        
+        <div id="musc-header">INITIALIZE</div>
         <div id="exercise-picker"></div>
-
         <div id="set-tracker">
             <div id="ex-header" style="font-size: 0.7rem; color: #8b949e; margin-bottom: 15px;">--</div>
             <div class="set-row"><div class="progress-bg"><div id="set-1-bar" class="progress-bar"></div></div></div>
@@ -146,7 +134,7 @@
 
     <div id="menu-init" class="overlay visible">
         <h2 style="color: var(--glow-blue); letter-spacing: 2px;">BIOSTACK ELITE</h2>
-        <button class="btn btn-solid" id="conn-btn">CONNECT COOSPO</button>
+        <button class="btn btn-solid" onclick="connectBluetooth()">CONNECT COOSPO</button>
     </div>
 
     <div id="menu-action" class="overlay">
