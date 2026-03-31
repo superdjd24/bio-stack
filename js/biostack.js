@@ -1,6 +1,5 @@
 /**
- * BIOSTACK ELITE v4.0
- * Corrected Handshake & Layout
+ * BIOSTACK ELITE v4.1
  */
 
 let bpm = 0, targetHR = 0, currentMusc = "", currentEx = "", currentView = "front";
@@ -21,14 +20,12 @@ const DB = {
     'Calves': ['Calf Raises']
 };
 
-// Start purely with the Hit Map
 window.onload = () => {
     generateHitMap();
 };
 
 async function startStream() {
     try {
-        // This is THE one and only connection call in app.html
         const device = await navigator.bluetooth.requestDevice({ filters: [{ services: ['heart_rate'] }] });
         const server = await device.gatt.connect();
         const service = await server.getPrimaryService('heart_rate');
@@ -40,7 +37,7 @@ async function startStream() {
         });
         document.getElementById('hr-pill').style.animation = "none";
         document.getElementById('hr-pill').style.borderColor = "var(--border)";
-    } catch (e) { alert("Stream Sync Error: " + e.message); }
+    } catch (e) { alert("Sync Failed: " + e.message); }
 }
 
 function updateEngine() {
@@ -111,4 +108,12 @@ function drawSparkline() {
         if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
     });
     ctx.stroke();
+}
+
+function startTraining() {
+    isTrain = true;
+    closeAction();
+    document.getElementById('exercise-picker').style.display = "none";
+    const saved = localStorage.getItem('biostack_max_' + currentEx) || 150;
+    targetHR = parseInt(saved);
 }
