@@ -38,7 +38,6 @@
 
         #status-bar { position: fixed; top: 110px; width: 100%; text-align: center; letter-spacing: 3px; color: #8b949e; font-size: 0.7rem; text-transform: uppercase; z-index: 500; }
 
-        /* REFINED TOUCH MAP (6x3 Grid) */
         #touch-map { 
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
             z-index: 100; display: grid; 
@@ -65,19 +64,19 @@
     <div id="stage">
         <img src="assets/base.png" id="base-layer" class="stack-layer">
 
-        <img src="assets/trapezoids.png" id="overlay-traps" class="muscle-overlay stack-layer">
-        <img src="assets/deltoids.png" id="overlay-delts" class="muscle-overlay stack-layer">
-        <img src="assets/pectorals.png" id="overlay-pecs" class="muscle-overlay stack-layer">
+        <img src="assets/trapezoids.png" id="overlay-trapezoids" class="muscle-overlay stack-layer">
+        <img src="assets/deltoids.png" id="overlay-deltoids" class="muscle-overlay stack-layer">
+        <img src="assets/pectorals.png" id="overlay-pectorals" class="muscle-overlay stack-layer">
         <img src="assets/biceps.png" id="overlay-biceps" class="muscle-overlay stack-layer">
         <img src="assets/triceps.png" id="overlay-triceps" class="muscle-overlay stack-layer">
         <img src="assets/forearms.png" id="overlay-forearms" class="muscle-overlay stack-layer">
-        <img src="assets/adbominals.png" id="overlay-abs" class="muscle-overlay stack-layer">
+        <img src="assets/abdominals.png" id="overlay-abdominals" class="muscle-overlay stack-layer">
         <img src="assets/quads.png" id="overlay-quads" class="muscle-overlay stack-layer">
 
         <div id="touch-map">
-            <div class="hit"></div><div class="hit" onclick="selectMuscle('Traps')"></div><div class="hit"></div>
-            <div class="hit" onclick="selectMuscle('Delts')"></div><div class="hit" onclick="selectMuscle('Pecs')"></div><div class="hit" onclick="selectMuscle('Delts')"></div>
-            <div class="hit" onclick="selectMuscle('Biceps')"></div><div class="hit" onclick="selectMuscle('Abs')"></div><div class="hit" onclick="selectMuscle('Biceps')"></div>
+            <div class="hit"></div><div class="hit" onclick="selectMuscle('Trapezoids')"></div><div class="hit"></div>
+            <div class="hit" onclick="selectMuscle('Deltoids')"></div><div class="hit" onclick="selectMuscle('Pectorals')"></div><div class="hit" onclick="selectMuscle('Deltoids')"></div>
+            <div class="hit" onclick="selectMuscle('Biceps')"></div><div class="hit" onclick="selectMuscle('Abdominals')"></div><div class="hit" onclick="selectMuscle('Biceps')"></div>
             <div class="hit" onclick="selectMuscle('Forearms')"></div><div class="hit"></div><div class="hit" onclick="selectMuscle('Forearms')"></div>
             <div class="hit" onclick="selectMuscle('Quads')"></div><div class="hit" onclick="selectMuscle('Quads')"></div><div class="hit" onclick="selectMuscle('Quads')"></div>
             <div class="hit"></div><div class="hit"></div><div class="hit"></div>
