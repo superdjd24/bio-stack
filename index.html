@@ -7,101 +7,95 @@
     <style>
         :root {
             --glow-blue: #00f2ff;
-            --glow-red: #ff0044;
             --bg-dark: #05070a;
             --glass: rgba(10, 15, 25, 0.95);
         }
 
         body { margin: 0; background: var(--bg-dark); color: white; font-family: sans-serif; overflow: hidden; height: 100vh; }
 
-        /* HUD LAYOUT */
-        #hud { position: fixed; top: 0; width: 100%; z-index: 1000; padding: 20px; box-sizing: border-box; pointer-events: none; }
-        .stat-pill { background: var(--glass); padding: 12px 25px; border-radius: 40px; border: 1px solid #30363d; display: inline-block; pointer-events: auto; backdrop-filter: blur(10px); }
+        #stage {
+            position: relative; width: 100vw; height: 100vh;
+            display: flex; justify-content: center; align-items: center;
+        }
+
+        .stack-layer {
+            position: absolute; height: 92%; width: auto;
+            transition: opacity 0.3s ease; pointer-events: none;
+        }
+
+        #base-layer { z-index: 10; opacity: 1; }
+        .muscle-overlay { z-index: 20; opacity: 0; mix-blend-mode: screen; }
+
+        @keyframes failure-pulse {
+            0% { filter: brightness(1) drop-shadow(0 0 5px #ff0044); }
+            100% { filter: brightness(2) drop-shadow(0 0 25px #ff0044); }
+        }
+        .throbbing { animation: failure-pulse 0.3s infinite alternate; }
+
+        #hud { position: fixed; top: 0; width: 100%; z-index: 1000; padding: 20px; box-sizing: border-box; display: flex; justify-content: space-between; align-items: center; }
+        .stat-pill { background: var(--glass); padding: 12px 25px; border-radius: 40px; border: 1px solid #30363d; backdrop-filter: blur(10px); }
         #hr-val { font-size: 2.5rem; font-weight: 800; color: var(--glow-blue); text-shadow: 0 0 10px var(--glow-blue); }
 
-        /* VIEWPORT SLIDER */
-        #anatomy-slider { 
-            display: flex; width: 200%; height: 100vh; 
-            transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .view-pane { width: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; padding-top: 40px; }
+        #status-bar { position: fixed; top: 110px; width: 100%; text-align: center; letter-spacing: 3px; color: #8b949e; font-size: 0.7rem; text-transform: uppercase; z-index: 500; }
 
-        /* SVG MESH STYLING */
-        .mesh-svg { width: 80%; max-width: 380px; height: auto; filter: drop-shadow(0 0 8px rgba(0, 242, 255, 0.2)); }
-        .muscle { fill: rgba(0, 242, 255, 0.05); stroke: var(--glow-blue); stroke-width: 0.8; cursor: pointer; pointer-events: auto; transition: 0.3s; }
-        .muscle:active { fill: rgba(0, 242, 255, 0.4); }
-
-        /* OVERLAYS */
-        .overlay {
-            position: fixed; bottom: 50px; left: 50%; transform: translateX(-50%);
-            width: 90%; max-width: 400px; background: var(--glass); 
-            border-radius: 30px; padding: 25px; border: 1px solid #30363d;
-            backdrop-filter: blur(20px); display: none; text-align: center; z-index: 2000;
+        /* REFINED TOUCH MAP (6x3 Grid) */
+        #touch-map { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            z-index: 100; display: grid; 
+            grid-template-columns: repeat(3, 1fr); 
+            grid-template-rows: repeat(6, 1fr); 
         }
+        .hit { pointer-events: auto; }
+
+        .overlay { position: fixed; bottom: 50px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px; background: var(--glass); border-radius: 30px; padding: 25px; border: 1px solid #30363d; backdrop-filter: blur(20px); display: none; text-align: center; z-index: 2000; }
         .overlay.visible { display: block; }
-
-        .btn {
-            width: 100%; padding: 18px; margin: 8px 0; border-radius: 50px;
-            border: 2px solid var(--glow-blue); background: transparent;
-            color: var(--glow-blue); font-weight: bold; text-transform: uppercase;
-            cursor: pointer; pointer-events: auto;
-        }
+        .btn { width: 100%; padding: 18px; margin: 8px 0; border-radius: 50px; border: 2px solid var(--glow-blue); background: transparent; color: var(--glow-blue); font-weight: bold; text-transform: uppercase; cursor: pointer; }
         .btn-solid { background: var(--glow-blue); color: black; }
-        .btn-back { border-color: #484f58; color: #8b949e; margin-top: 15px; }
-
-        #toggle-btn { position: fixed; bottom: 130px; right: 25px; background: var(--glass); border: 1px solid var(--glow-blue); color: var(--glow-blue); width: 60px; height: 60px; border-radius: 50%; z-index: 1500; pointer-events: auto; font-weight: bold; }
-        #status-bar { position: fixed; top: 130px; width: 100%; text-align: center; letter-spacing: 2px; color: #8b949e; font-size: 0.7rem; text-transform: uppercase; }
     </style>
 </head>
 <body>
 
     <div id="hud">
         <div class="stat-pill"><span id="hr-val">--</span></div>
-        <button id="conn-btn" class="stat-pill" style="float: right; color: var(--glow-blue);">CONNECT</button>
+        <button id="conn-btn" class="stat-pill" style="color: var(--glow-blue); cursor: pointer; border: 1px solid var(--glow-blue);">INITIALIZE SCAN</button>
     </div>
 
-    <div id="status-bar">Initialize Body Scan</div>
+    <div id="status-bar">Biometric Link Ready</div>
 
-    <button id="toggle-btn" onclick="toggleView()">BACK</button>
+    <div id="stage">
+        <img src="assets/base.png" id="base-layer" class="stack-layer">
 
-    <div id="anatomy-slider">
-        <div class="view-pane">
-            <svg class="mesh-svg" viewBox="0 0 200 500">
-                <path class="muscle" id="f-chest" d="M70,100 Q100,85 130,100 L135,140 Q100,155 65,140 Z" onclick="selectMuscle('Chest')" />
-                <path class="muscle" id="f-abs" d="M75,160 L125,160 L120,240 L80,240 Z" onclick="selectMuscle('Abs')" />
-                <path class="muscle" id="f-bicep-l" d="M40,130 Q30,170 45,210 L60,205 Q55,170 65,135 Z" onclick="selectMuscle('Biceps')" />
-                <path class="muscle" id="f-bicep-r" d="M160,130 Q170,170 155,210 L140,205 Q145,170 135,135 Z" onclick="selectMuscle('Biceps')" />
-                <path class="muscle" id="f-quad-l" d="M60,260 L95,260 L90,400 L55,400 Z" onclick="selectMuscle('Quads')" />
-                <path class="muscle" id="f-quad-r" d="M105,260 L140,260 L145,400 L110,400 Z" onclick="selectMuscle('Quads')" />
-                <path d="M100,20 L120,50 L160,110 L150,190 L135,480 L65,480 L50,190 L40,110 L80,50 Z" fill="none" stroke="rgba(0,242,255,0.2)" />
-            </svg>
-            <div style="color: #484f58; font-size: 0.6rem; margin-top: 10px;">FRONT-LEFT 45° MESH</div>
-        </div>
+        <img src="assets/trapezoids.png" id="overlay-traps" class="muscle-overlay stack-layer">
+        <img src="assets/deltoids.png" id="overlay-delts" class="muscle-overlay stack-layer">
+        <img src="assets/pectorals.png" id="overlay-pecs" class="muscle-overlay stack-layer">
+        <img src="assets/biceps.png" id="overlay-biceps" class="muscle-overlay stack-layer">
+        <img src="assets/triceps.png" id="overlay-triceps" class="muscle-overlay stack-layer">
+        <img src="assets/forearms.png" id="overlay-forearms" class="muscle-overlay stack-layer">
+        <img src="assets/adbominals.png" id="overlay-abs" class="muscle-overlay stack-layer">
+        <img src="assets/quads.png" id="overlay-quads" class="muscle-overlay stack-layer">
 
-        <div class="view-pane">
-            <svg class="mesh-svg" viewBox="0 0 200 500">
-                <path class="muscle" id="b-back" d="M60,110 L140,110 L130,220 L70,220 Z" onclick="selectMuscle('Back')" />
-                <path class="muscle" id="b-tricep-l" d="M35,130 L55,135 L50,210 L30,200 Z" onclick="selectMuscle('Triceps')" />
-                <path class="muscle" id="b-tricep-r" d="M165,130 L145,135 L150,210 L170,200 Z" onclick="selectMuscle('Triceps')" />
-                <path class="muscle" id="b-glutes" d="M65,245 Q100,230 135,245 L140,290 Q100,310 60,290 Z" onclick="selectMuscle('Glutes')" />
-                <path d="M100,20 L120,50 L160,110 L150,190 L135,480 L65,480 L50,190 L40,110 L80,50 Z" fill="none" stroke="rgba(0,242,255,0.2)" />
-            </svg>
-            <div style="color: #484f58; font-size: 0.6rem; margin-top: 10px;">BACK-RIGHT 45° MESH</div>
+        <div id="touch-map">
+            <div class="hit"></div><div class="hit" onclick="selectMuscle('Traps')"></div><div class="hit"></div>
+            <div class="hit" onclick="selectMuscle('Delts')"></div><div class="hit" onclick="selectMuscle('Pecs')"></div><div class="hit" onclick="selectMuscle('Delts')"></div>
+            <div class="hit" onclick="selectMuscle('Biceps')"></div><div class="hit" onclick="selectMuscle('Abs')"></div><div class="hit" onclick="selectMuscle('Biceps')"></div>
+            <div class="hit" onclick="selectMuscle('Forearms')"></div><div class="hit"></div><div class="hit" onclick="selectMuscle('Forearms')"></div>
+            <div class="hit" onclick="selectMuscle('Quads')"></div><div class="hit" onclick="selectMuscle('Quads')"></div><div class="hit" onclick="selectMuscle('Quads')"></div>
+            <div class="hit"></div><div class="hit"></div><div class="hit"></div>
         </div>
     </div>
 
     <div id="menu-ex" class="overlay">
         <h2 id="musc-name" style="color: var(--glow-blue); margin-top: 0;">MUSCLE</h2>
         <div id="list-container"></div>
-        <button class="btn btn-back" onclick="closeAll()">CLOSE</button>
+        <button class="btn" onclick="closeAll()" style="border:none; color:#8b949e">CLOSE</button>
     </div>
 
     <div id="menu-action" class="overlay">
         <h2 id="ex-name" style="margin-top: 0;">EXERCISE</h2>
-        <p style="color: #8b949e; font-size: 0.8rem;">Target Max: <span id="max-val" style="color:white">--</span> BPM</p>
-        <button class="btn" onclick="triggerCal()">CALIBRATE</button>
-        <button class="btn btn-solid" onclick="triggerSet()">BEGIN SET 1</button>
-        <button class="btn btn-back" onclick="closeAll()">CANCEL</button>
+        <p style="font-size: 0.8rem; color: #8b949e;">Peak HR Goal: <span id="max-bpm" style="color:white">--</span></p>
+        <button class="btn" onclick="startCalibration()">CALIBRATE FAILURE</button>
+        <button class="btn btn-solid" onclick="startTraining()">BEGIN SET</button>
+        <button class="btn" onclick="closeAll()" style="border:none; color:#8b949e">CANCEL</button>
     </div>
 
     <script src="js/biostack.js"></script>
