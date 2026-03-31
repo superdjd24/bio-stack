@@ -1,27 +1,27 @@
 /**
- * BIOSTACK ELITE v3.0
- * Mission Control Engine
+ * BIOSTACK ELITE v3.1
+ * Anatomy-First & Set Tracking Engine
  */
 
 let bpm = 0, targetHR = 0, currentMusc = "", currentEx = "";
 let isTrain = false, isCal = false, totalCal = 0;
-let hrHistory = []; // For 30s Sparkline
-let sets = [0, 0, 0, 0, 0]; // Max HR achieved per set
+let hrHistory = [];
+let sets = [0, 0, 0, 0, 0];
 let currentSetIdx = 0;
-let lastMode = "REST"; // To detect transitions
+let lastMode = "PUSH";
 
 const DB = {
     'Trapezoids': ['Dumbbell Shrugs', 'Barbell Shrugs'],
-    'Deltoids': ['Lateral Raises', 'Military Press'],
-    'Pectorals': ['Bench Press', 'Chest Flys'],
+    'Deltoids': ['Lateral Raises', 'Military Press', 'Arnold Press'],
+    'Pectorals': ['Bench Press', 'Incline Press', 'Chest Flys'],
     'Biceps': ['Barbell Curls', 'Hammer Curls'],
-    'Triceps': ['Pushdowns', 'Dips'],
-    'Forearms': ['Wrist Curls'],
-    'Abdominals': ['Leg Raises', 'Crunches'],
-    'Quads': ['Squats', 'Leg Press']
+    'Triceps': ['Skull Crushers', 'Pushdowns', 'Dips'],
+    'Forearms': ['Wrist Curls', 'Reverse Curls'],
+    'Abdominals': ['Leg Raises', 'Weighted Crunches'],
+    'Quads': ['Barbell Squats', 'Leg Press']
 };
 
-// --- INITIALIZATION ---
+// --- CONNECT ---
 
 document.getElementById('conn-btn').onclick = async () => {
     try {
@@ -32,84 +32,90 @@ document.getElementById('conn-btn').onclick = async () => {
         await char.startNotifications();
         char.addEventListener('characteristicvaluechanged', (e) => {
             bpm = e.target.value.getUint8(1);
-            updateUI();
+            updateEngine();
         });
         document.getElementById('menu-init').classList.remove('visible');
-        showMuscleSelection();
-    } catch (e) { alert("Connect Coospo in Bluefy."); }
+        document.getElementById('mode-val').innerText = "SELECT TARGET";
+    } catch (e) { alert("Enable Bluetooth in Bluefy."); }
 };
 
-function showMuscleSelection() {
-    const list = document.getElementById('list-container');
-    list.innerHTML = "";
-    Object.keys(DB).forEach(m => {
-        const b = document.createElement('button');
-        b.className = "btn";
-        b.innerText = m;
-        b.onclick = () => {
-            currentMusc = m;
-            document.getElementById('musc-header').innerText = m;
-            showExerciseSelection(m);
-        };
-        list.appendChild(b);
-    });
-    document.getElementById('menu-ex').classList.add('visible');
-}
+// --- NAVIGATION ---
 
-function showExerciseSelection(m) {
+function selectMuscle(m) {
+    if (isTrain || isCal) return;
+    
+    // Clear any previous previews
+    document.querySelectorAll('.muscle-overlay').forEach(img => img.style.opacity = 0);
+    
+    currentMusc = m;
+    const overlay = document.getElementById(`overlay-${m.toLowerCase()}`);
+    if (overlay) overlay.style.opacity = 0.5;
+
+    document.getElementById('musc-name-modal').innerText = m.toUpperCase();
     const list = document.getElementById('list-container');
     list.innerHTML = "";
+    
     DB[m].forEach(ex => {
         const b = document.createElement('button');
         b.className = "btn";
         b.innerText = ex;
-        b.onclick = () => {
-            currentEx = ex;
-            document.getElementById('ex-header').innerText = ex;
-            const saved = localStorage.getItem('biostack_max_' + ex) || 150;
-            targetHR = parseInt(saved);
-            document.getElementById('target-val').innerText = targetHR;
-            document.getElementById('menu-ex').classList.remove('visible');
-            document.getElementById('menu-action').classList.add('visible');
-        };
+        b.onclick = () => showActionMenu(ex);
         list.appendChild(b);
     });
+    
+    document.getElementById('menu-ex').classList.add('visible');
+}
+
+function showActionMenu(ex) {
+    currentEx = ex;
+    document.getElementById('ex-name-modal').innerText = ex;
+    const saved = localStorage.getItem('biostack_max_' + ex) || 150;
+    targetHR = parseInt(saved);
+    
+    document.getElementById('menu-ex').classList.remove('visible');
+    document.getElementById('menu-action').classList.add('visible');
 }
 
 function startTraining() {
     isTrain = true;
     document.getElementById('menu-action').classList.remove('visible');
-    // Set initial preview glow
-    const overlay = document.getElementById(`overlay-${currentMusc.toLowerCase()}`);
-    if (overlay) overlay.style.opacity = 0.5;
+    document.getElementById('set-tracker').style.display = "block";
+    document.getElementById('nav-controls').style.display = "block";
+    
+    document.getElementById('musc-header').innerText = currentMusc;
+    document.getElementById('ex-header').innerText = currentEx;
+    document.getElementById('target-val').innerText = targetHR;
+}
+
+function closeModals() {
+    document.querySelectorAll('.overlay').forEach(o => o.classList.remove('visible'));
+    if (!isTrain) document.querySelectorAll('.muscle-overlay').forEach(img => img.style.opacity = 0);
 }
 
 function resetToSelection() {
     isTrain = false;
     currentSetIdx = 0;
     sets = [0,0,0,0,0];
+    document.getElementById('set-tracker').style.display = "none";
+    document.getElementById('nav-controls').style.display = "none";
     document.querySelectorAll('.progress-bar').forEach(b => b.style.width = '0%');
-    showMuscleSelection();
+    document.querySelectorAll('.muscle-overlay').forEach(img => img.style.opacity = 0);
+    document.getElementById('mode-val').innerText = "SELECT TARGET";
 }
 
-// --- CORE ENGINE LOGIC ---
+// --- CORE ENGINE ---
 
-function updateUI() {
+function updateEngine() {
     document.getElementById('hr-val').innerText = bpm;
-    
-    // 1. Update Sparkline
+
+    // 1. Sparkline (30s Rolling)
     hrHistory.push(bpm);
     if (hrHistory.length > 30) hrHistory.shift();
     drawSparkline();
 
-    // 2. Calorie Estimation (Rough: 42yo Male approx)
-    if (isTrain) {
-        totalCal += (bpm * 0.015); // Simple iterative burner
-        document.getElementById('total-cal').innerText = Math.floor(totalCal);
-    }
-
-    // 3. Mode Detection & Set Logic
+    // 2. Mode & Set Logic
     const modeVal = document.getElementById('mode-val');
+    // We treat >110 as REST (Recovery) and <110 as PUSH (Intensity)
     let currentMode = (bpm >= 110) ? "REST" : "PUSH";
 
     if (currentMode === "REST") {
@@ -120,28 +126,33 @@ function updateUI() {
         modeVal.className = "mode-push";
     }
 
-    // Detect Transition: PUSH -> REST (End of set)
+    // Auto-Set Advance: Transition from PUSH back to REST signals set completion
     if (lastMode === "PUSH" && currentMode === "REST") {
-        currentSetIdx++;
+        if (currentSetIdx < 4) currentSetIdx++;
     }
     lastMode = currentMode;
 
-    // 4. Update Set Bars
-    if (isTrain && currentSetIdx < 5) {
-        // Track the highest HR hit in the current set
-        if (bpm > sets[currentSetIdx]) {
-            sets[currentSetIdx] = bpm;
-            const pct = Math.min((bpm / targetHR) * 100, 100);
-            document.getElementById(`set-${currentSetIdx + 1}-bar`).style.width = pct + "%";
-        }
-    }
+    // 3. Telemetry Updates
+    if (isTrain) {
+        // Calorie Burn (Approx 42yo Male)
+        totalCal += (bpm * 0.012); 
+        document.getElementById('total-cal').innerText = Math.floor(totalCal);
 
-    // 5. Heatmap Logic
-    if (isTrain && currentMusc) {
+        // Update Heatmap Opacity
         const overlay = document.getElementById(`overlay-${currentMusc.toLowerCase()}`);
         if (overlay) {
             const factor = Math.min(Math.max((bpm - 70) / (targetHR - 70), 0), 1);
             overlay.style.opacity = factor;
+        }
+
+        // Update Active Set Bar
+        if (currentSetIdx < 5) {
+            if (bpm > sets[currentSetIdx]) {
+                sets[currentSetIdx] = bpm;
+                const pct = Math.min((bpm / targetHR) * 100, 100);
+                const bar = document.getElementById(`set-${currentSetIdx + 1}-bar`);
+                if (bar) bar.style.width = pct + "%";
+            }
         }
     }
 }
@@ -149,24 +160,16 @@ function updateUI() {
 function drawSparkline() {
     const canvas = document.getElementById('sparkline-canvas');
     const ctx = canvas.getContext('2d');
+    canvas.width = 140; canvas.height = 50;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
     ctx.beginPath();
     ctx.strokeStyle = '#00f2ff';
     ctx.lineWidth = 2;
-    
     const step = canvas.width / 30;
     hrHistory.forEach((val, i) => {
         const x = i * step;
         const y = canvas.height - ((val - 60) / 140) * canvas.height;
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
     });
     ctx.stroke();
-}
-
-function setView(side) {
-    document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('toggle-active'));
-    event.target.classList.add('toggle-active');
-    // Logic for asset swap will go here when Back assets ready
 }
