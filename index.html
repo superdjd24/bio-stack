@@ -13,24 +13,18 @@
 <body>
     <div class="logo">BIOSTACK</div>
     <div class="sub" style="color:#8b949e; margin-bottom:40px;">HARDWARE LINK REQUIRED</div>
-    <button class="btn" onclick="initLink()">CONNECT COOSPO</button>
+    <button class="btn" onclick="pairDevice()">PAIR COOSPO</button>
 
     <script>
-        async function initLink() {
+        async function pairDevice() {
             try {
-                // EXPLICIT USER GESTURE
-                const device = await navigator.bluetooth.requestDevice({
-                    filters: [{ services: ['heart_rate'] }]
-                });
-                
-                // Flag the connection
-                sessionStorage.setItem('biostack_connected', 'true');
-                
-                // Hand-off to the app
+                // Step 1: Pair the device
+                await navigator.bluetooth.requestDevice({ filters: [{ services: ['heart_rate'] }] });
+                // Step 2: Mark as paired
+                sessionStorage.setItem('biostack_paired', 'true');
+                // Step 3: Go to App
                 window.location.href = 'app.html';
-            } catch (err) {
-                alert("Link Error: " + err.message);
-            }
+            } catch (err) { alert("Pairing Error: " + err.message); }
         }
     </script>
 </body>
