@@ -1,7 +1,6 @@
 /**
- * BIOSTACK ELITE v4.1
+ * BIOSTACK ELITE v4.3
  */
-
 let bpm = 0, targetHR = 0, currentMusc = "", currentEx = "", currentView = "front";
 let isTrain = false, totalCal = 0, hrHistory = [], lastMode = "PUSH";
 
@@ -20,9 +19,7 @@ const DB = {
     'Calves': ['Calf Raises']
 };
 
-window.onload = () => {
-    generateHitMap();
-};
+window.onload = () => { generateHitMap(); };
 
 async function startStream() {
     try {
@@ -35,9 +32,8 @@ async function startStream() {
             bpm = e.target.value.getUint8(1);
             updateEngine();
         });
-        document.getElementById('hr-pill').style.animation = "none";
-        document.getElementById('hr-pill').style.borderColor = "var(--border)";
-    } catch (e) { alert("Sync Failed: " + e.message); }
+        document.getElementById('hr-val').innerText = "--";
+    } catch (e) { alert("Link Failed: " + e.message); }
 }
 
 function updateEngine() {
@@ -99,7 +95,7 @@ function closeAction() { document.getElementById('menu-action').classList.remove
 function drawSparkline() {
     const canvas = document.getElementById('sparkline-canvas');
     const ctx = canvas.getContext('2d');
-    canvas.width = 120; canvas.height = 40;
+    canvas.width = 100; canvas.height = 30;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.beginPath(); ctx.strokeStyle = '#00f2ff'; ctx.lineWidth = 2;
     const step = canvas.width / 30;
@@ -114,6 +110,4 @@ function startTraining() {
     isTrain = true;
     closeAction();
     document.getElementById('exercise-picker').style.display = "none";
-    const saved = localStorage.getItem('biostack_max_' + currentEx) || 150;
-    targetHR = parseInt(saved);
 }
