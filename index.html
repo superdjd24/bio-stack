@@ -2,146 +2,107 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BioStack 3D Pro</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>BioStack: Elite</title>
     <style>
         :root {
             --glow-blue: #00f2ff;
-            --glass-bg: rgba(10, 15, 20, 0.9);
-            --border: #30363d;
+            --glow-red: #ff0044;
+            --bg-dark: #05070a;
+            --glass: rgba(10, 15, 25, 0.9);
         }
 
-        body { margin: 0; background: #05070a; color: white; font-family: sans-serif; overflow: hidden; }
+        body { margin: 0; background: var(--bg-dark); color: white; font-family: sans-serif; overflow-x: hidden; height: 100vh; }
 
-        /* THE HUD LAYER */
-        #hud-layer {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none; z-index: 100; padding: 20px; box-sizing: border-box;
+        /* HUD ELEMENTS */
+        #hud { position: fixed; top: 0; width: 100%; z-index: 100; padding: 20px; box-sizing: border-box; pointer-events: none; }
+        .stat-pill { background: var(--glass); padding: 12px 25px; border-radius: 40px; border: 1px solid #30363d; display: inline-block; pointer-events: auto; }
+        #hr-val { font-size: 2.5rem; font-weight: 800; color: var(--glow-blue); text-shadow: 0 0 10px var(--glow-blue); }
+
+        /* THE VISUALIZATION CONTAINER */
+        #anatomy-container { 
+            display: flex; justify-content: center; align-items: center; 
+            height: 100vh; width: 200%; transition: transform 0.5s ease-in-out;
+            padding-top: 60px;
         }
         
-        /* Force all buttons to be clickable */
-        .interactive { pointer-events: auto !important; cursor: pointer; }
+        .view-pane { width: 50%; display: flex; flex-direction: column; align-items: center; position: relative; }
 
-        .hud-header { display: flex; justify-content: space-between; align-items: center; pointer-events: none; }
-        .stat-pill { 
-            background: var(--glass-bg); padding: 12px 25px; border-radius: 40px; 
-            border: 1px solid var(--border); backdrop-filter: blur(10px);
-        }
-        #hr-display { font-size: 2.5rem; font-weight: 800; color: var(--glow-blue); line-height: 1; }
+        /* SVG SKELETON STYLING */
+        .skeleton-svg { width: 85%; height: auto; max-width: 350px; filter: drop-shadow(0 0 5px var(--glow-blue)); }
+        .muscle { fill: transparent; stroke: var(--glow-blue); stroke-width: 0.5; cursor: pointer; transition: 0.3s; pointer-events: auto; }
+        .muscle:active { fill: rgba(0, 242, 255, 0.3); }
+        .muscle.active-set { stroke: var(--glow-red); filter: drop-shadow(0 0 10px var(--glow-red)); }
 
-        #status-msg { 
-            position: absolute; top: 120px; width: 100%; text-align: center; 
-            font-weight: bold; text-transform: uppercase; letter-spacing: 3px; color: #8b949e;
-        }
-
-        /* OVERLAYS */
+        /* UI OVERLAYS */
         .overlay {
-            position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
-            width: 90%; max-width: 400px; background: var(--glass-bg); 
-            border-radius: 30px; padding: 25px; border: 1px solid var(--border);
-            backdrop-filter: blur(20px); display: none; text-align: center;
-            pointer-events: auto; /* Ensure menu content is clickable */
+            position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%);
+            width: 90%; max-width: 400px; background: var(--glass); 
+            border-radius: 30px; padding: 25px; border: 1px solid #30363d;
+            backdrop-filter: blur(20px); display: none; text-align: center; z-index: 200;
         }
-        .overlay.active { display: block; }
+        .overlay.visible { display: block; }
 
         .btn {
             width: 100%; padding: 18px; margin: 8px 0; border-radius: 50px;
             border: 2px solid var(--glow-blue); background: transparent;
             color: var(--glow-blue); font-weight: bold; text-transform: uppercase;
-            font-size: 0.9rem; transition: 0.2s;
+            cursor: pointer;
         }
-        .btn:active { transform: scale(0.95); background: var(--glow-blue); color: black; }
-        .btn-solid { background: var(--glow-blue); color: #05070a; }
-        .btn-back { border-color: #484f58; color: #8b949e; margin-top: 15px; }
+        .btn-solid { background: var(--glow-blue); color: black; }
+        
+        #toggle-view { position: fixed; bottom: 120px; right: 20px; background: var(--glass); border: 1px solid var(--glow-blue); color: var(--glow-blue); padding: 10px; border-radius: 50%; width: 50px; height: 50px; z-index: 150; cursor: pointer; font-weight: bold; pointer-events: auto; }
+
+        #status-bar { position: fixed; top: 130px; width: 100%; text-align: center; letter-spacing: 3px; color: #8b949e; font-size: 0.8rem; text-transform: uppercase; }
     </style>
 </head>
 <body>
 
-    <div id="hud-layer">
-        <div class="hud-header">
-            <div class="stat-pill"><div id="hr-display">--</div></div>
-            <button id="connect-btn" class="stat-pill interactive" style="color: var(--glow-blue); font-weight: bold;">CONNECT</button>
+    <div id="hud">
+        <div class="stat-pill"><span id="hr-val">--</span></div>
+        <button id="conn-btn" class="stat-pill" style="float: right; color: var(--glow-blue); font-weight: bold; cursor: pointer;">CONNECT</button>
+    </div>
+
+    <div id="status-bar">Initialize Bio-Stream</div>
+
+    <button id="toggle-view" onclick="toggleBodyView()">FRONT</button>
+
+    <div id="anatomy-container">
+        <div class="view-pane">
+            <svg class="skeleton-svg" viewBox="0 0 200 450">
+                <path d="M100,20 L120,50 L160,110 L150,190 L135,420 L65,420 L50,190 L40,110 L80,50 Z" fill="none" stroke="rgba(0,242,255,0.2)" stroke-width="3" />
+                <path id="front-chest" class="muscle" d="M75,90 Q100,80 125,90 L125,130 Q100,140 75,130 Z" onclick="selectMuscle('Chest')" />
+                <path id="front-biceps-l" class="muscle" d="M45,120 Q35,150 45,180 L60,180 Q70,150 60,120 Z" onclick="selectMuscle('Biceps')" />
+                <path id="front-biceps-r" class="muscle" d="M155,120 Q165,150 155,180 L140,180 Q130,150 140,120 Z" onclick="selectMuscle('Biceps')" />
+                <path id="front-quads" class="muscle" d="M65,220 L95,220 L90,350 L60,350 Z M105,220 L135,220 L140,350 L110,350 Z" onclick="selectMuscle('Quads')" />
+            </svg>
+            <div style="margin-top: 10px; color: #8b949e; font-size: 0.7rem;">FRONT-LEFT 45°</div>
         </div>
 
-        <div id="status-msg">SCANNING BODY...</div>
-
-        <div id="exercise-menu" class="overlay">
-            <h2 id="menu-muscle-title" style="margin-top: 0; color: var(--glow-blue);">MUSCLE</h2>
-            <div id="exercise-container"></div>
-            <button class="btn btn-back interactive" onclick="hideAllOverlays()">BACK TO SCAN</button>
-        </div>
-
-        <div id="action-menu" class="overlay">
-            <h2 id="menu-exercise-title" style="margin-top: 0;">EXERCISE</h2>
-            <p style="font-size: 0.8rem; color: #8b949e;">Target Max: <span id="target-max-val" style="color:white">--</span> BPM</p>
-            <button class="btn interactive" onclick="startCalibration()">CALIBRATE</button>
-            <button class="btn btn-solid interactive" onclick="startTrainingSet()">BEGIN SET 1</button>
-            <button class="btn btn-back interactive" onclick="showExerciseMenu()">BACK</button>
+        <div class="view-pane">
+            <svg class="skeleton-svg" viewBox="0 0 200 450">
+                <path d="M100,20 L120,50 L160,110 L150,190 L135,420 L65,420 L50,190 L40,110 L80,50 Z" fill="none" stroke="rgba(0,242,255,0.2)" stroke-width="3" />
+                <path id="back-lats" class="muscle" d="M60,110 L140,110 L130,200 L70,200 Z" onclick="selectMuscle('Back')" />
+                <path id="back-triceps" class="muscle" d="M40,130 L55,130 L55,190 L40,190 Z M145,130 L160,130 L160,190 L145,190 Z" onclick="selectMuscle('Triceps')" />
+            </svg>
+            <div style="margin-top: 10px; color: #8b949e; font-size: 0.7rem;">BACK-RIGHT 45°</div>
         </div>
     </div>
 
+    <div id="ex-menu" class="overlay">
+        <h2 id="musc-title" style="color: var(--glow-blue);">MUSCLE</h2>
+        <div id="ex-list"></div>
+        <button class="btn" onclick="closeOverlays()" style="border-color: #484f58; color: #8b949e; margin-top: 15px;">BACK</button>
+    </div>
+
+    <div id="action-menu" class="overlay">
+        <h2 id="ex-title">EXERCISE</h2>
+        <p style="color: #8b949e; font-size: 0.8rem;">Target Max: <span id="target-max" style="color:white">--</span> BPM</p>
+        <button class="btn" onclick="startCal()">CALIBRATE</button>
+        <button class="btn btn-solid" onclick="startSet()">BEGIN SET 1</button>
+        <button class="btn" onclick="closeOverlays()" style="border-color: #484f58; color: #8b949e;">CANCEL</button>
+    </div>
+
     <script src="js/biostack.js"></script>
-
-    <script>
-        const EXERCISES_DB = {
-            'Chest': ['Bench Press', 'Dumbbell Flys'],
-            'Biceps': ['Barbell Curls', 'Hammer Curls'],
-            'Quads': ['Squats', 'Leg Extensions'],
-            'Back': ['Lat Pulldowns', 'Deadlifts']
-        };
-
-        window.openMuscleMenu = function(muscleName) {
-            document.getElementById('menu-muscle-title').innerText = muscleName;
-            const container = document.getElementById('exercise-container');
-            container.innerHTML = "";
-            EXERCISES_DB[muscleName].forEach(ex => {
-                const b = document.createElement('button');
-                b.className = "btn interactive";
-                b.innerText = ex;
-                b.onclick = () => openActionMenu(ex);
-                container.appendChild(b);
-            });
-            hideAllOverlays();
-            document.getElementById('exercise-menu').classList.add('active');
-        };
-
-        function openActionMenu(ex) {
-            currentExercise = ex; 
-            document.getElementById('menu-exercise-title').innerText = ex;
-            const savedMax = localStorage.getItem('biostack_max_' + ex) || "--";
-            document.getElementById('target-max-val').innerText = savedMax;
-            targetMaxHR = parseInt(savedMax) || 0;
-            hideAllOverlays();
-            document.getElementById('action-menu').classList.add('active');
-        }
-
-        function hideAllOverlays() {
-            document.querySelectorAll('.overlay').forEach(o => o.classList.remove('active'));
-            document.getElementById('status-msg').innerText = "SCANNING BODY...";
-            isTraining = false; isCalibrating = false;
-        }
-
-        function showExerciseMenu() {
-            hideAllOverlays();
-            document.getElementById('exercise-menu').classList.add('active');
-        }
-
-        function startCalibration() {
-            hideAllOverlays(); isCalibrating = true; sessionMax = 0;
-            document.getElementById('status-msg').innerText = "PUSH TO FAILURE...";
-            // Logic for a floating "Finish" button goes here if needed
-        }
-
-        function startTrainingSet() {
-            hideAllOverlays(); isTraining = true;
-            document.getElementById('status-msg').innerText = "SET IN PROGRESS";
-        }
-
-        document.getElementById('connect-btn').onclick = () => {
-            if (typeof initBluetooth === "function") initBluetooth();
-            document.getElementById('connect-btn').style.display = "none";
-        };
-    </script>
 </body>
 </html>
