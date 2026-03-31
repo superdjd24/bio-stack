@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BioStack Elite v2.0</title>
+    <title>BioStack Elite v2.2</title>
     <style>
         :root {
             --glow-blue: #00f2ff;
@@ -13,43 +13,24 @@
         }
 
         body { 
-            margin: 0; 
-            background: var(--bg-dark); 
-            color: white; 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
-            overflow: hidden; 
-            height: 100vh; 
+            margin: 0; background: var(--bg-dark); color: white; 
+            font-family: -apple-system, system-ui, sans-serif; 
+            overflow: hidden; height: 100vh; 
         }
 
-        /* THE STACK CONTAINER */
         #stage {
-            position: relative; 
-            width: 100vw; 
-            height: 100vh;
-            display: flex; 
-            justify-content: center; 
-            align-items: center;
-            background: radial-gradient(circle at center, #111a24 0%, #05070a 100%);
+            position: relative; width: 100vw; height: 100vh;
+            display: flex; justify-content: center; align-items: center;
         }
 
         .stack-layer {
-            position: absolute; 
-            height: 92%; 
-            width: auto;
-            transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
-            pointer-events: none;
+            position: absolute; height: 92%; width: auto;
+            transition: opacity 0.4s ease; pointer-events: none;
         }
 
         #base-layer { z-index: 10; opacity: 1; }
-        
-        .muscle-overlay { 
-            z-index: 20; 
-            opacity: 0; 
-            mix-blend-mode: screen; 
-            filter: brightness(1.2) drop-shadow(0 0 10px rgba(255, 0, 68, 0.2));
-        }
+        .muscle-overlay { z-index: 20; opacity: 0; mix-blend-mode: screen; }
 
-        /* PULSE ANIMATION FOR PEAK EFFORT */
         @keyframes failure-pulse {
             0% { filter: brightness(1.2) drop-shadow(0 0 5px var(--glow-red)); }
             100% { filter: brightness(2.2) drop-shadow(0 0 30px var(--glow-red)); }
@@ -57,101 +38,37 @@
         .throbbing { animation: failure-pulse 0.3s infinite alternate; }
 
         /* HUD & TELEMETRY */
-        #hud { 
-            position: fixed; 
-            top: 0; 
-            width: 100%; 
-            z-index: 1000; 
-            padding: 20px; 
-            box-sizing: border-box; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            padding-top: env(safe-area-inset-top);
-        }
-        
-        .stat-pill { 
-            background: var(--glass); 
-            padding: 12px 25px; 
-            border-radius: 40px; 
-            border: 1px solid #30363d; 
-            backdrop-filter: blur(15px); 
-            box-shadow: 0 4px 24px rgba(0,0,0,0.5);
-        }
-        
+        #hud { position: fixed; top: 0; width: 100%; z-index: 1000; padding: 20px; box-sizing: border-box; display: flex; justify-content: space-between; align-items: center; padding-top: env(safe-area-inset-top); }
+        .stat-pill { background: var(--glass); padding: 12px 25px; border-radius: 40px; border: 1px solid #30363d; backdrop-filter: blur(15px); }
         #hr-val { font-size: 2.5rem; font-weight: 800; color: var(--glow-blue); text-shadow: 0 0 15px var(--glow-blue); }
 
-        #status-bar { 
-            position: fixed; 
-            top: 130px; 
-            width: 100%; 
-            text-align: center; 
-            letter-spacing: 4px; 
-            color: #8b949e; 
-            font-size: 0.7rem; 
-            text-transform: uppercase; 
-            z-index: 500; 
-            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
-        }
+        #status-bar { position: fixed; top: 130px; width: 100%; text-align: center; letter-spacing: 4px; color: #8b949e; font-size: 0.7rem; text-transform: uppercase; z-index: 500; }
 
-        /* THE INVISIBLE TOUCH GRID (Mapped to Skeleton) */
-        #touch-map { 
-            position: absolute; 
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 100%; 
-            z-index: 100; 
-            display: grid; 
-            grid-template-columns: repeat(3, 1fr); 
-            grid-template-rows: repeat(6, 1fr); 
-        }
+        /* TOUCH GRID */
+        #touch-map { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(6, 1fr); }
         .hit { pointer-events: auto; }
 
-        /* MODAL OVERLAYS */
+        /* MODALS */
         .overlay { 
-            position: fixed; 
-            bottom: 50px; 
-            left: 50%; 
-            transform: translateX(-50%); 
-            width: 92%; 
-            max-width: 400px; 
-            background: var(--glass); 
-            border-radius: 35px; 
-            padding: 30px; 
-            border: 1px solid #30363d; 
-            backdrop-filter: blur(25px); 
-            display: none; 
-            text-align: center; 
-            z-index: 2000;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+            position: fixed; bottom: 50px; left: 50%; transform: translateX(-50%); 
+            width: 92%; max-width: 400px; background: var(--glass); 
+            border-radius: 35px; padding: 30px; border: 1px solid #30363d; 
+            backdrop-filter: blur(25px); display: none; text-align: center; z-index: 2000;
         }
-        
-        .overlay.visible { display: block; animation: slideUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-
-        @keyframes slideUp {
-            from { transform: translate(-50%, 100%); opacity: 0; }
-            to { transform: translate(-50%, 0); opacity: 1; }
-        }
+        .overlay.visible { display: block; }
 
         .btn { 
-            width: 100%; 
-            padding: 20px; 
-            margin: 10px 0; 
-            border-radius: 50px; 
-            border: 2px solid var(--glow-blue); 
-            background: transparent; 
-            color: var(--glow-blue); 
-            font-weight: 800; 
-            text-transform: uppercase; 
-            letter-spacing: 1px;
-            cursor: pointer; 
-            transition: 0.2s;
+            width: 100%; padding: 20px; margin: 10px 0; border-radius: 50px; 
+            border: 2px solid var(--glow-blue); background: transparent; 
+            color: var(--glow-blue); font-weight: 800; text-transform: uppercase; cursor: pointer; 
         }
-        
         .btn:active { transform: scale(0.96); background: var(--glow-blue); color: #05070a; }
         .btn-solid { background: var(--glow-blue); color: #05070a; }
-        .btn-close { border: none; color: #8b949e; font-size: 0.8rem; margin-top: 10px; }
+        .btn-close { border: none; color: #8b949e; font-size: 0.8rem; }
+
+        /* CALIBRATION SPECIAL UI */
+        #cal-live-max { color: var(--glow-red); text-shadow: 0 0 20px rgba(255, 0, 68, 0.4); }
+        #cal-timer { font-family: monospace; letter-spacing: 2px; border: 1px solid var(--glow-blue); padding: 5px 15px; border-radius: 10px; display: inline-block; margin-bottom: 20px; }
 
     </style>
 </head>
@@ -159,14 +76,14 @@
 
     <div id="hud">
         <div class="stat-pill"><span id="hr-val">--</span> <span style="font-size:0.8rem; opacity:0.6">BPM</span></div>
-        <button id="conn-btn" class="stat-pill" style="color: var(--glow-blue); font-weight: bold; cursor: pointer;">INITIALIZE LINK</button>
+        <button id="conn-btn" class="stat-pill" style="color: var(--glow-blue); font-weight: bold;">INITIALIZE LINK</button>
     </div>
 
     <div id="status-bar">Syncing Biometric Stream...</div>
 
     <div id="stage">
         <img src="assets/base.png" id="base-layer" class="stack-layer">
-
+        
         <img src="assets/trapezoids.png" id="overlay-trapezoids" class="muscle-overlay stack-layer">
         <img src="assets/deltoids.png" id="overlay-deltoids" class="muscle-overlay stack-layer">
         <img src="assets/pectorals.png" id="overlay-pectorals" class="muscle-overlay stack-layer">
@@ -187,17 +104,30 @@
     </div>
 
     <div id="menu-ex" class="overlay">
-        <h2 id="musc-name" style="color: var(--glow-blue); margin-top: 0; letter-spacing: 2px;">MUSCLE</h2>
+        <h2 id="musc-name" style="color: var(--glow-blue); margin-top: 0;">MUSCLE</h2>
         <div id="list-container"></div>
         <button class="btn btn-close" onclick="closeAll()">CANCEL SCAN</button>
     </div>
 
     <div id="menu-action" class="overlay">
-        <h2 id="ex-name" style="margin-top: 0; letter-spacing: 1px;">EXERCISE</h2>
+        <h2 id="ex-name" style="margin-top: 0;">EXERCISE</h2>
         <p style="font-size: 0.9rem; color: #8b949e; margin-bottom: 25px;">Stored Peak HR: <span id="max-bpm" style="color:white; font-weight:bold">--</span></p>
         <button class="btn" onclick="startCalibration()">CALIBRATE PEAK</button>
         <button class="btn btn-solid" onclick="startTraining()">BEGIN TRAINING SET</button>
         <button class="btn btn-close" onclick="closeAll()">EXIT</button>
+    </div>
+
+    <div id="menu-cal" class="overlay">
+        <h2 style="color: var(--glow-red); margin-top: 0;">CALIBRATING...</h2>
+        <p id="cal-instruction" style="font-size: 0.8rem; color: #8b949e; margin-bottom: 10px;">Push to absolute failure. System will hold for 20s lag after you finish.</p>
+        
+        <div style="font-size: 3.5rem; font-weight: 900; margin: 15px 0;" id="cal-live-max">--</div>
+        
+        <div id="cal-timer-box" style="display:none;">
+            <div id="cal-timer">BUFFERING LAG: 20s</div>
+        </div>
+
+        <button id="cal-action-btn" class="btn btn-solid" style="background: var(--glow-red); border:none" onclick="startBuffer()">I FINISHED MY REPS</button>
     </div>
 
     <script src="js/biostack.js"></script>
