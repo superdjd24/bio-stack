@@ -8,99 +8,82 @@
     <style>
         :root {
             --glow-blue: #00f2ff;
-            --glow-red: #ff0044;
-            --glass-bg: rgba(22, 27, 34, 0.85);
+            --glass-bg: rgba(10, 15, 20, 0.9);
             --border: #30363d;
         }
 
-        body { margin: 0; background: #05070a; color: white; font-family: 'Segoe UI', system-ui, sans-serif; overflow: hidden; }
+        body { margin: 0; background: #05070a; color: white; font-family: sans-serif; overflow: hidden; }
 
-        /* UI HUD LAYER - Must be ON TOP (z-index 999) */
+        /* THE HUD LAYER */
         #hud-layer {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none; z-index: 999; padding: 20px; box-sizing: border-box;
-            display: flex; flex-direction: column;
+            pointer-events: none; z-index: 100; padding: 20px; box-sizing: border-box;
         }
         
-        /* Interactive elements MUST be explicitly set to allow clicks */
-        .interactive { pointer-events: auto !important; }
+        /* Force all buttons to be clickable */
+        .interactive { pointer-events: auto !important; cursor: pointer; }
 
-        /* HEADER STATS */
-        .hud-header { display: flex; justify-content: space-between; align-items: center; }
+        .hud-header { display: flex; justify-content: space-between; align-items: center; pointer-events: none; }
         .stat-pill { 
             background: var(--glass-bg); padding: 12px 25px; border-radius: 40px; 
-            border: 1px solid var(--border); backdrop-filter: blur(15px);
-            box-shadow: 0 0 20px rgba(0, 242, 255, 0.1);
+            border: 1px solid var(--border); backdrop-filter: blur(10px);
         }
         #hr-display { font-size: 2.5rem; font-weight: 800; color: var(--glow-blue); line-height: 1; }
-        .label { font-size: 0.6rem; letter-spacing: 2px; color: #8b949e; text-transform: uppercase; margin-top: 5px; }
 
-        /* STATUS TEXT */
         #status-msg { 
-            position: absolute; top: 130px; width: 100%; text-align: center; 
-            font-weight: bold; text-transform: uppercase; letter-spacing: 3px;
-            color: #8b949e; transition: 0.3s; pointer-events: none;
+            position: absolute; top: 120px; width: 100%; text-align: center; 
+            font-weight: bold; text-transform: uppercase; letter-spacing: 3px; color: #8b949e;
         }
-        .recovery-alert { color: #58a6ff; text-shadow: 0 0 10px #58a6ff; animation: pulse 1s infinite; }
 
-        /* OVERLAYS (MENUS) */
+        /* OVERLAYS */
         .overlay {
             position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
             width: 90%; max-width: 400px; background: var(--glass-bg); 
             border-radius: 30px; padding: 25px; border: 1px solid var(--border);
             backdrop-filter: blur(20px); display: none; text-align: center;
+            pointer-events: auto; /* Ensure menu content is clickable */
         }
-        .overlay.active { display: block; animation: slideUp 0.3s ease-out; }
+        .overlay.active { display: block; }
 
-        /* BUTTONS */
         .btn {
             width: 100%; padding: 18px; margin: 8px 0; border-radius: 50px;
             border: 2px solid var(--glow-blue); background: transparent;
             color: var(--glow-blue); font-weight: bold; text-transform: uppercase;
-            cursor: pointer; font-size: 0.9rem; transition: 0.2s;
+            font-size: 0.9rem; transition: 0.2s;
         }
-        .btn:active { transform: scale(0.96); }
+        .btn:active { transform: scale(0.95); background: var(--glow-blue); color: black; }
         .btn-solid { background: var(--glow-blue); color: #05070a; }
-        .btn-back { border-color: #484f58; color: #8b949e; font-size: 0.8rem; }
-
-        @keyframes slideUp { from { bottom: -50px; opacity: 0; } to { bottom: 40px; opacity: 1; } }
-        @keyframes pulse { 50% { opacity: 0.3; } }
+        .btn-back { border-color: #484f58; color: #8b949e; margin-top: 15px; }
     </style>
 </head>
 <body>
 
     <div id="hud-layer">
         <div class="hud-header">
-            <div class="stat-pill">
-                <div id="hr-display">--</div>
-                <div class="label">Heart Rate</div>
-            </div>
-            <button id="connect-btn" class="stat-pill interactive" style="color: var(--glow-blue); font-weight: bold; border: 1px solid var(--glow-blue);">
-                INITIALIZE
-            </button>
+            <div class="stat-pill"><div id="hr-display">--</div></div>
+            <button id="connect-btn" class="stat-pill interactive" style="color: var(--glow-blue); font-weight: bold;">CONNECT</button>
         </div>
 
-        <div id="status-msg">SELECT TARGET MUSCLE</div>
+        <div id="status-msg">SCANNING BODY...</div>
 
-        <div id="exercise-menu" class="overlay interactive">
-            <h2 id="menu-muscle-title" style="margin-top: 0; color: var(--glow-blue);">Muscle</h2>
+        <div id="exercise-menu" class="overlay">
+            <h2 id="menu-muscle-title" style="margin-top: 0; color: var(--glow-blue);">MUSCLE</h2>
             <div id="exercise-container"></div>
-            <button class="btn btn-back" onclick="hideAllOverlays()">BACK TO SCAN</button>
+            <button class="btn btn-back interactive" onclick="hideAllOverlays()">BACK TO SCAN</button>
         </div>
 
-        <div id="action-menu" class="overlay interactive">
-            <h2 id="menu-exercise-title" style="margin-top: 0;">Exercise</h2>
+        <div id="action-menu" class="overlay">
+            <h2 id="menu-exercise-title" style="margin-top: 0;">EXERCISE</h2>
             <p style="font-size: 0.8rem; color: #8b949e;">Target Max: <span id="target-max-val" style="color:white">--</span> BPM</p>
-            <button class="btn" onclick="startCalibration()">CALIBRATE FAILURE</button>
-            <button class="btn btn-solid" onclick="startTrainingSet()">BEGIN SET 1</button>
-            <button class="btn btn-back" onclick="showExerciseMenu()">BACK</button>
+            <button class="btn interactive" onclick="startCalibration()">CALIBRATE</button>
+            <button class="btn btn-solid interactive" onclick="startTrainingSet()">BEGIN SET 1</button>
+            <button class="btn btn-back interactive" onclick="showExerciseMenu()">BACK</button>
         </div>
     </div>
 
     <script src="js/biostack.js"></script>
 
     <script>
-        // UI & STATE LOGIC
         const EXERCISES_DB = {
             'Chest': ['Bench Press', 'Dumbbell Flys'],
             'Biceps': ['Barbell Curls', 'Hammer Curls'],
@@ -108,42 +91,35 @@
             'Back': ['Lat Pulldowns', 'Deadlifts']
         };
 
-        // This function is the "Bridge" called by biostack.js
         window.openMuscleMenu = function(muscleName) {
             document.getElementById('menu-muscle-title').innerText = muscleName;
             const container = document.getElementById('exercise-container');
             container.innerHTML = "";
-            
             EXERCISES_DB[muscleName].forEach(ex => {
                 const b = document.createElement('button');
-                b.className = "btn";
+                b.className = "btn interactive";
                 b.innerText = ex;
                 b.onclick = () => openActionMenu(ex);
                 container.appendChild(b);
             });
-            
             hideAllOverlays();
             document.getElementById('exercise-menu').classList.add('active');
-            document.getElementById('status-msg').innerText = "SELECT EXERCISE";
         };
 
         function openActionMenu(ex) {
-            currentExercise = ex; // Defined globally in biostack.js
+            currentExercise = ex; 
             document.getElementById('menu-exercise-title').innerText = ex;
-            
             const savedMax = localStorage.getItem('biostack_max_' + ex) || "--";
             document.getElementById('target-max-val').innerText = savedMax;
-            targetMaxHR = parseInt(savedMax) || 0; // Defined globally in biostack.js
-
+            targetMaxHR = parseInt(savedMax) || 0;
             hideAllOverlays();
             document.getElementById('action-menu').classList.add('active');
         }
 
         function hideAllOverlays() {
             document.querySelectorAll('.overlay').forEach(o => o.classList.remove('active'));
-            document.getElementById('status-msg').innerText = "SELECT TARGET MUSCLE";
-            isTraining = false;
-            isCalibrating = false;
+            document.getElementById('status-msg').innerText = "SCANNING BODY...";
+            isTraining = false; isCalibrating = false;
         }
 
         function showExerciseMenu() {
@@ -152,40 +128,19 @@
         }
 
         function startCalibration() {
-            hideAllOverlays();
-            isCalibrating = true;
-            sessionMax = 0;
+            hideAllOverlays(); isCalibrating = true; sessionMax = 0;
             document.getElementById('status-msg').innerText = "PUSH TO FAILURE...";
-            
-            const finishBtn = document.createElement('button');
-            finishBtn.className = "btn btn-solid interactive";
-            finishBtn.style.position = "absolute";
-            finishBtn.style.bottom = "40px";
-            finishBtn.style.left = "50%";
-            finishBtn.style.transform = "translateX(-50%)";
-            finishBtn.style.width = "80%";
-            finishBtn.style.zIndex = "1001";
-            finishBtn.innerText = "I'VE FINISHED";
-            finishBtn.id = "finish-cal-btn";
-            finishBtn.onclick = () => {
-                localStorage.setItem('biostack_max_' + currentExercise, sessionMax);
-                document.body.removeChild(finishBtn);
-                openActionMenu(currentExercise);
-            };
-            document.body.appendChild(finishBtn);
+            // Logic for a floating "Finish" button goes here if needed
         }
 
         function startTrainingSet() {
-            hideAllOverlays();
-            isTraining = true;
+            hideAllOverlays(); isTraining = true;
             document.getElementById('status-msg').innerText = "SET IN PROGRESS";
         }
 
         document.getElementById('connect-btn').onclick = () => {
-            if (typeof initBluetooth === "function") {
-                initBluetooth();
-                document.getElementById('connect-btn').style.display = "none";
-            }
+            if (typeof initBluetooth === "function") initBluetooth();
+            document.getElementById('connect-btn').style.display = "none";
         };
     </script>
 </body>
