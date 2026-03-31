@@ -1,100 +1,56 @@
 /**
- * BIOSTACK 3D ENGINE v1.2
- * High-Fidelity Anatomical Skeleton Integration
+ * BIOSTACK ELITE v1.3
+ * 2D High-Fidelity Logic
  */
 
-let scene, camera, renderer, raycaster, mouse;
-let muscleMeshes = []; // Array of meshes for raycasting
-let selectedMuscle = null;
-let liveBPM = 0, targetMaxHR = 0, isTraining = false, isCalibrating = false, sessionMax = 0;
+const EXERCISES = {
+    'Chest': ['Bench Press', 'Incline Press'],
+    'Biceps': ['Barbell Curls', 'Hammer Curls'],
+    'Quads': ['Squats', 'Leg Extensions'],
+    'Back': ['Lat Pulldowns', 'Deadlifts'],
+    'Triceps': ['Dips', 'Pushdowns']
+};
 
-init3D();
-animate();
+let liveBPM = 0, targetMaxHR = 0, currentEx = "", currentMusc = "";
+let isCal = false, isTrain = false, sessionMax = 0;
+let isFrontView = true;
 
-function init3D() {
-    scene = new THREE.Scene();
-    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.set(0, 1.2, 3.5);
-
-    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(window.devicePixelRatio);
-    
-    // Canvas sits in the background
-    renderer.domElement.style.position = 'absolute';
-    renderer.domElement.style.top = '0';
-    renderer.domElement.style.zIndex = '1';
-    document.body.appendChild(renderer.domElement);
-
-    raycaster = new THREE.Raycaster();
-    mouse = new THREE.Vector2();
-
-    // UPGRADE: Building a "Skeleton" Mesh (Placeholder for GLB)
-    // We are using Wireframe Cylinders and Spheres to look like an anatomical mesh
-    buildSkeleton();
-
-    window.addEventListener('mousedown', onSelect);
-    window.addEventListener('touchstart', (e) => onSelect(e.touches[0]));
+function toggleBodyView() {
+    isFrontView = !isFrontView;
+    document.getElementById('anatomy-container').style.transform = isFrontView ? 'translateX(0)' : 'translateX(-50%)';
+    document.getElementById('toggle-view').innerText = isFrontView ? 'FRONT' : 'BACK';
 }
 
-function buildSkeleton() {
-    // Torso/Chest
-    addPart('Chest', new THREE.CylinderGeometry(0.5, 0.3, 1, 8, 4, true), [0, 1.5, 0]);
-    // Arms
-    addPart('Biceps', new THREE.CylinderGeometry(0.12, 0.1, 0.8, 6, 2, true), [0.7, 1.4, 0], [0, 0, 0.3]);
-    addPart('Biceps', new THREE.CylinderGeometry(0.12, 0.1, 0.8, 6, 2, true), [-0.7, 1.4, 0], [0, 0, -0.3]);
-    // Legs
-    addPart('Quads', new THREE.CylinderGeometry(0.2, 0.15, 1.2, 6, 2, true), [0.3, 0.4, 0]);
-    addPart('Quads', new THREE.CylinderGeometry(0.2, 0.15, 1.2, 6, 2, true), [-0.3, 0.4, 0]);
-    // Head
-    addPart('Head', new THREE.IcosahedronGeometry(0.25, 1), [0, 2.2, 0]);
+function selectMuscle(m) {
+    if (isTrain || isCal) return;
+    currentMusc = m;
+    document.getElementById('musc-title').innerText = m;
+    const list = document.getElementById('ex-list');
+    list.innerHTML = "";
+    EXERCISES[m].forEach(ex => {
+        const b = document.createElement('button');
+        b.className = "btn";
+        b.innerText = ex;
+        b.onclick = () => openAction(ex);
+        list.appendChild(b);
+    });
+    document.getElementById('ex-menu').classList.add('visible');
 }
 
-function addPart(name, geo, pos, rot = [0,0,0]) {
-    const wire = new THREE.WireframeGeometry(geo);
-    const mat = new THREE.LineBasicMaterial({ color: 0x00f2ff, transparent: true, opacity: 0.4 });
-    const mesh = new THREE.LineSegments(wire, mat);
-    mesh.position.set(pos[0], pos[1], pos[2]);
-    mesh.rotation.set(rot[0], rot[1], rot[2]);
-    mesh.userData = { name: name };
-    scene.add(mesh);
-    muscleMeshes.push(mesh);
+function openAction(ex) {
+    currentEx = ex;
+    document.getElementById('ex-title').innerText = ex;
+    const saved = localStorage.getItem('biostack_max_' + ex) || "--";
+    document.getElementById('target-max').innerText = saved;
+    targetMaxHR = parseInt(saved) || 0;
+    document.getElementById('ex-menu').classList.remove('visible');
+    document.getElementById('action-menu').classList.add('visible');
 }
 
-function onSelect(input) {
-    if (isTraining || isCalibrating) return;
-    
-    mouse.x = (input.clientX / window.innerWidth) * 2 - 1;
-    mouse.y = -(input.clientY / window.innerHeight) * 2 + 1;
-
-    raycaster.setFromCamera(mouse, camera);
-    const intersects = raycaster.intersectObjects(muscleMeshes);
-
-    if (intersects.length > 0) {
-        const name = intersects[0].object.userData.name;
-        selectedMuscle = name;
-        if (window.openMuscleMenu) window.openMuscleMenu(name);
-    }
-}
-
-function animate() {
-    requestAnimationFrame(animate);
-    scene.rotation.y += 0.005;
-
-    if (isTraining && selectedMuscle && targetMaxHR > 0) {
-        const factor = Math.min(Math.max((liveBPM - 70) / (targetMaxHR - 70), 0), 1);
-        const r = Math.floor(0 + (255 - 0) * factor);
-        const g = Math.floor(242 + (0 - 242) * factor);
-        const b = Math.floor(255 + (68 - 255) * factor);
-        
-        muscleMeshes.forEach(m => {
-            if (m.userData.name === selectedMuscle) {
-                m.material.color.set(`rgb(${r},${g},${b})`);
-                m.material.opacity = 0.4 + (factor * 0.6);
-            }
-        });
-    }
-    renderer.render(scene, camera);
+function closeOverlays() {
+    document.querySelectorAll('.overlay').forEach(o => o.classList.remove('visible'));
+    isTrain = false; isCal = false;
+    document.querySelectorAll('.muscle').forEach(m => m.classList.remove('active-set'));
 }
 
 async function initBluetooth() {
@@ -106,14 +62,53 @@ async function initBluetooth() {
         await char.startNotifications();
         char.addEventListener('characteristicvaluechanged', (e) => {
             liveBPM = e.target.value.getUint8(1);
-            document.getElementById('hr-display').innerText = liveBPM;
-            if (isCalibrating && liveBPM > sessionMax) sessionMax = liveBPM;
-            
-            const status = document.getElementById('status-msg');
-            if (isTraining) {
-                if (liveBPM >= 110) status.innerText = "REST / RECOVERING...";
-                else status.innerText = "MUSCLE PRIMED - START NEXT SET";
+            document.getElementById('hr-val').innerText = liveBPM;
+            updateEngine();
+        });
+        document.getElementById('status-bar').innerText = "Coospo Connected";
+    } catch (e) { alert("Use Bluefy on iOS!"); }
+}
+
+function updateEngine() {
+    if (isCal && liveBPM > sessionMax) sessionMax = liveBPM;
+    
+    if (isTrain && targetMaxHR > 0) {
+        // Find all paths associated with the current muscle
+        const musclePaths = document.querySelectorAll('.muscle');
+        musclePaths.forEach(p => {
+            if (p.id.includes(currentMusc.toLowerCase())) {
+                const factor = Math.min(Math.max((liveBPM - 70) / (targetMaxHR - 70), 0), 1);
+                // Transition color from Blue to Red
+                const r = Math.floor(0 + 255 * factor);
+                const g = Math.floor(242 * (1 - factor));
+                const b = Math.floor(255 * (1 - factor));
+                p.style.stroke = `rgb(${r},${g},${b})`;
+                p.style.fill = `rgba(${r},${g},${b}, ${0.1 + factor * 0.4})`;
             }
         });
-    } catch (err) { console.log(err); }
+
+        const status = document.getElementById('status-bar');
+        if (liveBPM >= 110) status.innerText = "REST / RECOVERING MODE";
+        else status.innerText = "MUSCLE PRIMED - START SET";
+    }
 }
+
+function startCal() {
+    isCal = true; sessionMax = 0;
+    document.getElementById('action-menu').classList.remove('visible');
+    document.getElementById('status-bar').innerText = "PUSH TO FAILURE...";
+    // Finish button logic here...
+    setTimeout(() => {
+        localStorage.setItem('biostack_max_' + currentEx, sessionMax);
+        alert("Calibrated: " + sessionMax);
+        closeOverlays();
+    }, 10000);
+}
+
+function startSet() {
+    isTrain = true;
+    document.getElementById('action-menu').classList.remove('visible');
+    document.getElementById('status-bar').innerText = "SET IN PROGRESS";
+}
+
+document.getElementById('conn-btn').onclick = initBluetooth;
