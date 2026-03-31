@@ -3,43 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BioStack: Elite</title>
+    <title>BioStack Elite</title>
     <style>
         :root {
             --glow-blue: #00f2ff;
             --glow-red: #ff0044;
             --bg-dark: #05070a;
-            --glass: rgba(10, 15, 25, 0.9);
+            --glass: rgba(10, 15, 25, 0.95);
         }
 
-        body { margin: 0; background: var(--bg-dark); color: white; font-family: sans-serif; overflow-x: hidden; height: 100vh; }
+        body { margin: 0; background: var(--bg-dark); color: white; font-family: sans-serif; overflow: hidden; height: 100vh; }
 
-        /* HUD ELEMENTS */
-        #hud { position: fixed; top: 0; width: 100%; z-index: 100; padding: 20px; box-sizing: border-box; pointer-events: none; }
-        .stat-pill { background: var(--glass); padding: 12px 25px; border-radius: 40px; border: 1px solid #30363d; display: inline-block; pointer-events: auto; }
+        /* HUD LAYOUT */
+        #hud { position: fixed; top: 0; width: 100%; z-index: 1000; padding: 20px; box-sizing: border-box; pointer-events: none; }
+        .stat-pill { background: var(--glass); padding: 12px 25px; border-radius: 40px; border: 1px solid #30363d; display: inline-block; pointer-events: auto; backdrop-filter: blur(10px); }
         #hr-val { font-size: 2.5rem; font-weight: 800; color: var(--glow-blue); text-shadow: 0 0 10px var(--glow-blue); }
 
-        /* THE VISUALIZATION CONTAINER */
-        #anatomy-container { 
-            display: flex; justify-content: center; align-items: center; 
-            height: 100vh; width: 200%; transition: transform 0.5s ease-in-out;
-            padding-top: 60px;
+        /* VIEWPORT SLIDER */
+        #anatomy-slider { 
+            display: flex; width: 200%; height: 100vh; 
+            transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        
-        .view-pane { width: 50%; display: flex; flex-direction: column; align-items: center; position: relative; }
+        .view-pane { width: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; padding-top: 40px; }
 
-        /* SVG SKELETON STYLING */
-        .skeleton-svg { width: 85%; height: auto; max-width: 350px; filter: drop-shadow(0 0 5px var(--glow-blue)); }
-        .muscle { fill: transparent; stroke: var(--glow-blue); stroke-width: 0.5; cursor: pointer; transition: 0.3s; pointer-events: auto; }
-        .muscle:active { fill: rgba(0, 242, 255, 0.3); }
-        .muscle.active-set { stroke: var(--glow-red); filter: drop-shadow(0 0 10px var(--glow-red)); }
+        /* SVG MESH STYLING */
+        .mesh-svg { width: 80%; max-width: 380px; height: auto; filter: drop-shadow(0 0 8px rgba(0, 242, 255, 0.2)); }
+        .muscle { fill: rgba(0, 242, 255, 0.05); stroke: var(--glow-blue); stroke-width: 0.8; cursor: pointer; pointer-events: auto; transition: 0.3s; }
+        .muscle:active { fill: rgba(0, 242, 255, 0.4); }
 
-        /* UI OVERLAYS */
+        /* OVERLAYS */
         .overlay {
-            position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%);
+            position: fixed; bottom: 50px; left: 50%; transform: translateX(-50%);
             width: 90%; max-width: 400px; background: var(--glass); 
             border-radius: 30px; padding: 25px; border: 1px solid #30363d;
-            backdrop-filter: blur(20px); display: none; text-align: center; z-index: 200;
+            backdrop-filter: blur(20px); display: none; text-align: center; z-index: 2000;
         }
         .overlay.visible { display: block; }
 
@@ -47,60 +44,64 @@
             width: 100%; padding: 18px; margin: 8px 0; border-radius: 50px;
             border: 2px solid var(--glow-blue); background: transparent;
             color: var(--glow-blue); font-weight: bold; text-transform: uppercase;
-            cursor: pointer;
+            cursor: pointer; pointer-events: auto;
         }
         .btn-solid { background: var(--glow-blue); color: black; }
-        
-        #toggle-view { position: fixed; bottom: 120px; right: 20px; background: var(--glass); border: 1px solid var(--glow-blue); color: var(--glow-blue); padding: 10px; border-radius: 50%; width: 50px; height: 50px; z-index: 150; cursor: pointer; font-weight: bold; pointer-events: auto; }
+        .btn-back { border-color: #484f58; color: #8b949e; margin-top: 15px; }
 
-        #status-bar { position: fixed; top: 130px; width: 100%; text-align: center; letter-spacing: 3px; color: #8b949e; font-size: 0.8rem; text-transform: uppercase; }
+        #toggle-btn { position: fixed; bottom: 130px; right: 25px; background: var(--glass); border: 1px solid var(--glow-blue); color: var(--glow-blue); width: 60px; height: 60px; border-radius: 50%; z-index: 1500; pointer-events: auto; font-weight: bold; }
+        #status-bar { position: fixed; top: 130px; width: 100%; text-align: center; letter-spacing: 2px; color: #8b949e; font-size: 0.7rem; text-transform: uppercase; }
     </style>
 </head>
 <body>
 
     <div id="hud">
         <div class="stat-pill"><span id="hr-val">--</span></div>
-        <button id="conn-btn" class="stat-pill" style="float: right; color: var(--glow-blue); font-weight: bold; cursor: pointer;">CONNECT</button>
+        <button id="conn-btn" class="stat-pill" style="float: right; color: var(--glow-blue);">CONNECT</button>
     </div>
 
-    <div id="status-bar">Initialize Bio-Stream</div>
+    <div id="status-bar">Initialize Body Scan</div>
 
-    <button id="toggle-view" onclick="toggleBodyView()">FRONT</button>
+    <button id="toggle-btn" onclick="toggleView()">BACK</button>
 
-    <div id="anatomy-container">
+    <div id="anatomy-slider">
         <div class="view-pane">
-            <svg class="skeleton-svg" viewBox="0 0 200 450">
-                <path d="M100,20 L120,50 L160,110 L150,190 L135,420 L65,420 L50,190 L40,110 L80,50 Z" fill="none" stroke="rgba(0,242,255,0.2)" stroke-width="3" />
-                <path id="front-chest" class="muscle" d="M75,90 Q100,80 125,90 L125,130 Q100,140 75,130 Z" onclick="selectMuscle('Chest')" />
-                <path id="front-biceps-l" class="muscle" d="M45,120 Q35,150 45,180 L60,180 Q70,150 60,120 Z" onclick="selectMuscle('Biceps')" />
-                <path id="front-biceps-r" class="muscle" d="M155,120 Q165,150 155,180 L140,180 Q130,150 140,120 Z" onclick="selectMuscle('Biceps')" />
-                <path id="front-quads" class="muscle" d="M65,220 L95,220 L90,350 L60,350 Z M105,220 L135,220 L140,350 L110,350 Z" onclick="selectMuscle('Quads')" />
+            <svg class="mesh-svg" viewBox="0 0 200 500">
+                <path class="muscle" id="f-chest" d="M70,100 Q100,85 130,100 L135,140 Q100,155 65,140 Z" onclick="selectMuscle('Chest')" />
+                <path class="muscle" id="f-abs" d="M75,160 L125,160 L120,240 L80,240 Z" onclick="selectMuscle('Abs')" />
+                <path class="muscle" id="f-bicep-l" d="M40,130 Q30,170 45,210 L60,205 Q55,170 65,135 Z" onclick="selectMuscle('Biceps')" />
+                <path class="muscle" id="f-bicep-r" d="M160,130 Q170,170 155,210 L140,205 Q145,170 135,135 Z" onclick="selectMuscle('Biceps')" />
+                <path class="muscle" id="f-quad-l" d="M60,260 L95,260 L90,400 L55,400 Z" onclick="selectMuscle('Quads')" />
+                <path class="muscle" id="f-quad-r" d="M105,260 L140,260 L145,400 L110,400 Z" onclick="selectMuscle('Quads')" />
+                <path d="M100,20 L120,50 L160,110 L150,190 L135,480 L65,480 L50,190 L40,110 L80,50 Z" fill="none" stroke="rgba(0,242,255,0.2)" />
             </svg>
-            <div style="margin-top: 10px; color: #8b949e; font-size: 0.7rem;">FRONT-LEFT 45°</div>
+            <div style="color: #484f58; font-size: 0.6rem; margin-top: 10px;">FRONT-LEFT 45° MESH</div>
         </div>
 
         <div class="view-pane">
-            <svg class="skeleton-svg" viewBox="0 0 200 450">
-                <path d="M100,20 L120,50 L160,110 L150,190 L135,420 L65,420 L50,190 L40,110 L80,50 Z" fill="none" stroke="rgba(0,242,255,0.2)" stroke-width="3" />
-                <path id="back-lats" class="muscle" d="M60,110 L140,110 L130,200 L70,200 Z" onclick="selectMuscle('Back')" />
-                <path id="back-triceps" class="muscle" d="M40,130 L55,130 L55,190 L40,190 Z M145,130 L160,130 L160,190 L145,190 Z" onclick="selectMuscle('Triceps')" />
+            <svg class="mesh-svg" viewBox="0 0 200 500">
+                <path class="muscle" id="b-back" d="M60,110 L140,110 L130,220 L70,220 Z" onclick="selectMuscle('Back')" />
+                <path class="muscle" id="b-tricep-l" d="M35,130 L55,135 L50,210 L30,200 Z" onclick="selectMuscle('Triceps')" />
+                <path class="muscle" id="b-tricep-r" d="M165,130 L145,135 L150,210 L170,200 Z" onclick="selectMuscle('Triceps')" />
+                <path class="muscle" id="b-glutes" d="M65,245 Q100,230 135,245 L140,290 Q100,310 60,290 Z" onclick="selectMuscle('Glutes')" />
+                <path d="M100,20 L120,50 L160,110 L150,190 L135,480 L65,480 L50,190 L40,110 L80,50 Z" fill="none" stroke="rgba(0,242,255,0.2)" />
             </svg>
-            <div style="margin-top: 10px; color: #8b949e; font-size: 0.7rem;">BACK-RIGHT 45°</div>
+            <div style="color: #484f58; font-size: 0.6rem; margin-top: 10px;">BACK-RIGHT 45° MESH</div>
         </div>
     </div>
 
-    <div id="ex-menu" class="overlay">
-        <h2 id="musc-title" style="color: var(--glow-blue);">MUSCLE</h2>
-        <div id="ex-list"></div>
-        <button class="btn" onclick="closeOverlays()" style="border-color: #484f58; color: #8b949e; margin-top: 15px;">BACK</button>
+    <div id="menu-ex" class="overlay">
+        <h2 id="musc-name" style="color: var(--glow-blue); margin-top: 0;">MUSCLE</h2>
+        <div id="list-container"></div>
+        <button class="btn btn-back" onclick="closeAll()">CLOSE</button>
     </div>
 
-    <div id="action-menu" class="overlay">
-        <h2 id="ex-title">EXERCISE</h2>
-        <p style="color: #8b949e; font-size: 0.8rem;">Target Max: <span id="target-max" style="color:white">--</span> BPM</p>
-        <button class="btn" onclick="startCal()">CALIBRATE</button>
-        <button class="btn btn-solid" onclick="startSet()">BEGIN SET 1</button>
-        <button class="btn" onclick="closeOverlays()" style="border-color: #484f58; color: #8b949e;">CANCEL</button>
+    <div id="menu-action" class="overlay">
+        <h2 id="ex-name" style="margin-top: 0;">EXERCISE</h2>
+        <p style="color: #8b949e; font-size: 0.8rem;">Target Max: <span id="max-val" style="color:white">--</span> BPM</p>
+        <button class="btn" onclick="triggerCal()">CALIBRATE</button>
+        <button class="btn btn-solid" onclick="triggerSet()">BEGIN SET 1</button>
+        <button class="btn btn-back" onclick="closeAll()">CANCEL</button>
     </div>
 
     <script src="js/biostack.js"></script>
