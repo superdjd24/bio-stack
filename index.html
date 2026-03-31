@@ -18,33 +18,24 @@
             border: 2px solid #00f2ff; background: #00f2ff; color: #05070a; 
             font-weight: 900; text-transform: uppercase; cursor: pointer;
             box-shadow: 0 0 20px rgba(0, 242, 255, 0.3);
-            transition: 0.2s;
         }
-        .btn:active { transform: scale(0.95); opacity: 0.8; }
     </style>
 </head>
 <body>
     <div class="logo">BIOSTACK</div>
     <div class="sub">HARDWARE LINK REQUIRED</div>
-    
     <button class="btn" onclick="initLink()">CONNECT COOSPO</button>
 
     <script>
         async function initLink() {
             try {
-                // Requesting the Coospo device via Web Bluetooth
                 const device = await navigator.bluetooth.requestDevice({
                     filters: [{ services: ['heart_rate'] }]
                 });
-                
-                // Set the session flag so the main app knows we are linked
                 sessionStorage.setItem('biostack_connected', 'true');
-                
-                // Redirect to the main dashboard
                 window.location.href = 'app.html';
             } catch (err) {
-                console.error(err);
-                alert("Link Error: " + err.message + "\n\n1. Ensure Bluetooth is ON\n2. Use Bluefy Browser on iOS.");
+                alert("Link Error: " + err.message + "\n\nUse Bluefy on iOS.");
             }
         }
     </script>
