@@ -1,56 +1,58 @@
 /**
- * BIOSTACK ELITE v1.3
- * 2D High-Fidelity Logic
+ * BIOSTACK ELITE v1.4
  */
 
-const EXERCISES = {
+const DB = {
     'Chest': ['Bench Press', 'Incline Press'],
     'Biceps': ['Barbell Curls', 'Hammer Curls'],
-    'Quads': ['Squats', 'Leg Extensions'],
-    'Back': ['Lat Pulldowns', 'Deadlifts'],
-    'Triceps': ['Dips', 'Pushdowns']
+    'Quads': ['Squats', 'Leg Press'],
+    'Back': ['Lat Pulldowns', 'Rows'],
+    'Abs': ['Crunches', 'Leg Raises'],
+    'Triceps': ['Dips', 'Pushdowns'],
+    'Glutes': ['Hip Thrusts', 'Deadlifts']
 };
 
-let liveBPM = 0, targetMaxHR = 0, currentEx = "", currentMusc = "";
-let isCal = false, isTrain = false, sessionMax = 0;
-let isFrontView = true;
+let bpm = 0, targetHR = 0, currentEx = "", currentMusc = "";
+let isCal = false, isTrain = false, sMax = 0, isFront = true;
 
-function toggleBodyView() {
-    isFrontView = !isFrontView;
-    document.getElementById('anatomy-container').style.transform = isFrontView ? 'translateX(0)' : 'translateX(-50%)';
-    document.getElementById('toggle-view').innerText = isFrontView ? 'FRONT' : 'BACK';
+function toggleView() {
+    isFront = !isFront;
+    document.getElementById('anatomy-slider').style.transform = isFront ? 'translateX(0)' : 'translateX(-50%)';
+    document.getElementById('toggle-btn').innerText = isFront ? 'BACK' : 'FRONT';
 }
 
 function selectMuscle(m) {
     if (isTrain || isCal) return;
     currentMusc = m;
-    document.getElementById('musc-title').innerText = m;
-    const list = document.getElementById('ex-list');
-    list.innerHTML = "";
-    EXERCISES[m].forEach(ex => {
-        const b = document.createElement('button');
-        b.className = "btn";
-        b.innerText = ex;
-        b.onclick = () => openAction(ex);
-        list.appendChild(b);
+    document.getElementById('musc-name').innerText = m;
+    const container = document.getElementById('list-container');
+    container.innerHTML = "";
+    DB[m].forEach(ex => {
+        const btn = document.createElement('button');
+        btn.className = "btn";
+        btn.innerText = ex;
+        btn.onclick = () => openAction(ex);
+        container.appendChild(btn);
     });
-    document.getElementById('ex-menu').classList.add('visible');
+    document.getElementById('menu-ex').classList.add('visible');
 }
 
 function openAction(ex) {
     currentEx = ex;
-    document.getElementById('ex-title').innerText = ex;
-    const saved = localStorage.getItem('biostack_max_' + ex) || "--";
-    document.getElementById('target-max').innerText = saved;
-    targetMaxHR = parseInt(saved) || 0;
-    document.getElementById('ex-menu').classList.remove('visible');
-    document.getElementById('action-menu').classList.add('visible');
+    document.getElementById('ex-name').innerText = ex;
+    const val = localStorage.getItem('biostack_max_' + ex) || "--";
+    document.getElementById('max-val').innerText = val;
+    targetHR = parseInt(val) || 0;
+    document.getElementById('menu-ex').classList.remove('visible');
+    document.getElementById('menu-action').classList.add('visible');
 }
 
-function closeOverlays() {
+function closeAll() {
     document.querySelectorAll('.overlay').forEach(o => o.classList.remove('visible'));
     isTrain = false; isCal = false;
-    document.querySelectorAll('.muscle').forEach(m => m.classList.remove('active-set'));
+    document.querySelectorAll('.muscle').forEach(p => {
+        p.style.stroke = ''; p.style.fill = '';
+    });
 }
 
 async function initBluetooth() {
@@ -61,54 +63,52 @@ async function initBluetooth() {
         const char = await service.getCharacteristic('heart_rate_measurement');
         await char.startNotifications();
         char.addEventListener('characteristicvaluechanged', (e) => {
-            liveBPM = e.target.value.getUint8(1);
-            document.getElementById('hr-val').innerText = liveBPM;
-            updateEngine();
+            bpm = e.target.value.getUint8(1);
+            document.getElementById('hr-val').innerText = bpm;
+            runEngine();
         });
-        document.getElementById('status-bar').innerText = "Coospo Connected";
-    } catch (e) { alert("Use Bluefy on iOS!"); }
+        document.getElementById('status-bar').innerText = "LINK ACTIVE";
+        document.getElementById('conn-btn').style.display = "none";
+    } catch (e) { alert("Use Bluefy on iOS."); }
 }
 
-function updateEngine() {
-    if (isCal && liveBPM > sessionMax) sessionMax = liveBPM;
+function runEngine() {
+    if (isCal && bpm > sMax) sMax = bpm;
     
-    if (isTrain && targetMaxHR > 0) {
-        // Find all paths associated with the current muscle
-        const musclePaths = document.querySelectorAll('.muscle');
-        musclePaths.forEach(p => {
-            if (p.id.includes(currentMusc.toLowerCase())) {
-                const factor = Math.min(Math.max((liveBPM - 70) / (targetMaxHR - 70), 0), 1);
-                // Transition color from Blue to Red
-                const r = Math.floor(0 + 255 * factor);
-                const g = Math.floor(242 * (1 - factor));
-                const b = Math.floor(255 * (1 - factor));
+    if (isTrain && targetHR > 0) {
+        const factor = Math.min(Math.max((bpm - 70) / (targetHR - 70), 0), 1);
+        const r = Math.floor(0 + 255 * factor);
+        const g = Math.floor(242 * (1 - factor));
+        const b = Math.floor(255 * (1 - factor));
+        
+        document.querySelectorAll('.muscle').forEach(p => {
+            if (p.id.includes(currentMusc.toLowerCase().substring(0, 4))) {
                 p.style.stroke = `rgb(${r},${g},${b})`;
                 p.style.fill = `rgba(${r},${g},${b}, ${0.1 + factor * 0.4})`;
             }
         });
 
-        const status = document.getElementById('status-bar');
-        if (liveBPM >= 110) status.innerText = "REST / RECOVERING MODE";
-        else status.innerText = "MUSCLE PRIMED - START SET";
+        const sb = document.getElementById('status-bar');
+        if (bpm >= 110) sb.innerText = "REST / RECOVERY";
+        else sb.innerText = "MUSCLE PRIMED - START SET";
     }
 }
 
-function startCal() {
-    isCal = true; sessionMax = 0;
-    document.getElementById('action-menu').classList.remove('visible');
+function triggerCal() {
+    isCal = true; sMax = 0;
+    document.getElementById('menu-action').classList.remove('visible');
     document.getElementById('status-bar').innerText = "PUSH TO FAILURE...";
-    // Finish button logic here...
     setTimeout(() => {
-        localStorage.setItem('biostack_max_' + currentEx, sessionMax);
-        alert("Calibrated: " + sessionMax);
-        closeOverlays();
+        localStorage.setItem('biostack_max_' + currentEx, sMax);
+        alert("Calibrated: " + sMax + " BPM");
+        closeAll();
     }, 10000);
 }
 
-function startSet() {
+function triggerSet() {
     isTrain = true;
-    document.getElementById('action-menu').classList.remove('visible');
-    document.getElementById('status-bar').innerText = "SET IN PROGRESS";
+    document.getElementById('menu-action').classList.remove('visible');
+    document.getElementById('status-bar').innerText = "TRAINING ACTIVE";
 }
 
 document.getElementById('conn-btn').onclick = initBluetooth;
