@@ -1,6 +1,6 @@
 /**
- * BIOSTACK ELITE v3.4
- * Hardware Link Stabilization
+ * BIOSTACK ELITE v3.5
+ * Hardware Link Hand-off
  */
 
 let bpm = 0, targetHR = 0, currentMusc = "", currentEx = "";
@@ -11,80 +11,46 @@ let currentSetIdx = 0;
 let lastMode = "PUSH";
 
 const DB = {
-    'Trapezoids': ['Dumbbell Shrugs', 'Barbell Shrugs', 'Face Pulls'],
-    'Deltoids': ['Lateral Raises', 'Military Press', 'Arnold Press'],
-    'Pectorals': ['Bench Press', 'Incline Press', 'Chest Flys', 'Pushups'],
-    'Biceps': ['Barbell Curls', 'Hammer Curls', 'Preacher Curls'],
-    'Triceps': ['Skull Crushers', 'Pushdowns', 'Dips'],
-    'Forearms': ['Wrist Curls', 'Reverse Curls'],
-    'Abdominals': ['Leg Raises', 'Weighted Crunches', 'Plank'],
-    'Quads': ['Barbell Squats', 'Leg Press', 'Hack Squat']
+    'Trapezoids': ['Dumbbell Shrugs', 'Barbell Shrugs'],
+    'Deltoids': ['Lateral Raises', 'Military Press'],
+    'Pectorals': ['Bench Press', 'Incline Press', 'Chest Flys'],
+    'Biceps': ['Barbell Curls', 'Hammer Curls'],
+    'Triceps': ['Skull Crushers', 'Pushdowns'],
+    'Forearms': ['Wrist Curls'],
+    'Abdominals': ['Leg Raises', 'Weighted Crunches'],
+    'Quads': ['Barbell Squats', 'Leg Press']
 };
 
-// --- STANDALONE BLUETOOTH INIT ---
-async function initBluetooth() {
-    console.log("Triggering Bluetooth request...");
+// AUTO-CONNECT ON LOAD
+window.onload = async () => {
+    if (sessionStorage.getItem('biostack_connected') === 'true') {
+        connectBluetooth();
+    } else {
+        window.location.href = 'login.html';
+    }
+};
+
+async function connectBluetooth() {
     try {
+        // We call requestDevice again to finalize the stream link
         const device = await navigator.bluetooth.requestDevice({
             filters: [{ services: ['heart_rate'] }]
         });
-
         const server = await device.gatt.connect();
         const service = await server.getPrimaryService('heart_rate');
         const char = await service.getCharacteristic('heart_rate_measurement');
-        
         await char.startNotifications();
         char.addEventListener('characteristicvaluechanged', (e) => {
             bpm = e.target.value.getUint8(1);
             updateEngine();
         });
-
-        // If we got here, it worked. Clear UI.
-        document.getElementById('menu-init').classList.remove('visible');
-        document.getElementById('musc-header').innerText = "SELECT TARGET";
-    } catch (err) {
-        console.error("Bluetooth Error: ", err);
-        // Alert the user to the specific reason for failure
-        alert("Connection Error: " + err.message + "\n\n1. Ensure Bluetooth is ON\n2. Use Bluefy Browser\n3. Wear the Coospo.");
+    } catch (e) {
+        alert("Reconnect Link: " + e.message);
+        window.location.href = 'login.html';
     }
 }
 
-// --- ENGINE & UI ---
-function updateEngine() {
-    document.getElementById('hr-val').innerText = bpm;
-
-    hrHistory.push(bpm);
-    if (hrHistory.length > 30) hrHistory.shift();
-    drawSparkline();
-
-    let currentMode = (bpm >= 110) ? "REST" : "PUSH";
-    const mv = document.getElementById('mode-val');
-    mv.innerText = (currentMode === "REST") ? "REST / RECOVER" : "PUSH - GO!";
-    mv.className = (currentMode === "REST") ? "mode-rest" : "mode-push";
-
-    if (lastMode === "PUSH" && currentMode === "REST") {
-        if (currentSetIdx < 2) currentSetIdx++;
-    }
-    lastMode = currentMode;
-
-    if (isTrain) {
-        totalCal += (bpm * 0.012); 
-        document.getElementById('total-cal').innerText = Math.floor(totalCal);
-        const overlay = document.getElementById(`overlay-${currentMusc.toLowerCase()}`);
-        if (overlay) {
-            const factor = Math.min(Math.max((bpm - 70) / (targetHR - 70), 0), 1);
-            overlay.style.opacity = factor;
-        }
-        if (currentSetIdx < 3) {
-            if (bpm > sets[currentSetIdx]) {
-                sets[currentSetIdx] = bpm;
-                const pct = Math.min((bpm / targetHR) * 100, 100);
-                const bar = document.getElementById(`set-${currentSetIdx + 1}-bar`);
-                if (bar) bar.style.width = pct + "%";
-            }
-        }
-    }
-}
+// ... (Rest of the updateEngine, selectMuscle, etc. remain the same as v3.2) ...
 
 function selectMuscle(m) {
     if (isTrain || isCal) return;
@@ -92,12 +58,10 @@ function selectMuscle(m) {
     currentMusc = m;
     const overlay = document.getElementById(`overlay-${m.toLowerCase()}`);
     if (overlay) overlay.style.opacity = 0.5;
-
     document.getElementById('musc-header').innerText = m;
     const picker = document.getElementById('exercise-picker');
     picker.innerHTML = "";
     picker.style.display = "block";
-    
     DB[m].forEach(ex => {
         const b = document.createElement('button');
         b.className = "list-btn";
@@ -113,9 +77,7 @@ function showActionMenu(ex) {
     document.getElementById('menu-action').classList.add('visible');
 }
 
-function closeAction() {
-    document.getElementById('menu-action').classList.remove('visible');
-}
+function closeAction() { document.getElementById('menu-action').classList.remove('visible'); }
 
 function startTraining() {
     isTrain = true;
@@ -124,20 +86,36 @@ function startTraining() {
     document.getElementById('set-tracker').style.display = "block";
     document.getElementById('nav-controls').style.display = "block";
     document.getElementById('ex-header').innerText = currentEx;
-    
     const saved = localStorage.getItem('biostack_max_' + currentEx) || 150;
     targetHR = parseInt(saved);
 }
 
 function resetToSelection() {
-    isTrain = false;
-    currentSetIdx = 0;
-    sets = [0,0,0];
+    isTrain = false; currentSetIdx = 0; sets = [0,0,0];
     document.getElementById('set-tracker').style.display = "none";
     document.getElementById('nav-controls').style.display = "none";
     document.getElementById('exercise-picker').style.display = "block";
     document.querySelectorAll('.progress-bar').forEach(b => b.style.width = '0%');
     document.getElementById('musc-header').innerText = "SELECT TARGET";
+}
+
+function updateEngine() {
+    document.getElementById('hr-val').innerText = bpm;
+    hrHistory.push(bpm);
+    if (hrHistory.length > 30) hrHistory.shift();
+    drawSparkline();
+    let currentMode = (bpm >= 110) ? "REST" : "PUSH";
+    const mv = document.getElementById('mode-val');
+    mv.innerText = (currentMode === "REST") ? "REST / RECOVER" : "PUSH - GO!";
+    mv.className = (currentMode === "REST") ? "mode-rest" : "mode-push";
+    if (lastMode === "PUSH" && currentMode === "REST") { if (currentSetIdx < 2) currentSetIdx++; }
+    lastMode = currentMode;
+    if (isTrain) {
+        totalCal += (bpm * 0.012); document.getElementById('total-cal').innerText = Math.floor(totalCal);
+        const overlay = document.getElementById(`overlay-${currentMusc.toLowerCase()}`);
+        if (overlay) { const factor = Math.min(Math.max((bpm - 70) / (targetHR - 70), 0), 1); overlay.style.opacity = factor; }
+        if (currentSetIdx < 3) { if (bpm > sets[currentSetIdx]) { sets[currentSetIdx] = bpm; const pct = Math.min((bpm / targetHR) * 100, 100); document.getElementById(`set-${currentSetIdx + 1}-bar`).style.width = pct + "%"; } }
+    }
 }
 
 function drawSparkline() {
@@ -149,8 +127,7 @@ function drawSparkline() {
     ctx.beginPath(); ctx.strokeStyle = '#00f2ff'; ctx.lineWidth = 2;
     const step = canvas.width / 30;
     hrHistory.forEach((val, i) => {
-        const x = i * step;
-        const y = canvas.height - ((val - 60) / 140) * canvas.height;
+        const x = i * step; const y = canvas.height - ((val - 60) / 140) * canvas.height;
         if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
     });
     ctx.stroke();
