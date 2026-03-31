@@ -8,12 +8,11 @@
     </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BioStack Elite v3.7</title>
+    <title>BioStack Elite v3.7.1</title>
     <style>
         :root { --glow-blue: #00f2ff; --glow-red: #ff0044; --bg-dark: #05070a; --glass: rgba(15, 20, 30, 0.95); --border: #30363d; }
         body { margin: 0; background: var(--bg-dark); color: white; font-family: -apple-system, system-ui, sans-serif; overflow: hidden; height: 100vh; }
         
-        /* DASHBOARD */
         #top-dash { position: fixed; top: 0; width: 100%; height: 120px; display: flex; align-items: center; justify-content: space-between; padding: 40px 20px 0 20px; box-sizing: border-box; z-index: 1000; }
         #hr-pill { background: var(--glass); padding: 10px 20px; border-radius: 50px; border: 1px solid var(--border); display: flex; align-items: baseline; }
         #hr-val { font-size: 2.8rem; font-weight: 900; color: var(--glow-blue); margin-right: 5px; }
@@ -25,23 +24,22 @@
         .mode-rest { color: var(--glow-red); }
         .mode-push { color: var(--glow-blue); }
 
-        /* VIEW TOGGLE */
-        #view-toggle { position: fixed; top: 180px; right: 20px; z-index: 1100; display: flex; gap: 5px; }
-        .toggle-btn { background: var(--glass); border: 1px solid var(--border); color: white; padding: 8px 15px; border-radius: 12px; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; cursor: pointer; }
-        .toggle-active { border-color: var(--glow-blue); color: var(--glow-blue); box-shadow: 0 0 10px rgba(0, 242, 255, 0.2); }
-
-        /* SIDEBAR */
         #sidebar { position: fixed; top: 200px; left: 20px; width: 160px; height: 60vh; display: flex; flex-direction: column; z-index: 500; }
         #musc-header { font-size: 1.2rem; font-weight: 900; color: var(--glow-blue); text-transform: uppercase; margin-bottom: 5px; }
         #exercise-picker { flex-grow: 1; overflow-y: auto; display: block; }
         .list-btn { width: 100%; padding: 12px; margin-bottom: 8px; border-radius: 12px; border: 1px solid var(--border); background: var(--glass); color: white; font-size: 0.75rem; text-align: left; }
         
         #set-tracker { margin-bottom: 25px; display: none; }
+        .set-row { margin-bottom: 10px; }
         .progress-bg { width: 120px; height: 4px; background: rgba(255,255,255,0.05); border-radius: 10px; margin-top: 4px; }
         .progress-bar { height: 100%; background: var(--glow-blue); width: 0%; transition: width 0.4s ease; }
 
-        /* STAGE */
+        /* STAGE & PINNED TOGGLE */
         #stage { position: fixed; top: 160px; right: -30px; width: 70vw; height: 75vh; display: flex; justify-content: center; align-items: center; z-index: 10; }
+        #view-toggle { position: absolute; top: 10px; width: 180px; z-index: 1100; display: flex; justify-content: space-between; pointer-events: none; }
+        .toggle-btn { background: var(--glass); border: 1px solid var(--border); color: white; padding: 8px 15px; border-radius: 30px; font-size: 0.65rem; font-weight: 900; text-transform: uppercase; cursor: pointer; pointer-events: auto; }
+        .toggle-active { border-color: var(--glow-blue); color: var(--glow-blue); background: rgba(0, 242, 255, 0.1); }
+
         .stack-layer { position: absolute; height: 100%; width: auto; pointer-events: none; transition: opacity 0.4s ease; display: none; }
         .layer-visible { display: block; }
         #base-front, #base-back { z-index: 11; opacity: 0.7; }
@@ -52,6 +50,7 @@
 
         #nav-controls { position: fixed; bottom: 40px; left: 20px; z-index: 1000; display: none; }
         .link-btn { color: #8b949e; text-decoration: underline; font-size: 0.8rem; background: none; border: none; cursor: pointer; }
+        
         .overlay { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); width: 92%; max-width: 400px; background: var(--glass); border-radius: 35px; padding: 30px; border: 1px solid var(--border); backdrop-filter: blur(25px); display: none; text-align: center; z-index: 2000; }
         .btn { width: 100%; padding: 18px; margin: 8px 0; border-radius: 50px; border: 2px solid var(--glow-blue); background: transparent; color: var(--glow-blue); font-weight: 800; text-transform: uppercase; cursor: pointer; }
         .btn-solid { background: var(--glow-blue); color: black; }
@@ -69,11 +68,6 @@
         <div id="mode-box"><div id="mode-val" class="mode-push">LINKED</div></div>
     </div>
 
-    <div id="view-toggle">
-        <button id="btn-front" class="toggle-btn toggle-active" onclick="switchView('front')">Front</button>
-        <button id="btn-back" class="toggle-btn" onclick="switchView('back')">Back</button>
-    </div>
-
     <div id="sidebar">
         <div id="musc-header">SELECT TARGET</div>
         <div id="exercise-picker"></div>
@@ -86,6 +80,11 @@
     </div>
 
     <div id="stage">
+        <div id="view-toggle">
+            <button id="btn-front" class="toggle-btn toggle-active" onclick="switchView('front')">Front</button>
+            <button id="btn-back" class="toggle-btn" onclick="switchView('back')">Back</button>
+        </div>
+
         <img src="assets/base_front.png" id="base-front" class="stack-layer layer-visible">
         <img src="assets/trapezoids.png" id="overlay-trapezoids" class="muscle-overlay stack-layer layer-visible">
         <img src="assets/deltoids.png" id="overlay-deltoids" class="muscle-overlay stack-layer layer-visible">
