@@ -1,18 +1,18 @@
 /**
- * BIOSTACK ELITE v1.7 (Full-Body Layered)
+ * BIOSTACK ELITE v1.8 (Final Naming Sync)
  */
 
 let bpm = 0, targetHR = 0, currentMusc = "", currentEx = "";
 let isTrain = false, isCal = false, sMax = 0;
 
 const DB = {
-    'Traps': ['Dumbbell Shrugs', 'Barbell Shrugs'],
-    'Delts': ['Lateral Raises', 'Overhead Press'],
-    'Pecs': ['Bench Press', 'Chest Flys'],
+    'Trapezoids': ['Dumbbell Shrugs', 'Barbell Shrugs'],
+    'Deltoids': ['Lateral Raises', 'Front Raises'],
+    'Pectorals': ['Bench Press', 'Chest Flys'],
     'Biceps': ['Hammer Curls', 'EZ Bar Curls'],
     'Triceps': ['Skull Crushers', 'Tricep Pushdowns'],
     'Forearms': ['Wrist Curls', 'Reverse Curls'],
-    'Abs': ['Weighted Crunches', 'Leg Raises'],
+    'Abdominals': ['Weighted Crunches', 'Leg Raises'],
     'Quads': ['Barbell Squats', 'Leg Press']
 };
 
@@ -62,6 +62,7 @@ function runEngine() {
     if (isCal && bpm > sMax) sMax = bpm;
 
     if (isTrain && currentMusc && targetHR > 0) {
+        // Points to the ID defined in index.html (e.g., overlay-abdominals)
         const overlay = document.getElementById(`overlay-${currentMusc}`);
         if (!overlay) return;
 
