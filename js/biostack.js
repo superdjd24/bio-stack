@@ -1,6 +1,6 @@
 /**
- * BIOSTACK ELITE v3.8
- * Direct-Tap Hardware Sync
+ * BIOSTACK ELITE v3.9
+ * Anchor-Logic Engine
  */
 
 let bpm = 0, targetHR = 0, currentMusc = "", currentEx = "", currentView = "front";
@@ -24,13 +24,11 @@ const DB = {
 window.onload = () => {
     if (sessionStorage.getItem('biostack_connected') === 'true') {
         generateHitMap();
-        alert("Tap the HR Pill to sync your Coospo data stream.");
     }
 };
 
 async function connectHardware() {
     try {
-        // Direct tap trigger for browser security
         const device = await navigator.bluetooth.requestDevice({ filters: [{ services: ['heart_rate'] }] });
         const server = await device.gatt.connect();
         const service = await server.getPrimaryService('heart_rate');
@@ -78,6 +76,7 @@ function selectMuscle(m) {
 function generateHitMap() {
     const map = document.getElementById('touch-map');
     map.innerHTML = "";
+    // Adjusted grid for the v3.9 alignment
     const fG = ["", "", "", "Deltoids", "Pectorals", "Deltoids", "Biceps", "Abdominals", "Biceps", "Forearms", "Trapezoids", "Triceps", "Quads", "Quads", "Quads", "", "", ""];
     const bG = ["", "", "", "Lats", "Lats", "Lats", "Triceps", "Trapezoids", "Triceps", "Glutes", "Glutes", "Glutes", "Hamstrings", "", "Hamstrings", "Calves", "", "Calves"];
     const active = (currentView === 'front') ? fG : bG;
@@ -104,8 +103,9 @@ function closeAction() { document.getElementById('menu-action').classList.remove
 
 function drawSparkline() {
     const canvas = document.getElementById('sparkline-canvas');
+    if(!canvas) return;
     const ctx = canvas.getContext('2d');
-    canvas.width = 140; canvas.height = 50;
+    canvas.width = 120; canvas.height = 40;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.beginPath(); ctx.strokeStyle = '#00f2ff'; ctx.lineWidth = 2;
     const step = canvas.width / 30;
