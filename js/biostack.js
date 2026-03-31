@@ -1,38 +1,33 @@
 /**
- * BIOSTACK ELITE v1.4
+ * BIOSTACK ELITE v1.7 (Full-Body Layered)
  */
 
+let bpm = 0, targetHR = 0, currentMusc = "", currentEx = "";
+let isTrain = false, isCal = false, sMax = 0;
+
 const DB = {
-    'Chest': ['Bench Press', 'Incline Press'],
-    'Biceps': ['Barbell Curls', 'Hammer Curls'],
-    'Quads': ['Squats', 'Leg Press'],
-    'Back': ['Lat Pulldowns', 'Rows'],
-    'Abs': ['Crunches', 'Leg Raises'],
-    'Triceps': ['Dips', 'Pushdowns'],
-    'Glutes': ['Hip Thrusts', 'Deadlifts']
+    'Traps': ['Dumbbell Shrugs', 'Barbell Shrugs'],
+    'Delts': ['Lateral Raises', 'Overhead Press'],
+    'Pecs': ['Bench Press', 'Chest Flys'],
+    'Biceps': ['Hammer Curls', 'EZ Bar Curls'],
+    'Triceps': ['Skull Crushers', 'Tricep Pushdowns'],
+    'Forearms': ['Wrist Curls', 'Reverse Curls'],
+    'Abs': ['Weighted Crunches', 'Leg Raises'],
+    'Quads': ['Barbell Squats', 'Leg Press']
 };
-
-let bpm = 0, targetHR = 0, currentEx = "", currentMusc = "";
-let isCal = false, isTrain = false, sMax = 0, isFront = true;
-
-function toggleView() {
-    isFront = !isFront;
-    document.getElementById('anatomy-slider').style.transform = isFront ? 'translateX(0)' : 'translateX(-50%)';
-    document.getElementById('toggle-btn').innerText = isFront ? 'BACK' : 'FRONT';
-}
 
 function selectMuscle(m) {
     if (isTrain || isCal) return;
-    currentMusc = m;
+    currentMusc = m.toLowerCase();
     document.getElementById('musc-name').innerText = m;
     const container = document.getElementById('list-container');
     container.innerHTML = "";
     DB[m].forEach(ex => {
-        const btn = document.createElement('button');
-        btn.className = "btn";
-        btn.innerText = ex;
-        btn.onclick = () => openAction(ex);
-        container.appendChild(btn);
+        const b = document.createElement('button');
+        b.className = "btn";
+        b.innerText = ex;
+        b.onclick = () => openAction(ex);
+        container.appendChild(b);
     });
     document.getElementById('menu-ex').classList.add('visible');
 }
@@ -40,19 +35,54 @@ function selectMuscle(m) {
 function openAction(ex) {
     currentEx = ex;
     document.getElementById('ex-name').innerText = ex;
-    const val = localStorage.getItem('biostack_max_' + ex) || "--";
-    document.getElementById('max-val').innerText = val;
-    targetHR = parseInt(val) || 0;
+    const saved = localStorage.getItem('biostack_max_' + ex) || "--";
+    document.getElementById('max-bpm').innerText = saved + " BPM";
+    targetHR = parseInt(saved) || 0;
     document.getElementById('menu-ex').classList.remove('visible');
     document.getElementById('menu-action').classList.add('visible');
 }
 
+function startTraining() {
+    isTrain = true;
+    document.getElementById('menu-action').classList.remove('visible');
+    document.getElementById('status-bar').innerText = "LIVE BIO-TELEMETRY ACTIVE";
+}
+
 function closeAll() {
     document.querySelectorAll('.overlay').forEach(o => o.classList.remove('visible'));
-    isTrain = false; isCal = false;
-    document.querySelectorAll('.muscle').forEach(p => {
-        p.style.stroke = ''; p.style.fill = '';
+    document.querySelectorAll('.muscle-overlay').forEach(img => {
+        img.style.opacity = 0;
+        img.classList.remove('throbbing');
     });
+    isTrain = false; isCal = false;
+    document.getElementById('status-bar').innerText = "Biometric Link Ready";
+}
+
+function runEngine() {
+    if (isCal && bpm > sMax) sMax = bpm;
+
+    if (isTrain && currentMusc && targetHR > 0) {
+        const overlay = document.getElementById(`overlay-${currentMusc}`);
+        if (!overlay) return;
+
+        const factor = Math.min(Math.max((bpm - 70) / (targetHR - 70), 0), 1);
+        overlay.style.opacity = factor;
+
+        if (factor > 0.92) {
+            overlay.classList.add('throbbing');
+        } else {
+            overlay.classList.remove('throbbing');
+        }
+
+        const sb = document.getElementById('status-bar');
+        if (bpm >= 110) {
+            sb.innerText = "REST / RECOVERY DETECTED";
+            sb.style.color = "#58a6ff";
+        } else {
+            sb.innerText = "MUSCLE PRIMED - START NEXT SET";
+            sb.style.color = "#00f2ff";
+        }
+    }
 }
 
 async function initBluetooth() {
@@ -67,48 +97,15 @@ async function initBluetooth() {
             document.getElementById('hr-val').innerText = bpm;
             runEngine();
         });
-        document.getElementById('status-bar').innerText = "LINK ACTIVE";
         document.getElementById('conn-btn').style.display = "none";
-    } catch (e) { alert("Use Bluefy on iOS."); }
+        document.getElementById('status-bar').innerText = "BODY SCAN COMPLETE";
+    } catch (e) { alert("Bluetooth connection failed."); }
 }
 
-function runEngine() {
-    if (isCal && bpm > sMax) sMax = bpm;
-    
-    if (isTrain && targetHR > 0) {
-        const factor = Math.min(Math.max((bpm - 70) / (targetHR - 70), 0), 1);
-        const r = Math.floor(0 + 255 * factor);
-        const g = Math.floor(242 * (1 - factor));
-        const b = Math.floor(255 * (1 - factor));
-        
-        document.querySelectorAll('.muscle').forEach(p => {
-            if (p.id.includes(currentMusc.toLowerCase().substring(0, 4))) {
-                p.style.stroke = `rgb(${r},${g},${b})`;
-                p.style.fill = `rgba(${r},${g},${b}, ${0.1 + factor * 0.4})`;
-            }
-        });
-
-        const sb = document.getElementById('status-bar');
-        if (bpm >= 110) sb.innerText = "REST / RECOVERY";
-        else sb.innerText = "MUSCLE PRIMED - START SET";
-    }
-}
-
-function triggerCal() {
+function startCalibration() {
     isCal = true; sMax = 0;
     document.getElementById('menu-action').classList.remove('visible');
-    document.getElementById('status-bar').innerText = "PUSH TO FAILURE...";
-    setTimeout(() => {
-        localStorage.setItem('biostack_max_' + currentEx, sMax);
-        alert("Calibrated: " + sMax + " BPM");
-        closeAll();
-    }, 10000);
-}
-
-function triggerSet() {
-    isTrain = true;
-    document.getElementById('menu-action').classList.remove('visible');
-    document.getElementById('status-bar').innerText = "TRAINING ACTIVE";
+    document.getElementById('status-bar').innerText = "CALIBRATING MAX HR FAILURE POINT...";
 }
 
 document.getElementById('conn-btn').onclick = initBluetooth;
