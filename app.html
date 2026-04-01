@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BioStack Elite v9.4</title>
+    <title>BioStack Elite v9.6</title>
     <style>
         :root { --glow-blue: #00f2ff; --bg-dark: #05070a; --glass: rgba(15, 20, 30, 0.95); --border: #30363d; }
         body { margin: 0; background: var(--bg-dark); color: white; font-family: -apple-system, system-ui, sans-serif; overflow: hidden; height: 100vh; }
@@ -16,17 +16,16 @@
         #main-dashboard { display: none; opacity: 0; transition: opacity 0.8s ease; }
         #top-dash { position: fixed; top: 0; width: 100%; height: 100px; display: flex; align-items: center; justify-content: space-between; padding: 20px; box-sizing: border-box; z-index: 9000; }
         
-        /* FIX: Pill width for 3 digits + tight heart padding */
         #hr-pill { 
             background: var(--glass); 
             padding: 0 15px;
-            width: 135px; /* Fixed width to prevent jumping */
+            width: 135px;
             height: 65px; 
             border-radius: 50px; 
             border: 1px solid var(--border); 
             display: flex; 
             align-items: center; 
-            justify-content: flex-start; /* Left aligned for stable padding */
+            justify-content: flex-start;
             gap: 8px;
         }
         #hr-val { font-size: 2.4rem; font-weight: 900; color: var(--glow-blue); transition: color 0.3s ease; flex-grow: 1; text-align: center; }
@@ -45,7 +44,6 @@
 
         #stage-area { position: fixed; top: 120px; right: 0; width: 75vw; height: 65vh; display: flex; align-items: center; justify-content: flex-end; z-index: 10; }
         
-        /* INTENSITY LIST WRAPPER */
         #set-bar-sidebar { 
             width: 180px; 
             height: 450px; 
@@ -56,6 +54,7 @@
             padding: 10px;
             justify-content: flex-start;
             align-items: flex-start;
+            border-right: none;
         }
 
         #active-ex-context { font-size: 0.65rem; color: var(--glow-blue); text-transform: uppercase; border-bottom: 1px solid rgba(0,242,255,0.2); width: 100%; text-align: left; padding-bottom: 8px; margin-bottom: 5px; font-weight: 700; }
@@ -76,7 +75,6 @@
         .bar-inner-label { font-size: 0.65rem; color: #000; font-weight: 900; opacity: 0; transition: opacity 0.3s ease 0.8s; }
         .set-bar.revealed .bar-inner-label { opacity: 1; }
 
-        /* FIX: Move HUD under the sets */
         #hud-in-flow { width: 100%; margin-top: 15px; display: none; }
         .flow-btn { width: 100%; padding: 14px; border-radius: 12px; border: none; font-weight: 800; text-transform: uppercase; cursor: pointer; margin-bottom: 10px; }
         #new-ex-btn { background: transparent; border: 1px solid #444; color: #888; font-size: 0.7rem; }
@@ -93,15 +91,16 @@
 
         .overlay { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); width: 92%; max-width: 400px; background: var(--glass); border-radius: 35px; padding: 30px; border: 1px solid var(--border); backdrop-filter: blur(25px); display: none; text-align: center; z-index: 9500; }
         
-        /* CALIBRATION HUD KEEPING AS OVERLAY FOR FOCUS */
         #calibration-hud { position: fixed; bottom: 40px; left: 20px; display: none; z-index: 9999; }
         .hud-btn-cal { background: #ffaa00; color: #000; padding: 15px 30px; border-radius: 50px; border: none; font-weight: 900; text-transform: uppercase; cursor: pointer; }
+        .hud-timer-cal { display:none; color:#ffaa00; font-weight:800; display:block; margin-top:10px; font-size: 0.75rem; text-transform:uppercase; letter-spacing:1px; }
+
         #version-tag { position: fixed; bottom: 15px; left: 15px; font-size: 0.6rem; color: #333; }
     </style>
 </head>
 <body>
 
-    <div id="version-tag">BIOSTACK_v9.4_ERGO_FIX</div>
+    <div id="version-tag">BIOSTACK_v9.6_SESSION_RESET</div>
 
     <div id="login-screen">
         <div class="login-card">
@@ -114,11 +113,13 @@
 
     <div id="main-dashboard">
         <div id="top-dash">
-            <div id="hr-pill">
-                <img src="assets/heartbeat_icon.png" id="hr-icon">
-                <span id="hr-val">--</span>
+            <div id="tel-group">
+                <div id="hr-pill">
+                    <img src="assets/heartbeat_icon.png" id="hr-icon">
+                    <span id="hr-val">--</span>
+                </div>
+                <div id="graph-box"><canvas id="sparkline-canvas"></canvas></div>
             </div>
-            <div id="graph-box"><canvas id="sparkline-canvas"></canvas></div>
         </div>
 
         <div id="mid-dash">
@@ -130,17 +131,17 @@
         <div id="sidebar"><div id="exercise-picker"></div></div>
 
         <div id="calibration-hud">
-            <button id="cal-main-btn" class="hud-btn-cal" onclick="startCalTimer()">Finish Calibration</button>
-            <span id="cal-timer-display" style="display:none; color:#ffaa00; font-weight:800; display:block; margin-top:10px;">LOOK-BACK: 20s</span>
+            <button id="cal-main-btn" class="hud-btn-cal" onclick="startCalTimer()">FINISH CALIBRATION</button>
+            <span id="cal-timer-display" class="hud-timer-cal"></span>
         </div>
 
         <div id="stage-area">
             <div id="set-bar-sidebar">
                 <div id="active-ex-context"></div>
                 <div id="hud-in-flow">
-                    <button id="set-main-btn" class="flow-btn" onclick="startSetTimer()" style="background: var(--glow-blue); color:#000;">End Set</button>
-                    <span id="set-timer-display" style="display:none; font-size:0.7rem; color:#ffaa00; margin-bottom:10px; font-weight:800;">CAPTURE: 20s</span>
-                    <button id="new-ex-btn" class="flow-btn" onclick="exitTraining()">New Exercise</button>
+                    <button id="set-main-btn" class="flow-btn" onclick="startSetTimer()" style="background: var(--glow-blue); color:#000;">END SET</button>
+                    <span id="set-timer-display" style="display:none; font-size:0.75rem; color:#ffaa00; margin-bottom:10px; font-weight:800; text-transform:uppercase;">Analyzing vitals...</span>
+                    <button id="new-ex-btn" class="flow-btn" onclick="exitTraining()">NEW EXERCISE</button>
                 </div>
             </div>
             <div id="image-container">
