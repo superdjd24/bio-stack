@@ -1,6 +1,6 @@
 /**
- * BIOSTACK ELITE ENGINE v10.1 STABLE
- * Calibration Button Position Fix
+ * BIOSTACK ELITE ENGINE v10.3 STABLE
+ * Front Anatomy Grid Map Realignment + Cache Bust
  */
 
 let bpm = 0;
@@ -235,7 +235,18 @@ function generateHitMap() {
     const map = document.getElementById('touch-map');
     if (!map) return;
     map.innerHTML = "";
-    const fG = ["Trapezoids", "Trapezoids", "TOGGLE_BACK", "Deltoids", "Pectorals", "Deltoids", "Biceps", "Abdominals", "Biceps", "Biceps", "Abdominals", "Biceps", "Forearms", "Quads", "Forearms", "", "Quads", ""];
+    
+    // BUG FIX: Re-mapped the grid to anatomically match the front silhouette. 
+    // Forearms moved to row 4, Quads occupy all of row 5, Shins (row 6) cleared.
+    const fG = [
+        "Trapezoids", "Trapezoids", "TOGGLE_BACK",
+        "Deltoids", "Pectorals", "Deltoids", 
+        "Biceps", "Abdominals", "Biceps", 
+        "Forearms", "Abdominals", "Forearms", 
+        "Quads", "Quads", "Quads", 
+        "", "", ""
+    ];
+    
     const bG = ["TOGGLE_FRONT", "Trapezoids", "Trapezoids", "Triceps", "Lats", "Triceps", "Triceps", "Lats", "Triceps", "Glutes", "Glutes", "Glutes", "Hamstrings", "Hamstrings", "Hamstrings", "Hamstrings", "Calves", "Hamstrings"];
     const active = (currentView === "front") ? fG : bG;
     active.forEach((m) => {
