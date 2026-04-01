@@ -1,6 +1,6 @@
 /**
- * BIOSTACK ELITE ENGINE v6.0
- * Aggressive Vertical Up-Shift
+ * BIOSTACK ELITE ENGINE v6.2
+ * Tricep Target Recovery
  */
 let bpm = 0;
 let currentMusc = "";
@@ -46,22 +46,25 @@ function generateHitMap() {
     const map = document.getElementById('touch-map');
     map.innerHTML = "";
     
-    /** * FRONT GRID v6.0
-     * Concentrating targets in the top 4 rows.
+    /** * FRONT GRID v6.2
+     * Expanding Tricep zones on outer edges of Row 3
      */
     const fG = [
-        "Trapezoids", "Trapezoids", "TOGGLE_BACK",   // Row 1 (Neck/Toggle)
-        "Deltoids", "Pectorals", "Deltoids",       // Row 2 (Chest)
-        "Biceps", "Abdominals", "Biceps",          // Row 3 (Abs/Arms)
-        "Forearms", "Quads", "Forearms",           // Row 4 (Legs/Forearms)
-        "", "Quads", "",                           // Row 5 (Lower Legs Buffer)
-        "", "", ""                                 // Row 6 (Bottom Buffer)
+        "Trapezoids", "Trapezoids", "TOGGLE_BACK",   // Row 1
+        "Deltoids", "Pectorals", "Deltoids",       // Row 2
+        "Triceps", "Abdominals", "Triceps",        // Row 3: Recovered Triceps
+        "Biceps", "Quads", "Biceps",               // Row 4
+        "Forearms", "Quads", "Forearms",           // Row 5 
+        "", "", ""                                 // Row 6
     ];
 
+    /** * BACK GRID v6.2
+     * Ensuring Triceps take priority on outer columns
+     */
     const bG = [
         "TOGGLE_FRONT", "Trapezoids", "Trapezoids", // Row 1
-        "Deltoids", "Lats", "Deltoids",            // Row 2
-        "Triceps", "Lats", "Triceps",              // Row 3
+        "Triceps", "Lats", "Triceps",              // Row 2: Recovered Triceps
+        "Deltoids", "Lats", "Deltoids",            // Row 3
         "Glutes", "Glutes", "Glutes",              // Row 4
         "Hamstrings", "Calves", "Hamstrings",      // Row 5
         "", "", ""                                 // Row 6
