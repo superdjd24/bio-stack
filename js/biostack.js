@@ -1,6 +1,6 @@
 /**
- * BIOSTACK ELITE ENGINE v10.5 STABLE
- * True Thigh Quad Mapping Fix + Cache Bust
+ * BIOSTACK ELITE ENGINE v10.7 STABLE
+ * Custom User Matrix Grid Applied + Cache Bust
  */
 
 let bpm = 0;
@@ -236,15 +236,16 @@ function generateHitMap() {
     if (!map) return;
     map.innerHTML = "";
     
-    // BUG FIX: Shifted Quads up into the middle of row 4, and across all of row 5. 
-    // This perfectly overlays the thighs in the center of the silhouette.
+    // BUG FIX: Custom matrix implemented per user spec
+    // Row 1c (index 2) remains TOGGLE_BACK for app functionality.
+    // Row 3a/3c (indices 6, 8) default to Forearms.
     const fG = [
-        "Trapezoids", "Trapezoids", "TOGGLE_BACK",
-        "Deltoids", "Pectorals", "Deltoids", 
-        "Biceps", "Abdominals", "Biceps", 
-        "Forearms", "Quads", "Forearms", 
-        "Quads", "Quads", "Quads", 
-        "", "", ""
+        "Deltoids", "Pectorals", "TOGGLE_BACK",  // Row 1
+        "Biceps", "Abdominals", "Biceps",        // Row 2
+        "Forearms", "Abdominals", "Forearms",    // Row 3
+        "Quads", "Quads", "Quads",               // Row 4
+        "", "", "",                              // Row 5
+        "", "", ""                               // Row 6
     ];
     
     const bG = ["TOGGLE_FRONT", "Trapezoids", "Trapezoids", "Triceps", "Lats", "Triceps", "Triceps", "Lats", "Triceps", "Glutes", "Glutes", "Glutes", "Hamstrings", "Hamstrings", "Hamstrings", "Hamstrings", "Calves", "Hamstrings"];
