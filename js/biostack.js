@@ -1,6 +1,6 @@
 /**
- * BIOSTACK ELITE ENGINE v9.6
- * Session Reset & Logic Refinement
+ * BIOSTACK ELITE ENGINE v9.7
+ * Telemetry Positioning & Sidebar Ghost Removal
  */
 
 let bpm = 0;
@@ -109,7 +109,7 @@ function lockMaxHr() {
     const bufferMax = peakBuffer.length > 0 ? Math.max(...peakBuffer.map(p => p.bpm)) : 0;
     const trueMax = Math.max(tempMaxHr, bufferMax, bpm);
     if (trueMax < 60) {
-        alert("Calibration failed: Vitals too low. Recalibrate.");
+        alert("Calibration failed: Vitals too low.");
         exitCalHud(); return;
     }
     localStorage.setItem('maxhr_' + activeExercise, trueMax);
@@ -123,21 +123,19 @@ function exitCalHud() {
 }
 
 function startTraining() {
-    isTrain = true; isCalibrating = false;
     const newEx = document.getElementById('ex-name-modal').innerText;
     if (!localStorage.getItem('maxhr_' + newEx)) {
         alert(`${newEx} requires calibration.`); calibrateExercise(); return;
     }
+    isTrain = true; isCalibrating = false;
     activeExercise = newEx;
     document.getElementById('active-ex-tag').innerText = "WORK SET: " + activeExercise;
     const savedMax = localStorage.getItem('maxhr_' + activeExercise);
     const contextBox = document.getElementById('active-ex-context');
     contextBox.innerText = `Target HR for ${activeExercise}: ${savedMax}`;
     contextBox.style.display = 'block';
-    
     setCounter = 0;
     clearIntensityBars();
-    
     document.getElementById('hud-in-flow').style.display = "block";
     resetSetHUD();
     closeAction();
@@ -210,7 +208,6 @@ function processSetResult() {
     document.getElementById('set-timer-display').style.display = "none";
 }
 
-/** SESSION RESET LOGIC v9.6 **/
 function clearIntensityBars() {
     const items = document.querySelectorAll('#set-bar-sidebar .intensity-item');
     items.forEach(i => i.remove());
@@ -220,8 +217,7 @@ function exitTraining() {
     isTrain = false;
     document.getElementById('hud-in-flow').style.display = "none";
     document.getElementById('active-ex-context').style.display = 'none';
-    document.getElementById('active-ex-context').innerText = "";
-    clearIntensityBars(); // FIX: Clear graphs on "New Exercise"
+    clearIntensityBars();
     document.getElementById('sidebar').style.display = "block";
     document.getElementById('active-ex-tag').innerText = "NO ACTIVE EXERCISE";
 }
