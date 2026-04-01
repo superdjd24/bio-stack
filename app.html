@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BioStack Elite v9.7</title>
+    <title>BioStack Elite v9.8</title>
     <style>
         :root { --glow-blue: #00f2ff; --bg-dark: #05070a; --glass: rgba(15, 20, 30, 0.95); --border: #30363d; }
         body { margin: 0; background: var(--bg-dark); color: white; font-family: -apple-system, system-ui, sans-serif; overflow: hidden; height: 100vh; }
@@ -15,7 +15,6 @@
 
         #main-dashboard { display: none; opacity: 0; transition: opacity 0.8s ease; }
         
-        /* TOP DASH FIX: Explicitly separate left pill and right graph */
         #top-dash { 
             position: fixed; 
             top: 0; 
@@ -44,7 +43,6 @@
         #hr-val { font-size: 2.4rem; font-weight: 900; color: var(--glow-blue); flex-grow: 1; text-align: center; }
         #hr-icon { width: 24px; height: auto; margin-left: 5px; }
         
-        /* Sparkline positioned back to the right */
         #graph-box { width: 200px; height: 50px; position: relative; }
         #sparkline-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
 
@@ -68,7 +66,7 @@
             padding: 10px;
             justify-content: flex-start;
             align-items: flex-start;
-            border-right: none; /* KILLED THE GHOST LINE */
+            border-right: none; 
         }
 
         #active-ex-context { font-size: 0.65rem; color: var(--glow-blue); text-transform: uppercase; border-bottom: 1px solid rgba(0,242,255,0.2); width: 100%; text-align: left; padding-bottom: 8px; margin-bottom: 5px; font-weight: 700; }
@@ -114,7 +112,7 @@
 </head>
 <body>
 
-    <div id="version-tag">BIOSTACK_v9.7_UI_FIXED</div>
+    <div id="version-tag">BIOSTACK_v9.8_STABLE_SYNC</div>
 
     <div id="login-screen">
         <div class="login-card">
