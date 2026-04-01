@@ -1,30 +1,33 @@
-<div id="login-box" style="text-align: center; background: rgba(15, 20, 30, 0.95); padding: 40px; border-radius: 30px; border: 1px solid #30363d;">
-    <h2 style="color: #00f2ff; margin-bottom: 30px;">USER BIOMETRICS</h2>
-    
-    <div style="margin-bottom: 20px;">
-        <input type="number" id="user-weight" placeholder="Weight (lbs)" style="width: 80%; padding: 15px; border-radius: 10px; border: 1px solid #444; background: #000; color: #fff;">
-    </div>
-    
-    <div style="margin-bottom: 30px;">
-        <input type="number" id="user-age" placeholder="Age" style="width: 80%; padding: 15px; border-radius: 10px; border: 1px solid #444; background: #000; color: #fff;">
-    </div>
-
-    <button onclick="saveAndGo()" style="width: 85%; padding: 18px; background: #00f2ff; color: #000; border: none; border-radius: 50px; font-weight: 800; cursor: pointer;">INITIALIZE SYSTEM</button>
-</div>
-
 <script>
-function saveAndGo() {
+async function saveAndGo() {
     const w = document.getElementById('user-weight').value;
+    const h = document.getElementById('user-height').value;
     const a = document.getElementById('user-age').value;
     
-    if(!w || !a) {
-        alert("Please enter Weight and Age for Calorie tracking.");
+    if(!w || !h || !a) {
+        alert("Weight, Height, and Age are required.");
         return;
     }
-    
-    localStorage.setItem('bio_weight', w);
-    localStorage.setItem('bio_age', a);
-    sessionStorage.setItem('biostack_paired', 'true');
-    window.location.href = 'app.html';
+
+    try {
+        // ACTUAL BLE INITIALIZATION
+        const device = await navigator.bluetooth.requestDevice({ 
+            filters: [{ services: ['heart_rate'] }] 
+        });
+        
+        // Save Biometrics
+        localStorage.setItem('bio_weight', w);
+        localStorage.setItem('bio_height', h);
+        localStorage.setItem('bio_age', a);
+        
+        // Flag that we are paired and ready
+        sessionStorage.setItem('biostack_paired', 'true');
+        
+        // Redirect to App
+        window.location.href = 'app.html';
+        
+    } catch (e) {
+        alert("Bluetooth Setup Cancelled or Failed: " + e.message);
+    }
 }
 </script>
