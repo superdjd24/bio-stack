@@ -1,6 +1,6 @@
 /**
- * BIOSTACK ELITE ENGINE v10.25 STABLE
- * Front Grid Perfect Alignment (Visualizer Values) + Cache Bust
+ * BIOSTACK ELITE ENGINE v10.26 STABLE
+ * Front Ruler-Perfect Map Alignment + Cache Bust
  */
 
 let bpm = 0;
@@ -237,15 +237,15 @@ function generateHitMap() {
     map.innerHTML = "";
     
     if (currentView === "front") {
-        // Applied exact percentages from user visualizer input
-        map.style.gridTemplateRows = '27% 9% 14% 17% 17% 16%';
+        // Pixel-perfect mapping extracted directly from user's ruler overlay
+        map.style.gridTemplateRows = '19% 10% 9% 11% 23% 28%';
         const fG = [
-            "", "", "TOGGLE_BACK",                   // Row 1 (27%)
-            "Deltoids", "", "",                      // Row 2 (9%)
-            "Biceps", "Pectorals", "Biceps",         // Row 3 (14%)
-            "Forearms", "Abdominals", "Forearms",    // Row 4 (17%)
-            "Quads", "Quads", "Quads",               // Row 5 (17%)
-            "", "", ""                               // Row 6 (16%)
+            "", "", "TOGGLE_BACK",                   // R1 (19%) 
+            "Deltoids", "Pectorals", "Deltoids",     // R2 (10%) 
+            "Biceps", "Abdominals", "Biceps",        // R3 (9%) 
+            "Forearms", "Abdominals", "Forearms",    // R4 (11%) 
+            "", "Quads", "",                         // R5 (23%) 
+            "", "", ""                               // R6 (28%) 
         ];
         fG.forEach((m) => {
             const div = document.createElement('div');
@@ -255,7 +255,6 @@ function generateHitMap() {
             map.appendChild(div);
         });
     } else {
-        // Back Grid remains perfectly aligned
         map.style.gridTemplateRows = '12% 10% 22% 8% 4% 20% 24%';
         const bG = [
             "TOGGLE_FRONT", "", "",                   
