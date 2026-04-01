@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BioStack Elite v9.1</title>
+    <title>BioStack Elite v9.2</title>
     <style>
         :root { --glow-blue: #00f2ff; --bg-dark: #05070a; --glass: rgba(15, 20, 30, 0.95); --border: #30363d; }
         body { margin: 0; background: var(--bg-dark); color: white; font-family: -apple-system, system-ui, sans-serif; overflow: hidden; height: 100vh; }
@@ -28,41 +28,49 @@
         #sidebar { position: fixed; top: 200px; left: 20px; width: 140px; z-index: 500; }
         .list-btn { width: 100%; padding: 12px; margin-bottom: 8px; border-radius: 12px; border: 1px solid var(--border); background: var(--glass); color: white; font-size: 0.7rem; text-align: left; }
 
-        #stage-area { position: fixed; top: 120px; right: 0; width: 65vw; height: 65vh; display: flex; align-items: center; justify-content: flex-end; z-index: 10; }
+        #stage-area { position: fixed; top: 120px; right: 0; width: 75vw; height: 65vh; display: flex; align-items: center; justify-content: flex-end; z-index: 10; }
         
-        /* UPDATED SIDEBAR - INTENSITY LIST */
+        /* UPDATED v9.2 SIDEBAR - Spaced for labels */
         #set-bar-sidebar { 
-            width: 150px; 
+            width: 180px; 
             height: 320px; 
             display: flex; 
-            flex-direction: column; /* Changed from column-reverse so Target HR stays at top */
+            flex-direction: column; 
             gap: 12px; 
-            margin-right: 15px; 
+            margin-right: 10px; 
             padding: 10px;
-            border-right: 1px solid rgba(0, 242, 255, 0.2);
             justify-content: flex-start;
-            align-items: flex-end;
+            align-items: flex-start; /* Align everything to the left of this container */
             overflow: visible;
         }
 
-        /* NEW Target HR Display Item */
-        #active-ex-context { font-size: 0.7rem; color: var(--glow-blue); text-transform: uppercase; border-bottom: 1px solid rgba(0,242,255,0.2); width: 100%; text-align: right; padding-bottom: 8px; display: none;}
+        #active-ex-context { 
+            font-size: 0.65rem; 
+            color: var(--glow-blue); 
+            text-transform: uppercase; 
+            border-bottom: 1px solid rgba(0,242,255,0.2); 
+            width: 100%; 
+            text-align: left; 
+            padding-bottom: 8px; 
+            margin-bottom: 5px;
+            font-weight: 700;
+        }
         
-        /* The dynamic Intensity Item structure */
-        .intensity-item { width: 100%; display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
-        .intensity-label { font-size: 0.65rem; color: #ccc; text-transform: uppercase; flex-shrink: 0; }
+        .intensity-item { width: 100%; display: flex; align-items: center; gap: 10px; justify-content: flex-start; }
+        .intensity-label { font-size: 0.7rem; color: #fff; font-weight: 600; flex-shrink: 0; width: 40px; }
         
         .set-bar { 
-            height: 14px; 
+            height: 16px; 
             background: var(--glow-blue); 
             border-radius: 4px; 
-            transition: width 1s ease-out; 
+            transition: width 1s cubic-bezier(0.1, 0.7, 1.0, 0.1); 
             width: 0px; 
-            z-index: 1000;
-            box-shadow: 0 0 10px rgba(0, 242, 255, 0.5);
-            display: flex; align-items: center; justify-content: center; /* For the internal label */
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            box-shadow: 0 0 10px rgba(0, 242, 255, 0.3);
         }
-        .bar-inner-label { font-size: 0.6rem; color: #000; font-weight: 800; opacity: 0; transition: opacity 0.5s ease; transition-delay: 0.8s;}
+        .bar-inner-label { font-size: 0.65rem; color: #000; font-weight: 900; opacity: 0; transition: opacity 0.3s ease 0.8s; }
         .set-bar.revealed .bar-inner-label { opacity: 1; }
 
         #image-container { position: relative; height: 100%; width: auto; display: inline-block; }
@@ -87,7 +95,7 @@
 </head>
 <body>
 
-    <div id="version-tag">BIOSTACK_v9.1_EXPECTATIONS</div>
+    <div id="version-tag">BIOSTACK_v9.2_ALIGNED</div>
 
     <div id="login-screen">
         <div class="login-card">
