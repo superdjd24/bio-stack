@@ -1,6 +1,6 @@
 /**
- * BIOSTACK ELITE ENGINE v6.5
- * Hamstring Mapping Precision
+ * BIOSTACK ELITE ENGINE v6.6
+ * Horizontal Re-Alignment
  */
 let bpm = 0, currentMusc = "", currentView = "front", isTrain = false, hrHistory = [];
 
@@ -43,25 +43,24 @@ function generateHitMap() {
     map.innerHTML = "";
     
     const fG = [
-        "", "Trapezoids", "TOGGLE_BACK",       
-        "Deltoids", "Pectorals", "Deltoids",     
-        "Biceps", "Abdominals", "Biceps",        
-        "Biceps", "Abdominals", "Biceps",        
-        "Forearms", "Quads", "Forearms",         
-        "", "Quads", ""                          
+        "Trapezoids", "Trapezoids", "TOGGLE_BACK",
+        "Deltoids", "Pectorals", "Deltoids",
+        "Biceps", "Abdominals", "Biceps",
+        "Biceps", "Abdominals", "Biceps",
+        "Forearms", "Quads", "Forearms",
+        "", "Quads", ""
     ];
 
-    /** * BACK GRID v6.5
-     * Row 5: Now shares Glutes and Hamstrings for better vertical coverage
-     * Row 6: Primary Hamstring and Calf zone
+    /** * BACK GRID v6.6
+     * Widening Hamstring zone to avoid center-glute overlap
      */
     const bG = [
-        "TOGGLE_FRONT", "Trapezoids", "",       // Row 1
-        "Triceps", "Lats", "Triceps",            // Row 2
-        "Triceps", "Lats", "Triceps",            // Row 3
-        "Deltoids", "Glutes", "Deltoids",        // Row 4
-        "Hamstrings", "Glutes", "Hamstrings",    // Row 5: FIX - Expanded Hamstrings
-        "Hamstrings", "Calves", "Hamstrings"     // Row 6: FIX - Expanded Hamstrings
+        "TOGGLE_FRONT", "Trapezoids", "Trapezoids",
+        "Triceps", "Lats", "Triceps",
+        "Triceps", "Lats", "Triceps",
+        "Glutes", "Glutes", "Glutes",
+        "Hamstrings", "Hamstrings", "Hamstrings", // Row 5: Full Hamstrings
+        "Hamstrings", "Calves", "Hamstrings"      // Row 6: Wide Hamstrings
     ];
 
     const active = (currentView === "front") ? fG : bG;
