@@ -8,7 +8,7 @@
     </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BioStack Elite v4.7</title>
+    <title>BioStack Elite v4.8</title>
     <style>
         :root { --glow-blue: #00f2ff; --bg-dark: #05070a; --glass: rgba(15, 20, 30, 0.95); --border: #30363d; }
         body { margin: 0; background: var(--bg-dark); color: white; font-family: -apple-system, system-ui, sans-serif; overflow: hidden; height: 100vh; }
@@ -25,30 +25,36 @@
 
         /* THE STAGE */
         #stage-area { 
-            position: fixed; top: 100px; right: 0; width: 65vw; height: 85vh; 
+            position: fixed; top: 100px; right: 0; width: 65vw; height: 80vh; 
             display: flex; justify-content: flex-end; z-index: 10; 
         }
 
         #image-container { 
             position: relative; height: 100%; width: auto; 
-            display: inline-block; /* Forces container to match image width */
+            display: inline-block; 
         }
         
+        /* The "Foundation" - Not absolute, defines the container size */
+        #base-front { 
+            height: 100%; width: auto; display: block; opacity: 1; 
+        }
+
+        /* All other layers are absolute, sitting on top of the foundation */
         .stack-layer { 
-            position: absolute; height: 100%; width: auto; right: 0; 
+            position: absolute; top: 0; right: 0; height: 100%; width: auto; 
             pointer-events: none; transition: opacity 0.4s ease; display: none; 
         }
         .layer-visible { display: block; }
         
-        #base-front, #base-back { z-index: 11; opacity: 1; }
+        /* Muscle and UI Layers */
         .muscle-overlay { z-index: 12; opacity: 0; mix-blend-mode: screen; }
-        .ui-overlay { z-index: 15; opacity: 1; pointer-events: none; display: none; }
+        .ui-overlay { z-index: 15; opacity: 1; pointer-events: none; }
 
-        /* THE FIX: Forced Grid over the image container */
+        /* THE GRID - Forced to match image container */
         #touch-map { 
             position: absolute; top: 0; right: 0; 
             width: 100%; height: 100%; 
-            z-index: 2000; /* Way on top */
+            z-index: 2000; 
             display: grid; 
             grid-template-columns: repeat(3, 1fr); 
             grid-template-rows: repeat(6, 1fr); 
@@ -56,9 +62,7 @@
         .hit { 
             width: 100%; height: 100%; 
             pointer-events: auto; 
-            /* DEBUG: Remove background once clickable is confirmed */
-            background: rgba(0, 255, 0, 0.05); 
-            border: 1px solid rgba(0, 255, 0, 0.1);
+            /* background: rgba(0, 255, 0, 0.05); */ /* Uncomment for debugging */
         }
 
         .overlay { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); width: 92%; max-width: 400px; background: var(--glass); border-radius: 35px; padding: 30px; border: 1px solid var(--border); backdrop-filter: blur(25px); display: none; text-align: center; z-index: 3000; }
@@ -66,7 +70,7 @@
 </head>
 <body>
 
-    <div id="version-tag">BIOSTACK_v4.7_DEBUG</div>
+    <div id="version-tag">BIOSTACK_v4.8_STABLE</div>
 
     <div id="top-dash">
         <div id="hr-pill" onclick="startStream()">
@@ -86,10 +90,10 @@
 
     <div id="stage-area">
         <div id="image-container">
-            <img src="assets/base_front.png" id="base-front" class="stack-layer layer-visible" style="position:relative; display:block; visibility:hidden;">
-            <img src="assets/base_front.png" id="base-front-real" class="stack-layer layer-visible" style="z-index:11;">
+            <img src="assets/base_front.png" id="base-front">
             
             <img src="assets/back_button.png" id="btn-to-back" class="stack-layer ui-overlay layer-visible">
+            <img src="assets/front_button.png" id="btn-to-front" class="stack-layer ui-overlay">
             
             <img src="assets/trapezoids.png" id="overlay-trapezoids" class="muscle-overlay stack-layer layer-visible">
             <img src="assets/deltoids.png" id="overlay-deltoids" class="muscle-overlay stack-layer layer-visible">
@@ -100,9 +104,7 @@
             <img src="assets/abdominals.png" id="overlay-abdominals" class="muscle-overlay stack-layer layer-visible">
             <img src="assets/quads.png" id="overlay-quads" class="muscle-overlay stack-layer layer-visible">
 
-            <img src="assets/base_back.png" id="base-back" class="stack-layer">
-            <img src="assets/front_button.png" id="btn-to-front" class="stack-layer ui-overlay">
-            
+            <img src="assets/base_back.png" id="base-back" class="stack-layer" style="z-index: 11;">
             <img src="assets/lats.png" id="overlay-lats" class="muscle-overlay stack-layer">
             <img src="assets/glutes.png" id="overlay-glutes" class="muscle-overlay stack-layer">
             <img src="assets/hamstrings.png" id="overlay-hamstrings" class="muscle-overlay stack-layer">
