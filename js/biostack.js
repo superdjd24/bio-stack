@@ -1,6 +1,6 @@
 /**
- * BIOSTACK ELITE v5.5
- * Dynamic Color & Smoothed Curve
+ * BIOSTACK ELITE v5.6
+ * Precision Grid Mapping Fix
  */
 let bpm = 0, currentMusc = "", currentView = "front", isTrain = false, hrHistory = [];
 
@@ -38,75 +38,38 @@ async function startStream() {
     } catch (e) { alert("Sync Error: " + e.message); }
 }
 
-function drawSparkline() {
-    const canvas = document.getElementById('sparkline-canvas');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    
-    const dpr = window.devicePixelRatio || 1;
-    const rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width * dpr;
-    canvas.height = rect.height * dpr;
-    ctx.scale(dpr, dpr);
-
-    ctx.clearRect(0, 0, rect.width, rect.height);
-    if (hrHistory.length < 3) return;
-
-    // STEP 1: Determine Color based on current BPM
-    let color = '#00f2ff'; // Default Cyan
-    let glow = 'rgba(0, 242, 255, 0.4)';
-    
-    if (bpm > 140) { 
-        color = '#ff0044'; glow = 'rgba(255, 0, 68, 0.4)'; // Red Alert
-    } else if (bpm > 110) { 
-        color = '#ffaa00'; glow = 'rgba(255, 170, 0, 0.4)'; // Warning Orange
-    }
-
-    const step = rect.width / (hrHistory.length - 1);
-    const points = hrHistory.map((val, i) => ({
-        x: i * step,
-        y: rect.height - ((val - 60) / 100) * rect.height
-    }));
-
-    // STEP 2: Draw Glow Pass (Smooth)
-    drawCurve(ctx, points, glow, 7);
-
-    // STEP 3: Draw Core Pass (Smooth)
-    drawCurve(ctx, points, color, 3);
-}
-
-// Function to calculate smooth Quadratic curves between points
-function drawCurve(ctx, p, style, width) {
-    ctx.beginPath();
-    ctx.strokeStyle = style;
-    ctx.lineWidth = width;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-
-    ctx.moveTo(p[0].x, p[0].y);
-
-    for (let i = 1; i < p.length - 2; i++) {
-        const xc = (p[i].x + p[i + 1].x) / 2;
-        const yc = (p[i].y + p[i + 1].y) / 2;
-        ctx.quadraticCurveTo(p[i].x, p[i].y, xc, yc);
-    }
-
-    // curve through the last two points
-    ctx.quadraticCurveTo(
-        p[p.length - 2].x, 
-        p[p.length - 2].y, 
-        p[p.length - 1].x, 
-        p[p.length - 1].y
-    );
-    ctx.stroke();
-}
-
 function generateHitMap() {
     const map = document.getElementById('touch-map');
     map.innerHTML = "";
-    const fG = ["", "", "TOGGLE_BACK", "Deltoids", "Pectorals", "Deltoids", "Biceps", "Abdominals", "Biceps", "Forearms", "Trapezoids", "Triceps", "Quads", "Quads", "Quads", "", "", ""];
-    const bG = ["TOGGLE_FRONT", "", "", "Lats", "Lats", "Lats", "Triceps", "Trapezoids", "Triceps", "Glutes", "Glutes", "Glutes", "Hamstrings", "", "Hamstrings", "Calves", "", "Calves"];
+    
+    const fG = [
+        "", "", "TOGGLE_BACK", 
+        "Deltoids", "Pectorals", "Deltoids",
+        "Biceps", "Abdominals", "Biceps",
+        "Forearms", "Trapezoids", "Triceps",
+        "Quads", "Quads", "Quads",
+        "", "", ""
+    ];
+
+    /** * BACK GRID FIX (bG)
+     * Row 1: View Toggle
+     * Row 2: Upper Back (Traps/Lats)
+     * Row 3: Mid Back (Lats/Triceps)
+     * Row 4: Lower Back/Glutes
+     * Row 5: Legs (Hamstrings)
+     * Row 6: Lower Legs (Calves)
+     */
+    const bG = [
+        "TOGGLE_FRONT", "", "",        // Row 1
+        "Trapezoids", "Lats", "Trapezoids", // Row 2 (Moved Lats up)
+        "Triceps", "Lats", "Triceps",    // Row 3 (Lats centered)
+        "Glutes", "Glutes", "Glutes",    // Row 4
+        "Hamstrings", "", "Hamstrings",  // Row 5
+        "Calves", "", "Calves"           // Row 6
+    ];
+
     const active = (currentView === "front") ? fG : bG;
+
     active.forEach((m) => {
         const div = document.createElement('div');
         div.className = "hit";
@@ -150,6 +113,40 @@ function selectMuscle(m) {
         };
         picker.appendChild(b);
     });
+}
+
+// ... Smoothing Graph Engine (v5.5) remains same ...
+
+function drawSparkline() {
+    const canvas = document.getElementById('sparkline-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.scale(dpr, dpr);
+    ctx.clearRect(0, 0, rect.width, rect.height);
+    if (hrHistory.length < 3) return;
+    let color = '#00f2ff'; let glow = 'rgba(0, 242, 255, 0.4)';
+    if (bpm > 140) { color = '#ff0044'; glow = 'rgba(255, 0, 68, 0.4)'; }
+    else if (bpm > 110) { color = '#ffaa00'; glow = 'rgba(255, 170, 0, 0.4)'; }
+    const step = rect.width / (hrHistory.length - 1);
+    const points = hrHistory.map((val, i) => ({ x: i * step, y: rect.height - ((val - 60) / 100) * rect.height }));
+    drawCurve(ctx, points, glow, 7);
+    drawCurve(ctx, points, color, 3);
+}
+
+function drawCurve(ctx, p, style, width) {
+    ctx.beginPath(); ctx.strokeStyle = style; ctx.lineWidth = width; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.moveTo(p[0].x, p[0].y);
+    for (let i = 1; i < p.length - 2; i++) {
+        const xc = (p[i].x + p[i + 1].x) / 2;
+        const yc = (p[i].y + p[i + 1].y) / 2;
+        ctx.quadraticCurveTo(p[i].x, p[i].y, xc, yc);
+    }
+    ctx.quadraticCurveTo(p[p.length-2].x, p[p.length-2].y, p[p.length-1].x, p[p.length-1].y);
+    ctx.stroke();
 }
 
 function closeAction() { document.getElementById('menu-action').classList.remove('visible'); }
