@@ -1,6 +1,6 @@
 /**
- * BIOSTACK ELITE ENGINE v7.8
- * 20s Rolling Peak Buffer Logic
+ * BIOSTACK ELITE ENGINE v7.9
+ * Dedicated Calibration HUD Logic
  */
 
 let bpm = 0;
@@ -9,8 +9,6 @@ let isTrain = false;
 let isCalibrating = false;
 let activeExercise = null;
 let tempMaxHr = 0;
-
-// NEW: Rolling Peak Buffer
 let peakBuffer = []; // Objects: { bpm: val, time: timestamp }
 
 let hrHistory = [];
@@ -53,12 +51,9 @@ async function initSystem() {
             document.getElementById('hr-val').innerText = bpm;
             const now = Date.now();
 
-            // Track peaks for Calibration or Active Sets
             if (isCalibrating && bpm > tempMaxHr) tempMaxHr = bpm;
             
-            // Push to rolling 20s buffer
             peakBuffer.push({ bpm: bpm, time: now });
-            // Clean up buffer (remove anything older than 20 seconds)
             peakBuffer = peakBuffer.filter(p => now - p.time < 20000);
 
             calculateCals(bpm);
@@ -84,33 +79,46 @@ function calculateCals(currentBpm) {
     if (calDisplay) calDisplay.innerText = Math.round(totalCalories);
 }
 
+/**
+ * CALIBRATION FLOW
+ */
 function calibrateExercise() {
-    isCalibrating = true; isTrain = false;
+    isCalibrating = true; 
+    isTrain = false;
     tempMaxHr = 0;
     activeExercise = document.getElementById('ex-name-modal').innerText;
     document.getElementById('active-ex-tag').innerText = "CALIBRATING: " + activeExercise;
+    
+    // UI Updates
     closeAction();
     document.getElementById('sidebar').style.display = "none";
-    document.getElementById('hr-pill').onclick = stopCalibration;
+    document.getElementById('calibration-hud').style.display = "block";
 }
 
 function stopCalibration() {
     isCalibrating = false;
-    // When stopping calibration, also check the buffer for the peak
     const bufferMax = peakBuffer.length > 0 ? Math.max(...peakBuffer.map(p => p.bpm)) : 0;
     const trueMax = Math.max(tempMaxHr, bufferMax);
     
     localStorage.setItem('maxhr_' + activeExercise, trueMax);
-    document.getElementById('active-ex-tag').innerText = "MAX SET: " + trueMax + " BPM";
+    
+    // UI Updates
+    document.getElementById('active-ex-tag').innerText = "CALIBRATED: " + trueMax + " BPM";
+    document.getElementById('calibration-hud').style.display = "none";
     document.getElementById('sidebar').style.display = "block";
-    document.getElementById('hr-pill').onclick = null;
 }
 
+/**
+ * TRAINING FLOW
+ */
 function startTraining() {
     isTrain = true;
-    peakBuffer = []; // Clear buffer for start of set
+    isCalibrating = false;
+    peakBuffer = []; 
     activeExercise = document.getElementById('ex-name-modal').innerText;
     document.getElementById('active-ex-tag').innerText = "WORK SET: " + activeExercise;
+    
+    // UI Updates
     document.getElementById('training-hud').style.display = "block";
     document.getElementById('set-bar-sidebar').innerHTML = ""; 
     closeAction();
@@ -119,8 +127,6 @@ function startTraining() {
 
 function endSet() {
     const savedMax = localStorage.getItem('maxhr_' + activeExercise) || 190;
-    
-    // Find the highest BPM in the last 20 seconds from the buffer
     const peakInLast20 = peakBuffer.length > 0 ? Math.max(...peakBuffer.map(p => p.bpm)) : bpm;
     
     const intensityPercent = (peakInLast20 / savedMax) * 100;
@@ -141,6 +147,9 @@ function exitTraining() {
     document.getElementById('active-ex-tag').innerText = "NO ACTIVE EXERCISE";
 }
 
+/**
+ * VISUALIZATION & GRID
+ */
 function drawSparkline() {
     const canvas = document.getElementById('sparkline-canvas');
     if (!canvas) return;
@@ -201,7 +210,7 @@ function switchView(view) {
 }
 
 function selectMuscle(m) {
-    if (isTrain && !isCalibrating) return;
+    if ((isTrain || isCalibrating)) return;
     document.querySelectorAll('.muscle-overlay').forEach(img => img.style.opacity = 0);
     const overlay = document.getElementById(`overlay-${m.toLowerCase()}`);
     if (overlay) overlay.style.opacity = 0.5;
