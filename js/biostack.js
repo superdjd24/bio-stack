@@ -1,6 +1,6 @@
 /**
- * BIOSTACK ELITE ENGINE v10.15 STABLE
- * Glute Shrink / Hamstring Expansion + Cache Bust
+ * BIOSTACK ELITE ENGINE v10.16 STABLE
+ * Glute 50% Reduction / Leg Realignment + Cache Bust
  */
 
 let bpm = 0;
@@ -254,16 +254,17 @@ function generateHitMap() {
             map.appendChild(div);
         });
     } else {
-        // FIX: Reduced Glutes to 8% and increased Hamstrings to 25% to shift boundary up
-        map.style.gridTemplateRows = '12% 10% 22% 8% 8% 25% 15%';
+        // FIX: Reduced Glutes to 4%. The remaining 4% is added to Calves to anchor the bottom.
+        // This shifts Hamstrings and Calves upwards by exactly 4% total vertical height.
+        map.style.gridTemplateRows = '12% 10% 22% 8% 4% 25% 19%';
         const bG = [
             "TOGGLE_FRONT", "", "",                   // Row 1 (12%)
             "Trapezoids", "Trapezoids", "Trapezoids", // Row 2 (10%)
             "Triceps", "Lats", "Triceps",             // Row 3 (22%)
             "", "", "",                               // Row 4 (8%)
-            "Glutes", "Glutes", "Glutes",             // Row 5 (8%)  <-- Shrunk
-            "Hamstrings", "Hamstrings", "Hamstrings", // Row 6 (25%) <-- Expanded
-            "Calves", "Calves", "Calves"              // Row 7 (15%)
+            "Glutes", "Glutes", "Glutes",             // Row 5 (4%)  <-- Shrunk by 50%
+            "Hamstrings", "Hamstrings", "Hamstrings", // Row 6 (25%) <-- Shifted up
+            "Calves", "Calves", "Calves"              // Row 7 (19%) <-- Stretched to bottom
         ];
         bG.forEach((m) => {
             const div = document.createElement('div');
