@@ -1,5 +1,5 @@
 /**
- * BIOSTACK ELITE v4.5
+ * BIOSTACK ELITE v4.6
  */
 let bpm = 0, currentMusc = "", currentView = "front", isTrain = false, hrHistory = [];
 
@@ -64,15 +64,18 @@ function generateHitMap() {
     active.forEach(m => {
         const div = document.createElement('div');
         div.className = "hit";
-        if (m === "TOGGLE_BACK") div.onclick = () => switchView('back');
-        else if (m === "TOGGLE_FRONT") div.onclick = () => switchView('front');
-        else if (m !== "") div.onclick = () => selectMuscle(m);
+        if (m === "TOGGLE_BACK") div.onclick = (e) => { e.stopPropagation(); switchView('back'); };
+        else if (m === "TOGGLE_FRONT") div.onclick = (e) => { e.stopPropagation(); switchView('front'); };
+        else if (m !== "") div.onclick = (e) => { e.stopPropagation(); selectMuscle(m); };
         map.appendChild(div);
     });
 }
 
 function switchView(view) {
     currentView = view;
+    // Clear all overlays before swap
+    document.querySelectorAll('.muscle-overlay').forEach(img => img.style.opacity = 0);
+    
     document.querySelectorAll('.stack-layer').forEach(l => l.classList.remove('layer-visible'));
     document.getElementById(`base-${view}`).classList.add('layer-visible');
     
@@ -86,9 +89,12 @@ function switchView(view) {
 
 function selectMuscle(m) {
     if (isTrain) return;
+    // Debug Visual Reset
     document.querySelectorAll('.muscle-overlay').forEach(img => img.style.opacity = 0);
+    
     const overlay = document.getElementById(`overlay-${m.toLowerCase()}`);
     if (overlay) overlay.style.opacity = 0.5;
+    
     document.getElementById('musc-header').innerText = "TARGET: " + m;
     const picker = document.getElementById('exercise-picker');
     picker.innerHTML = "";
