@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BioStack Elite v9.2</title>
+    <title>BioStack Elite v9.3</title>
     <style>
         :root { --glow-blue: #00f2ff; --bg-dark: #05070a; --glass: rgba(15, 20, 30, 0.95); --border: #30363d; }
         body { margin: 0; background: var(--bg-dark); color: white; font-family: -apple-system, system-ui, sans-serif; overflow: hidden; height: 100vh; }
@@ -15,9 +15,23 @@
 
         #main-dashboard { display: none; opacity: 0; transition: opacity 0.8s ease; }
         #top-dash { position: fixed; top: 0; width: 100%; height: 100px; display: flex; align-items: center; justify-content: space-between; padding: 20px; box-sizing: border-box; z-index: 9000; }
-        #hr-pill { background: var(--glass); width: 110px; height: 60px; border-radius: 50px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; }
-        #hr-val { font-size: 2.2rem; font-weight: 900; color: var(--glow-blue); }
-        #graph-box { width: 220px; height: 45px; position: relative; }
+        
+        /* CONSOLIDATED HR PILL */
+        #hr-pill { 
+            background: var(--glass); 
+            padding: 0 25px;
+            height: 65px; 
+            border-radius: 50px; 
+            border: 1px solid var(--border); 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            gap: 12px;
+        }
+        #hr-val { font-size: 2.4rem; font-weight: 900; color: var(--glow-blue); transition: color 0.3s ease; }
+        #hr-icon { width: 22px; height: auto; filter: drop-shadow(0 0 5px rgba(255,255,255,0.2)); }
+        
+        #graph-box { width: 200px; height: 45px; position: relative; }
         #sparkline-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
 
         #mid-dash { position: fixed; top: 110px; left: 20px; z-index: 900; }
@@ -28,11 +42,10 @@
         #sidebar { position: fixed; top: 200px; left: 20px; width: 140px; z-index: 500; }
         .list-btn { width: 100%; padding: 12px; margin-bottom: 8px; border-radius: 12px; border: 1px solid var(--border); background: var(--glass); color: white; font-size: 0.7rem; text-align: left; }
 
-        #stage-area { position: fixed; top: 120px; right: 0; width: 75vw; height: 65vh; display: flex; align-items: center; justify-content: flex-end; z-index: 10; }
+        #stage-area { position: fixed; top: 120px; right: 0; width: 80vw; height: 65vh; display: flex; align-items: center; justify-content: flex-end; z-index: 10; }
         
-        /* UPDATED v9.2 SIDEBAR - Spaced for labels */
         #set-bar-sidebar { 
-            width: 180px; 
+            width: 200px; 
             height: 320px; 
             display: flex; 
             flex-direction: column; 
@@ -40,22 +53,10 @@
             margin-right: 10px; 
             padding: 10px;
             justify-content: flex-start;
-            align-items: flex-start; /* Align everything to the left of this container */
-            overflow: visible;
+            align-items: flex-start;
         }
 
-        #active-ex-context { 
-            font-size: 0.65rem; 
-            color: var(--glow-blue); 
-            text-transform: uppercase; 
-            border-bottom: 1px solid rgba(0,242,255,0.2); 
-            width: 100%; 
-            text-align: left; 
-            padding-bottom: 8px; 
-            margin-bottom: 5px;
-            font-weight: 700;
-        }
-        
+        #active-ex-context { font-size: 0.65rem; color: var(--glow-blue); text-transform: uppercase; border-bottom: 1px solid rgba(0,242,255,0.2); width: 100%; text-align: left; padding-bottom: 8px; margin-bottom: 5px; font-weight: 700; }
         .intensity-item { width: 100%; display: flex; align-items: center; gap: 10px; justify-content: flex-start; }
         .intensity-label { font-size: 0.7rem; color: #fff; font-weight: 600; flex-shrink: 0; width: 40px; }
         
@@ -68,7 +69,7 @@
             display: flex; 
             align-items: center; 
             justify-content: center;
-            box-shadow: 0 0 10px rgba(0, 242, 255, 0.3);
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
         }
         .bar-inner-label { font-size: 0.65rem; color: #000; font-weight: 900; opacity: 0; transition: opacity 0.3s ease 0.8s; }
         .set-bar.revealed .bar-inner-label { opacity: 1; }
@@ -87,7 +88,7 @@
         .btn-modal { width: 100%; padding: 18px; border-radius: 50px; font-weight: 800; border: none; cursor: pointer; text-transform: uppercase; margin-bottom: 12px; display: block; }
         
         #training-hud, #calibration-hud { position: fixed; bottom: 40px; left: 20px; display: none; z-index: 9999; }
-        .hud-btn { background: var(--glow-blue); color: #000; padding: 15px 30px; border-radius: 50px; border: none; font-weight: 900; text-transform: uppercase; cursor: pointer; }
+        .hud-btn { background: var(--glow-blue); color: #000; padding: 15px 30px; border-radius: 50px; border: none; font-weight: 900; text-transform: uppercase; cursor: pointer; min-width: 160px; }
         .hud-exit { background: transparent; color: #fff; padding: 12px 25px; border: none; opacity: 0.5; font-size: 0.7rem; cursor: pointer; display: block; margin-top: 10px; }
         .hud-timer { display: block; margin-top: 10px; font-size: 0.8rem; color: #ffaa00; font-weight: 700; }
         #version-tag { position: fixed; bottom: 15px; left: 15px; font-size: 0.6rem; color: #333; }
@@ -95,13 +96,12 @@
 </head>
 <body>
 
-    <div id="version-tag">BIOSTACK_v9.2_ALIGNED</div>
+    <div id="version-tag">BIOSTACK_v9.3_ELITE_FINAL</div>
 
     <div id="login-screen">
         <div class="login-card">
             <h2>BIOSTACK ELITE</h2>
             <input type="number" id="user-weight" placeholder="Weight (lbs)">
-            <input type="number" id="user-height" placeholder="Height (in)">
             <input type="number" id="user-age" placeholder="Age">
             <button id="init-btn" onclick="initSystem()">Initialize & Link</button>
         </div>
@@ -109,9 +109,9 @@
 
     <div id="main-dashboard">
         <div id="top-dash">
-            <div id="tel-group">
-                <div id="hr-pill"><span id="hr-val">--</span></div>
-                <img src="assets/heartbeat_icon.png" style="width:24px;">
+            <div id="hr-pill">
+                <img src="assets/heartbeat_icon.png" id="hr-icon">
+                <span id="hr-val">--</span>
             </div>
             <div id="graph-box"><canvas id="sparkline-canvas"></canvas></div>
         </div>
@@ -127,7 +127,7 @@
         <div id="training-hud">
             <button id="set-main-btn" class="hud-btn" onclick="startSetTimer()">End Set</button>
             <span id="set-timer-display" class="hud-timer" style="display:none;">PEAK CAPTURE: 20s</span>
-            <button id="set-exit-btn" class="hud-exit" onclick="exitTraining()">Exit</button>
+            <button id="set-exit-btn" class="hud-exit" onclick="exitTraining()">Exit Session</button>
         </div>
 
         <div id="calibration-hud">
