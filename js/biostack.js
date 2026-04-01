@@ -1,6 +1,6 @@
 /**
- * BIOSTACK ELITE ENGINE v10.13 STABLE
- * Percentage-Based Asymmetrical Grid + Cache Bust
+ * BIOSTACK ELITE ENGINE v10.15 STABLE
+ * Glute Shrink / Hamstring Expansion + Cache Bust
  */
 
 let bpm = 0;
@@ -237,7 +237,6 @@ function generateHitMap() {
     map.innerHTML = "";
     
     if (currentView === "front") {
-        // Keep the front grid symmetrical 6-rows
         map.style.gridTemplateRows = 'repeat(6, 1fr)';
         const fG = [
             "Deltoids", "Trapezoids", "TOGGLE_BACK", // Row 1
@@ -255,16 +254,16 @@ function generateHitMap() {
             map.appendChild(div);
         });
     } else {
-        // FIX: The Back grid now uses specific percentages for row heights to match human anatomy
-        map.style.gridTemplateRows = '12% 10% 22% 8% 13% 20% 15%';
+        // FIX: Reduced Glutes to 8% and increased Hamstrings to 25% to shift boundary up
+        map.style.gridTemplateRows = '12% 10% 22% 8% 8% 25% 15%';
         const bG = [
-            "TOGGLE_FRONT", "", "",                   // Row 1 (12%): Head/Neck
-            "Trapezoids", "Trapezoids", "Trapezoids", // Row 2 (10%): Traps
-            "Triceps", "Lats", "Triceps",             // Row 3 (22%): Lats / Triceps
-            "", "", "",                               // Row 4 (8%): Lower Back (Empty)
-            "Glutes", "Glutes", "Glutes",             // Row 5 (13%): Glutes
-            "Hamstrings", "Hamstrings", "Hamstrings", // Row 6 (20%): Hamstrings
-            "Calves", "Calves", "Calves"              // Row 7 (15%): Calves
+            "TOGGLE_FRONT", "", "",                   // Row 1 (12%)
+            "Trapezoids", "Trapezoids", "Trapezoids", // Row 2 (10%)
+            "Triceps", "Lats", "Triceps",             // Row 3 (22%)
+            "", "", "",                               // Row 4 (8%)
+            "Glutes", "Glutes", "Glutes",             // Row 5 (8%)  <-- Shrunk
+            "Hamstrings", "Hamstrings", "Hamstrings", // Row 6 (25%) <-- Expanded
+            "Calves", "Calves", "Calves"              // Row 7 (15%)
         ];
         bG.forEach((m) => {
             const div = document.createElement('div');
