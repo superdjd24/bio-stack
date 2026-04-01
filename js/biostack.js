@@ -1,6 +1,6 @@
 /**
- * BIOSTACK ELITE ENGINE v9.7
- * Telemetry Positioning & Sidebar Ghost Removal
+ * BIOSTACK ELITE ENGINE v9.8
+ * Full Merge & Session Reset Fix
  */
 
 let bpm = 0;
@@ -108,10 +108,7 @@ function lockMaxHr() {
     isCalibrating = false;
     const bufferMax = peakBuffer.length > 0 ? Math.max(...peakBuffer.map(p => p.bpm)) : 0;
     const trueMax = Math.max(tempMaxHr, bufferMax, bpm);
-    if (trueMax < 60) {
-        alert("Calibration failed: Vitals too low.");
-        exitCalHud(); return;
-    }
+    if (trueMax < 60) { alert("Calibration failed: Vitals too low."); exitCalHud(); return; }
     localStorage.setItem('maxhr_' + activeExercise, trueMax);
     document.getElementById('active-ex-tag').innerText = "CALIBRATED: " + trueMax + " BPM";
     exitCalHud();
@@ -124,9 +121,7 @@ function exitCalHud() {
 
 function startTraining() {
     const newEx = document.getElementById('ex-name-modal').innerText;
-    if (!localStorage.getItem('maxhr_' + newEx)) {
-        alert(`${newEx} requires calibration.`); calibrateExercise(); return;
-    }
+    if (!localStorage.getItem('maxhr_' + newEx)) { alert(`${newEx} requires calibration.`); calibrateExercise(); return; }
     isTrain = true; isCalibrating = false;
     activeExercise = newEx;
     document.getElementById('active-ex-tag').innerText = "WORK SET: " + activeExercise;
