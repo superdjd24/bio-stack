@@ -1,6 +1,6 @@
 /**
- * BIOSTACK ELITE ENGINE v7.5
- * Exercise-Specific Calibration Engine
+ * BIOSTACK ELITE ENGINE v7.8
+ * 20s Rolling Peak Buffer Logic
  */
 
 let bpm = 0;
@@ -10,30 +10,26 @@ let isCalibrating = false;
 let activeExercise = null;
 let tempMaxHr = 0;
 
+// NEW: Rolling Peak Buffer
+let peakBuffer = []; // Objects: { bpm: val, time: timestamp }
+
 let hrHistory = [];
 let totalCalories = 0;
 let lastTimestamp = null;
 
 const DB = {
-    'Trapezoids': ['Dumbbell Shrugs', 'Barbell Shrugs'],
-    'Deltoids': ['Lateral Raises', 'Military Press'],
-    'Pectorals': ['Bench Press', 'Incline Press'],
-    'Biceps': ['Barbell Curls', 'Hammer Curls'],
-    'Triceps': ['Pushdowns', 'Dips'],
-    'Forearms': ['Wrist Curls'],
-    'Abdominals': ['Leg Raises', 'Crunches'],
-    'Quads': ['Squats', 'Leg Press'],
-    'Lats': ['Lat Pulldowns', 'Bent Over Rows'],
-    'Glutes': ['Hip Thrusts'],
-    'Hamstrings': ['Deadlifts'],
-    'Calves': ['Calf Raises']
+    'Trapezoids': ['Dumbbell Shrugs', 'Barbell Shrugs'], 'Deltoids': ['Lateral Raises', 'Military Press'],
+    'Pectorals': ['Bench Press', 'Incline Press'], 'Biceps': ['Barbell Curls', 'Hammer Curls'],
+    'Triceps': ['Pushdowns', 'Dips'], 'Forearms': ['Wrist Curls'],
+    'Abdominals': ['Leg Raises', 'Crunches'], 'Quads': ['Squats', 'Leg Press'],
+    'Lats': ['Lat Pulldowns', 'Bent Over Rows'], 'Glutes': ['Hip Thrusts'],
+    'Hamstrings': ['Deadlifts'], 'Calves': ['Calf Raises']
 };
 
 async function initSystem() {
     const w = document.getElementById('user-weight').value;
-    const h = document.getElementById('user-height').value;
     const a = document.getElementById('user-age').value;
-    if (!w || !h || !a) return alert("All fields required.");
+    if (!w || !a) return alert("Fields required.");
 
     try {
         const device = await navigator.bluetooth.requestDevice({ filters: [{ services: ['heart_rate'] }] });
@@ -55,11 +51,15 @@ async function initSystem() {
         char.addEventListener('characteristicvaluechanged', (e) => {
             bpm = e.target.value.getUint8(1);
             document.getElementById('hr-val').innerText = bpm;
+            const now = Date.now();
+
+            // Track peaks for Calibration or Active Sets
+            if (isCalibrating && bpm > tempMaxHr) tempMaxHr = bpm;
             
-            // If calibrating, track the highest value seen
-            if (isCalibrating && bpm > tempMaxHr) {
-                tempMaxHr = bpm;
-            }
+            // Push to rolling 20s buffer
+            peakBuffer.push({ bpm: bpm, time: now });
+            // Clean up buffer (remove anything older than 20 seconds)
+            peakBuffer = peakBuffer.filter(p => now - p.time < 20000);
 
             calculateCals(bpm);
             hrHistory.push(bpm);
@@ -85,41 +85,62 @@ function calculateCals(currentBpm) {
 }
 
 function calibrateExercise() {
-    isCalibrating = true;
-    isTrain = true;
+    isCalibrating = true; isTrain = false;
     tempMaxHr = 0;
     activeExercise = document.getElementById('ex-name-modal').innerText;
     document.getElementById('active-ex-tag').innerText = "CALIBRATING: " + activeExercise;
     closeAction();
     document.getElementById('sidebar').style.display = "none";
-    
-    // Add a finish button or time-out? Let's use a "Done" click on the pill
     document.getElementById('hr-pill').onclick = stopCalibration;
-    alert("Calibration Mode: Perform your heaviest set of " + activeExercise + ". Tapping the Heart Rate Pill when finished will save your peak.");
 }
 
 function stopCalibration() {
-    if (!isCalibrating) return;
     isCalibrating = false;
-    isTrain = false;
-    localStorage.setItem('maxhr_' + activeExercise, tempMaxHr);
-    document.getElementById('active-ex-tag').innerText = "CALIBRATED: " + activeExercise + " (" + tempMaxHr + " BPM)";
+    // When stopping calibration, also check the buffer for the peak
+    const bufferMax = peakBuffer.length > 0 ? Math.max(...peakBuffer.map(p => p.bpm)) : 0;
+    const trueMax = Math.max(tempMaxHr, bufferMax);
+    
+    localStorage.setItem('maxhr_' + activeExercise, trueMax);
+    document.getElementById('active-ex-tag').innerText = "MAX SET: " + trueMax + " BPM";
     document.getElementById('sidebar').style.display = "block";
-    document.getElementById('hr-pill').onclick = null; // Remove the listener
+    document.getElementById('hr-pill').onclick = null;
 }
 
 function startTraining() {
     isTrain = true;
+    peakBuffer = []; // Clear buffer for start of set
     activeExercise = document.getElementById('ex-name-modal').innerText;
-    const savedMax = localStorage.getItem('maxhr_' + activeExercise);
-    document.getElementById('active-ex-tag').innerText = "ACTIVE: " + activeExercise + (savedMax ? " (Max: " + savedMax + ")" : "");
+    document.getElementById('active-ex-tag').innerText = "WORK SET: " + activeExercise;
+    document.getElementById('training-hud').style.display = "block";
+    document.getElementById('set-bar-sidebar').innerHTML = ""; 
     closeAction();
     document.getElementById('sidebar').style.display = "none";
 }
 
-/**
- * GRAPH ENGINE - Using specific Max HR
- */
+function endSet() {
+    const savedMax = localStorage.getItem('maxhr_' + activeExercise) || 190;
+    
+    // Find the highest BPM in the last 20 seconds from the buffer
+    const peakInLast20 = peakBuffer.length > 0 ? Math.max(...peakBuffer.map(p => p.bpm)) : bpm;
+    
+    const intensityPercent = (peakInLast20 / savedMax) * 100;
+    const bar = document.createElement('div');
+    bar.className = 'set-bar';
+    bar.style.width = Math.min(intensityPercent, 100) + '%';
+    
+    if (intensityPercent > 85) bar.style.background = '#ff0044';
+    else if (intensityPercent > 70) bar.style.background = '#ffaa00';
+
+    document.getElementById('set-bar-sidebar').appendChild(bar);
+}
+
+function exitTraining() {
+    isTrain = false;
+    document.getElementById('training-hud').style.display = "none";
+    document.getElementById('sidebar').style.display = "block";
+    document.getElementById('active-ex-tag').innerText = "NO ACTIVE EXERCISE";
+}
+
 function drawSparkline() {
     const canvas = document.getElementById('sparkline-canvas');
     if (!canvas) return;
@@ -130,26 +151,17 @@ function drawSparkline() {
     ctx.scale(dpr, dpr);
     ctx.clearRect(0, 0, rect.width, rect.height);
     if (hrHistory.length < 3) return;
-
-    // Pull specific max HR or fallback to generic
-    const specificMax = activeExercise ? localStorage.getItem('maxhr_' + activeExercise) : null;
-    const baselineMax = specificMax ? parseInt(specificMax) : 190;
-
+    const savedMax = activeExercise ? localStorage.getItem('maxhr_' + activeExercise) : null;
+    const baselineMax = savedMax ? parseInt(savedMax) : 190;
     let color = '#00f2ff'; let glow = 'rgba(0, 242, 255, 0.4)';
     if (bpm > (baselineMax * 0.85)) { color = '#ff0044'; glow = 'rgba(255, 0, 68, 0.4)'; }
     else if (bpm > (baselineMax * 0.70)) { color = '#ffaa00'; glow = 'rgba(255, 170, 0, 0.4)'; }
-
     const step = rect.width / (hrHistory.length - 1);
-    const points = hrHistory.map((val, i) => ({ 
-        x: i * step, 
-        y: rect.height - ((val - 60) / (baselineMax - 60)) * rect.height 
-    }));
-
+    const points = hrHistory.map((val, i) => ({ x: i * step, y: rect.height - ((val - 60) / (baselineMax - 60)) * rect.height }));
     drawCurve(ctx, points, glow, 8);
     drawCurve(ctx, points, color, 3);
 }
 
-// ... Grid Logic v6.6 ...
 function generateHitMap() {
     const map = document.getElementById('touch-map');
     if (!map) return;
