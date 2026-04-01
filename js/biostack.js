@@ -1,5 +1,6 @@
 /**
- * BIOSTACK ELITE v5.1
+ * BIOSTACK ELITE v5.2
+ * Reverted Linear Graph
  */
 let bpm = 0, currentMusc = "", currentView = "front", isTrain = false, hrHistory = [];
 
@@ -39,14 +40,14 @@ async function startStream() {
 
 function drawSparkline() {
     const canvas = document.getElementById('sparkline-canvas');
+    if (!canvas) return;
     const ctx = canvas.getContext('2d');
     
-    // Scale for High-DPI
     const dpr = window.devicePixelRatio || 1;
     const rect = canvas.getBoundingClientRect();
     canvas.width = rect.width * dpr;
     canvas.height = rect.height * dpr;
-    ctx.scale(dpr, DPR);
+    ctx.scale(dpr, dpr);
 
     ctx.clearRect(0, 0, rect.width, rect.height);
     if (hrHistory.length < 2) return;
@@ -58,29 +59,10 @@ function drawSparkline() {
     ctx.lineJoin = 'round';
 
     const step = rect.width / (hrHistory.length - 1);
-
-    // FIX #3: Clever Math Algorithm (Exaggerated Fluctuations)
-    const savedPeak = localStorage.getItem('biostack_max_' + currentEx) || 160;
-    const targetPeak = parseInt(savedPeak);
-    
-    // Dynamic floor (the quiet zone, e.g., 60-100)
-    const restZone = (view === 'front') ? 100 : 90;
-
-    // Use a logarithmic-like power scale to map small high-bpm jumps to big pixel moves
-    const powerFactor = 1.3;
-
     hrHistory.forEach((val, i) => {
         const x = i * step;
-        
-        // Ignore noise. Normalize 100-160 to 0-1 range.
-        let normalizedVal = Math.min(Math.max((val - restZone) / (targetPeak - restZone), 0), 1);
-        
-        // Exaggerate fluctuations: (0.1 normalized becomes 0.2 power, 0.9 power remains near 0.9)
-        let exaggeratedVal = Math.pow(normalizedVal, 1 / powerFactor);
-        
-        // Map exaggerated 0-1 to canvas height (40-0)
-        const y = rect.height - (exaggeratedVal * rect.height);
-        
+        // Map HR (60-160) to canvas height (linear)
+        const y = rect.height - ((val - 60) / 100) * rect.height;
         if (i === 0) ctx.moveTo(x, y);
         else ctx.lineTo(x, y);
     });
