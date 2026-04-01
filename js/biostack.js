@@ -1,176 +1,296 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BioStack Elite v9.3</title>
-    <style>
-        :root { --glow-blue: #00f2ff; --bg-dark: #05070a; --glass: rgba(15, 20, 30, 0.95); --border: #30363d; }
-        body { margin: 0; background: var(--bg-dark); color: white; font-family: -apple-system, system-ui, sans-serif; overflow: hidden; height: 100vh; }
-        
-        #login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-dark); z-index: 10000; display: flex; align-items: center; justify-content: center; }
-        .login-card { background: var(--glass); padding: 40px; border-radius: 30px; border: 1px solid var(--border); text-align: center; width: 85%; max-width: 400px; }
-        input { width: 100%; padding: 15px; margin-bottom: 15px; border-radius: 12px; border: 1px solid #444; background: #000; color: #fff; box-sizing: border-box; }
-        #init-btn { width: 100%; padding: 18px; background: var(--glow-blue); border-radius: 50px; font-weight: 800; border: none; cursor: pointer; }
+/**
+ * BIOSTACK ELITE ENGINE v9.3
+ * Final Color Mapping & UI Consolidations
+ */
 
-        #main-dashboard { display: none; opacity: 0; transition: opacity 0.8s ease; }
-        #top-dash { position: fixed; top: 0; width: 100%; height: 100px; display: flex; align-items: center; justify-content: space-between; padding: 20px; box-sizing: border-box; z-index: 9000; }
-        
-        /* CONSOLIDATED HR PILL */
-        #hr-pill { 
-            background: var(--glass); 
-            padding: 0 25px;
-            height: 65px; 
-            border-radius: 50px; 
-            border: 1px solid var(--border); 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            gap: 12px;
-        }
-        #hr-val { font-size: 2.4rem; font-weight: 900; color: var(--glow-blue); transition: color 0.3s ease; }
-        #hr-icon { width: 22px; height: auto; filter: drop-shadow(0 0 5px rgba(255,255,255,0.2)); }
-        
-        #graph-box { width: 200px; height: 45px; position: relative; }
-        #sparkline-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+let bpm = 0;
+let currentView = "front";
+let isTrain = false;
+let isCalibrating = false;
+let activeExercise = null;
+let tempMaxHr = 0;
+let peakBuffer = [];
+let setCounter = 0;
 
-        #mid-dash { position: fixed; top: 110px; left: 20px; z-index: 900; }
-        #total-cal { color: var(--glow-blue); font-size: 1.4rem; font-weight: 700; }
-        #musc-header { font-size: 0.8rem; margin-top: 10px; color: var(--glow-blue); letter-spacing: 1px; }
-        #active-ex-tag { font-size: 0.6rem; color: #666; margin-top: 5px; text-transform: uppercase; }
+let hrHistory = [];
+let totalCalories = 0;
+let lastTimestamp = null;
 
-        #sidebar { position: fixed; top: 200px; left: 20px; width: 140px; z-index: 500; }
-        .list-btn { width: 100%; padding: 12px; margin-bottom: 8px; border-radius: 12px; border: 1px solid var(--border); background: var(--glass); color: white; font-size: 0.7rem; text-align: left; }
+const DB = {
+    'Trapezoids': ['Dumbbell Shrugs', 'Barbell Shrugs'], 'Deltoids': ['Lateral Raises', 'Military Press'],
+    'Pectorals': ['Bench Press', 'Incline Press'], 'Biceps': ['Barbell Curls', 'Hammer Curls'],
+    'Triceps': ['Pushdowns', 'Dips'], 'Forearms': ['Wrist Curls'],
+    'Abdominals': ['Leg Raises', 'Crunches'], 'Quads': ['Squats', 'Leg Press'],
+    'Lats': ['Lat Pulldowns', 'Bent Over Rows'], 'Glutes': ['Hip Thrusts'],
+    'Hamstrings': ['Deadlifts'], 'Calves': ['Calf Raises']
+};
 
-        #stage-area { position: fixed; top: 120px; right: 0; width: 80vw; height: 65vh; display: flex; align-items: center; justify-content: flex-end; z-index: 10; }
-        
-        #set-bar-sidebar { 
-            width: 200px; 
-            height: 320px; 
-            display: flex; 
-            flex-direction: column; 
-            gap: 12px; 
-            margin-right: 10px; 
-            padding: 10px;
-            justify-content: flex-start;
-            align-items: flex-start;
-        }
+/** COLOR MAPPING v9.3 CUSTOM THRESHOLDS **/
+function getEliteColor(val) {
+    if (val < 80) return '#00f2ff'; // Blue
+    if (val < 100) return '#00ff88'; // Green
+    if (val < 115) return '#ffff00'; // Yellow
+    if (val < 130) return '#ffaa00'; // Orange
+    return '#ff0044'; // Red (Over 145/Default High)
+}
 
-        #active-ex-context { font-size: 0.65rem; color: var(--glow-blue); text-transform: uppercase; border-bottom: 1px solid rgba(0,242,255,0.2); width: 100%; text-align: left; padding-bottom: 8px; margin-bottom: 5px; font-weight: 700; }
-        .intensity-item { width: 100%; display: flex; align-items: center; gap: 10px; justify-content: flex-start; }
-        .intensity-label { font-size: 0.7rem; color: #fff; font-weight: 600; flex-shrink: 0; width: 40px; }
-        
-        .set-bar { 
-            height: 16px; 
-            background: var(--glow-blue); 
-            border-radius: 4px; 
-            transition: width 1s cubic-bezier(0.1, 0.7, 1.0, 0.1); 
-            width: 0px; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-        }
-        .bar-inner-label { font-size: 0.65rem; color: #000; font-weight: 900; opacity: 0; transition: opacity 0.3s ease 0.8s; }
-        .set-bar.revealed .bar-inner-label { opacity: 1; }
+async function initSystem() {
+    const w = document.getElementById('user-weight').value;
+    const a = document.getElementById('user-age').value;
+    if (!w || !a) return alert("Weight and Age required.");
+    try {
+        const device = await navigator.bluetooth.requestDevice({ filters: [{ services: ['heart_rate'] }] });
+        const server = await device.gatt.connect();
+        const service = await server.getPrimaryService('heart_rate');
+        const char = await service.getCharacteristic('heart_rate_measurement');
+        await char.startNotifications();
+        localStorage.setItem('bio_weight', w);
+        localStorage.setItem('bio_age', a);
+        document.getElementById('login-screen').style.display = 'none';
+        const dash = document.getElementById('main-dashboard');
+        dash.style.display = 'block';
+        setTimeout(() => { dash.style.opacity = '1'; }, 50);
+        generateHitMap();
+        char.addEventListener('characteristicvaluechanged', (e) => {
+            bpm = e.target.value.getUint8(1);
+            const hrEl = document.getElementById('hr-val');
+            hrEl.innerText = bpm;
+            hrEl.style.color = getEliteColor(bpm);
+            
+            const now = Date.now();
+            if (isCalibrating && bpm > tempMaxHr) tempMaxHr = bpm;
+            peakBuffer.push({ bpm: bpm, time: now });
+            peakBuffer = peakBuffer.filter(p => now - p.time < 20000);
+            calculateCals(bpm);
+            hrHistory.push(bpm);
+            if (hrHistory.length > 55) hrHistory.shift();
+            drawSparkline();
+        });
+    } catch (e) { alert("Link Failed: " + e.message); }
+}
 
-        #image-container { position: relative; height: 100%; width: auto; display: inline-block; }
-        #base-front { height: 100%; width: auto; display: block; z-index: 5; }
-        .stack-layer { position: absolute; top: 0; right: 0; height: 100%; width: auto; pointer-events: none; transition: opacity 0.4s ease; display: none; }
-        .layer-visible { display: block; }
-        .muscle-overlay { z-index: 10; opacity: 0; mix-blend-mode: screen; }
-        .ui-overlay { z-index: 20; opacity: 1; pointer-events: none; }
+function calculateCals(currentBpm) {
+    const weight = localStorage.getItem('bio_weight') || 180;
+    const age = localStorage.getItem('bio_age') || 30;
+    const now = Date.now();
+    if (!lastTimestamp) { lastTimestamp = now; return; }
+    const durationHours = (now - lastTimestamp) / (1000 * 60 * 60);
+    lastTimestamp = now;
+    let calPerMinute = ( (age * 0.2017) + (weight * 0.09036) + (currentBpm * 0.6309) - 55.0969 );
+    if (calPerMinute < 0) calPerMinute = 0;
+    const sliceCals = (calPerMinute / 60) * (durationHours * 60);
+    totalCalories += sliceCals;
+    document.getElementById('total-cal').innerText = Math.round(totalCalories);
+}
 
-        #touch-map { position: absolute; top: 0; right: 10%; width: 80%; height: 100%; z-index: 100; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(6, 1fr); }
-        .hit { width: 100%; height: 100%; pointer-events: auto; }
+function calibrateExercise() {
+    isCalibrating = true; isTrain = false; tempMaxHr = 0;
+    activeExercise = document.getElementById('ex-name-modal').innerText;
+    document.getElementById('active-ex-tag').innerText = "CALIBRATING: " + activeExercise;
+    closeAction();
+    document.getElementById('sidebar').style.display = "none";
+    document.getElementById('calibration-hud').style.display = "block";
+}
 
-        .overlay { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); width: 92%; max-width: 400px; background: var(--glass); border-radius: 35px; padding: 30px; border: 1px solid var(--border); backdrop-filter: blur(25px); display: none; text-align: center; z-index: 9500; }
-        .btn-modal { width: 100%; padding: 18px; border-radius: 50px; font-weight: 800; border: none; cursor: pointer; text-transform: uppercase; margin-bottom: 12px; display: block; }
-        
-        #training-hud, #calibration-hud { position: fixed; bottom: 40px; left: 20px; display: none; z-index: 9999; }
-        .hud-btn { background: var(--glow-blue); color: #000; padding: 15px 30px; border-radius: 50px; border: none; font-weight: 900; text-transform: uppercase; cursor: pointer; min-width: 160px; }
-        .hud-exit { background: transparent; color: #fff; padding: 12px 25px; border: none; opacity: 0.5; font-size: 0.7rem; cursor: pointer; display: block; margin-top: 10px; }
-        .hud-timer { display: block; margin-top: 10px; font-size: 0.8rem; color: #ffaa00; font-weight: 700; }
-        #version-tag { position: fixed; bottom: 15px; left: 15px; font-size: 0.6rem; color: #333; }
-    </style>
-</head>
-<body>
+function startCalTimer() {
+    document.getElementById('cal-main-btn').style.display = "none";
+    const timerText = document.getElementById('cal-timer-display');
+    timerText.style.display = "block";
+    let timeLeft = 20;
+    const countdown = setInterval(() => {
+        timeLeft--;
+        timerText.innerText = "LOOK-BACK ACTIVE: " + timeLeft + "s";
+        if (timeLeft <= 0) { clearInterval(countdown); lockMaxHr(); }
+    }, 1000);
+}
 
-    <div id="version-tag">BIOSTACK_v9.3_ELITE_FINAL</div>
+function lockMaxHr() {
+    isCalibrating = false;
+    const bufferMax = peakBuffer.length > 0 ? Math.max(...peakBuffer.map(p => p.bpm)) : 0;
+    const trueMax = Math.max(tempMaxHr, bufferMax);
+    localStorage.setItem('maxhr_' + activeExercise, trueMax);
+    document.getElementById('active-ex-tag').innerText = "CALIBRATED: " + trueMax + " BPM";
+    document.getElementById('calibration-hud').style.display = "none";
+    document.getElementById('sidebar').style.display = "block";
+}
 
-    <div id="login-screen">
-        <div class="login-card">
-            <h2>BIOSTACK ELITE</h2>
-            <input type="number" id="user-weight" placeholder="Weight (lbs)">
-            <input type="number" id="user-age" placeholder="Age">
-            <button id="init-btn" onclick="initSystem()">Initialize & Link</button>
-        </div>
-    </div>
+function startTraining() {
+    isTrain = true; isCalibrating = false;
+    const newEx = document.getElementById('ex-name-modal').innerText;
+    activeExercise = newEx;
+    document.getElementById('active-ex-tag').innerText = "WORK SET: " + activeExercise;
+    const savedMax = localStorage.getItem('maxhr_' + activeExercise) || 190;
+    const contextBox = document.getElementById('active-ex-context');
+    contextBox.innerText = `Target HR for ${activeExercise}: ${savedMax}`;
+    contextBox.style.display = 'block';
+    setCounter = 0;
+    const items = document.querySelectorAll('#set-bar-sidebar .intensity-item');
+    items.forEach(i => i.remove());
+    document.getElementById('training-hud').style.display = "block";
+    resetSetHUD();
+    closeAction();
+    document.getElementById('sidebar').style.display = "none";
+}
 
-    <div id="main-dashboard">
-        <div id="top-dash">
-            <div id="hr-pill">
-                <img src="assets/heartbeat_icon.png" id="hr-icon">
-                <span id="hr-val">--</span>
-            </div>
-            <div id="graph-box"><canvas id="sparkline-canvas"></canvas></div>
-        </div>
+/** START NEXT SET LOGIC **/
+function resetSetHUD() {
+    const btn = document.getElementById('set-main-btn');
+    btn.innerText = "END SET";
+    btn.style.background = 'var(--glow-blue)';
+    btn.onclick = startSetTimer;
+    document.getElementById('set-timer-display').style.display = "none";
+    peakBuffer = []; // Clear buffer for new set
+}
 
-        <div id="mid-dash">
-            <div><span id="total-cal">0</span> <span style="font-size:0.7rem; opacity:0.5;">CALORIES</span></div>
-            <div id="musc-header">TARGET: --</div>
-            <div id="active-ex-tag">NO ACTIVE EXERCISE</div>
-        </div>
+function startSetTimer() {
+    document.getElementById('set-main-btn').style.display = "none";
+    const timerText = document.getElementById('set-timer-display');
+    timerText.style.display = "block";
+    let timeLeft = 20;
+    const countdown = setInterval(() => {
+        timeLeft--;
+        timerText.innerText = "PEAK CAPTURE: " + timeLeft + "s";
+        if (timeLeft <= 0) { clearInterval(countdown); processSetResult(); }
+    }, 1000);
+}
 
-        <div id="sidebar"><div id="exercise-picker"></div></div>
+function processSetResult() {
+    const savedMax = localStorage.getItem('maxhr_' + activeExercise) || 190;
+    const peakInLast20 = peakBuffer.length > 0 ? Math.max(...peakBuffer.map(p => p.bpm)) : bpm;
+    setCounter++;
+    const ratio = peakInLast20 / savedMax;
+    const percent = Math.round(ratio * 100);
+    const barPx = Math.round(ratio * 130); 
 
-        <div id="training-hud">
-            <button id="set-main-btn" class="hud-btn" onclick="startSetTimer()">End Set</button>
-            <span id="set-timer-display" class="hud-timer" style="display:none;">PEAK CAPTURE: 20s</span>
-            <button id="set-exit-btn" class="hud-exit" onclick="exitTraining()">Exit Session</button>
-        </div>
+    const container = document.getElementById('set-bar-sidebar');
+    const item = document.createElement('div');
+    item.className = 'intensity-item';
+    const label = document.createElement('span');
+    label.className = 'intensity-label';
+    label.innerText = `Set${setCounter}`;
 
-        <div id="calibration-hud">
-            <button id="cal-main-btn" class="hud-btn" style="background: #ffaa00;" onclick="startCalTimer()">Finish Calibration</button>
-            <span id="cal-timer-display" class="hud-timer" style="display:none;">LOOK-BACK ACTIVE: 20s</span>
-        </div>
+    const bar = document.createElement('div');
+    bar.className = 'set-bar';
+    bar.style.width = "0px";
+    
+    // Bar color should be blue by default
+    if (ratio > 0.85) bar.style.background = '#ff0044';
+    else if (ratio > 0.70) bar.style.background = '#ffaa00';
+    else bar.style.background = '#00f2ff';
 
-        <div id="stage-area">
-            <div id="set-bar-sidebar">
-                <div id="active-ex-context"></div>
-            </div>
-            <div id="image-container">
-                <img src="assets/base_front.png" id="base-front">
-                <img src="assets/back_button.png" id="btn-to-back" class="stack-layer ui-overlay layer-visible">
-                <img src="assets/front_button.png" id="btn-to-front" class="stack-layer ui-overlay">
-                
-                <img src="assets/trapezoids.png" id="overlay-trapezoids" class="muscle-overlay stack-layer layer-visible">
-                <img src="assets/deltoids.png" id="overlay-deltoids" class="muscle-overlay stack-layer layer-visible">
-                <img src="assets/pectorals.png" id="overlay-pectorals" class="muscle-overlay stack-layer layer-visible">
-                <img src="assets/biceps.png" id="overlay-biceps" class="muscle-overlay stack-layer layer-visible">
-                <img src="assets/forearms.png" id="overlay-forearms" class="muscle-overlay stack-layer layer-visible">
-                <img src="assets/abdominals.png" id="overlay-abdominals" class="muscle-overlay stack-layer layer-visible">
-                <img src="assets/quads.png" id="overlay-quads" class="muscle-overlay stack-layer layer-visible">
-                
-                <img src="assets/base_back.png" id="base-back" class="stack-layer" style="z-index: 6;">
-                <img src="assets/lats.png" id="overlay-lats" class="muscle-overlay stack-layer">
-                <img src="assets/triceps.png" id="overlay-triceps" class="muscle-overlay stack-layer">
-                <img src="assets/glutes.png" id="overlay-glutes" class="muscle-overlay stack-layer">
-                <img src="assets/hamstrings.png" id="overlay-hamstrings" class="muscle-overlay stack-layer">
-                <img src="assets/calves.png" id="overlay-calves" class="muscle-overlay stack-layer">
+    const inner = document.createElement('span');
+    inner.className = 'bar-inner-label';
+    inner.innerText = `${percent}%`;
+    bar.appendChild(inner);
+    item.appendChild(label);
+    item.appendChild(bar);
+    container.appendChild(item);
 
-                <div id="touch-map"></div>
-            </div>
-        </div>
+    requestAnimationFrame(() => {
+        setTimeout(() => {
+            bar.style.width = Math.max(35, barPx) + "px";
+            bar.classList.add('revealed');
+        }, 50);
+    });
 
-        <div id="menu-action" class="overlay">
-            <h2 id="ex-name-modal" style="margin-bottom:25px;">EXERCISE</h2>
-            <button class="btn-modal" style="background: var(--glow-blue); color: #000;" onclick="startTraining()">START SETS</button>
-            <button class="btn-modal" style="background: transparent; border: 1px solid var(--glow-blue); color: var(--glow-blue);" onclick="calibrateExercise()">CALIBRATE MAX HR</button>
-            <p onclick="closeAction()" style="margin-top:15px; font-size:0.8rem; opacity:0.5; cursor:pointer;">CANCEL</p>
-        </div>
-    </div>
+    // Toggle HUD to "START NEXT SET"
+    const btn = document.getElementById('set-main-btn');
+    btn.innerText = "START NEXT SET";
+    btn.style.background = '#00ff88'; // Green for start
+    btn.style.display = "block";
+    btn.onclick = resetSetHUD;
+    document.getElementById('set-timer-display').style.display = "none";
+}
 
-    <script src="js/biostack.js"></script>
-</body>
-</html>
+function exitTraining() {
+    isTrain = false;
+    document.getElementById('training-hud').style.display = "none";
+    document.getElementById('active-ex-context').style.display = 'none';
+    document.getElementById('sidebar').style.display = "block";
+}
+
+function drawSparkline() {
+    const canvas = document.getElementById('sparkline-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr; canvas.height = rect.height * dpr;
+    ctx.scale(dpr, dpr); ctx.clearRect(0, 0, rect.width, rect.height);
+    if (hrHistory.length < 3) return;
+    
+    ctx.strokeStyle = getEliteColor(bpm);
+    ctx.lineWidth = 3;
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = getEliteColor(bpm);
+
+    const step = rect.width / (hrHistory.length - 1);
+    const points = hrHistory.map((val, i) => ({ x: i * step, y: rect.height - ((val - 60) / 100) * rect.height }));
+
+    ctx.beginPath();
+    ctx.moveTo(points[0].x, points[0].y);
+    for (let i = 1; i < points.length; i++) {
+        ctx.lineTo(points[i].x, points[i].y);
+    }
+    ctx.stroke();
+}
+
+function generateHitMap() {
+    const map = document.getElementById('touch-map');
+    if (!map) return;
+    map.innerHTML = "";
+    const fG = ["Trapezoids", "Trapezoids", "TOGGLE_BACK", "Deltoids", "Pectorals", "Deltoids", "Biceps", "Abdominals", "Biceps", "Biceps", "Abdominals", "Biceps", "Forearms", "Quads", "Forearms", "", "Quads", ""];
+    const bG = ["TOGGLE_FRONT", "Trapezoids", "Trapezoids", "Triceps", "Lats", "Triceps", "Triceps", "Lats", "Triceps", "Glutes", "Glutes", "Glutes", "Hamstrings", "Hamstrings", "Hamstrings", "Hamstrings", "Calves", "Hamstrings"];
+    const active = (currentView === "front") ? fG : bG;
+    active.forEach((m) => {
+        const div = document.createElement('div');
+        div.className = "hit";
+        if (m === "TOGGLE_BACK") div.onclick = () => switchView('back');
+        else if (m === "TOGGLE_FRONT") div.onclick = () => switchView('front');
+        else if (m !== "") div.onclick = () => selectMuscle(m);
+        map.appendChild(div);
+    });
+}
+
+function switchView(view) {
+    currentView = view;
+    document.querySelectorAll('.muscle-overlay').forEach(img => img.style.opacity = 0);
+    document.querySelectorAll('.stack-layer').forEach(l => l.classList.remove('layer-visible'));
+    if (view === 'front') {
+        document.getElementById('btn-to-back').classList.add('layer-visible');
+        ['trapezoids','deltoids','pectorals','biceps','forearms','abdominals','quads'].forEach(m => {
+            const el = document.getElementById(`overlay-${m}`);
+            if (el) el.classList.add('layer-visible');
+        });
+    } else {
+        document.getElementById('base-back').classList.add('layer-visible');
+        document.getElementById('btn-to-front').classList.add('layer-visible');
+        ['lats','triceps','glutes','hamstrings','calves'].forEach(m => {
+            const el = document.getElementById(`overlay-${m}`);
+            if (el) el.classList.add('layer-visible');
+        });
+    }
+    generateHitMap();
+}
+
+function selectMuscle(m) {
+    if ((isTrain || isCalibrating)) return;
+    document.querySelectorAll('.muscle-overlay').forEach(img => img.style.opacity = 0);
+    const overlay = document.getElementById(`overlay-${m.toLowerCase()}`);
+    if (overlay) overlay.style.opacity = 0.5;
+    document.getElementById('musc-header').innerText = "TARGET: " + m;
+    const picker = document.getElementById('exercise-picker');
+    picker.innerHTML = "";
+    DB[m].forEach(ex => {
+        const b = document.createElement('button');
+        b.className = "list-btn";
+        b.innerText = ex;
+        b.onclick = () => {
+            document.getElementById('ex-name-modal').innerText = ex;
+            document.getElementById('menu-action').style.display = 'block';
+        };
+        picker.appendChild(b);
+    });
+}
+
+function closeAction() { document.getElementById('menu-action').style.display = 'none'; }
