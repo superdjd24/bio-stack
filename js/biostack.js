@@ -1,8 +1,7 @@
 /**
- * BIOSTACK ELITE v4.8
- * Aligned Coordinate Handshake
+ * BIOSTACK ELITE v4.9
  */
-let bpm = 0, currentMusc = "", currentView = "front", isTrain = false;
+let bpm = 0, currentMusc = "", currentView = "front", isTrain = false, hrHistory = [];
 
 const DB = {
     'Trapezoids': ['Dumbbell Shrugs', 'Barbell Shrugs'],
@@ -21,30 +20,59 @@ const DB = {
 
 window.onload = () => { generateHitMap(); };
 
+async function startStream() {
+    try {
+        const device = await navigator.bluetooth.requestDevice({ filters: [{ services: ['heart_rate'] }] });
+        const server = await device.gatt.connect();
+        const service = await server.getPrimaryService('heart_rate');
+        const char = await service.getCharacteristic('heart_rate_measurement');
+        await char.startNotifications();
+        char.addEventListener('characteristicvaluechanged', (e) => {
+            bpm = e.target.value.getUint8(1);
+            document.getElementById('hr-val').innerText = bpm;
+            hrHistory.push(bpm);
+            if (hrHistory.length > 40) hrHistory.shift();
+            drawSparkline();
+        });
+    } catch (e) { alert("Sync Error: " + e.message); }
+}
+
+function drawSparkline() {
+    const canvas = document.getElementById('sparkline-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    
+    // Scale for High-DPI displays
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = 120 * dpr;
+    canvas.height = 40 * dpr;
+    ctx.scale(dpr, dpr);
+
+    ctx.clearRect(0, 0, 120, 40);
+    if (hrHistory.length < 2) return;
+
+    ctx.beginPath();
+    ctx.strokeStyle = '#00f2ff';
+    ctx.lineWidth = 2;
+    ctx.lineJoin = 'round';
+
+    const step = 120 / (hrHistory.length - 1);
+    hrHistory.forEach((val, i) => {
+        // Map HR (60-180) to canvas height (40-0)
+        const x = i * step;
+        const y = 40 - ((val - 60) / 120) * 40;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+}
+
 function generateHitMap() {
     const map = document.getElementById('touch-map');
     map.innerHTML = "";
-    
-    const fG = [
-        "", "", "TOGGLE_BACK", 
-        "Deltoids", "Pectorals", "Deltoids",
-        "Biceps", "Abdominals", "Biceps",
-        "Forearms", "Trapezoids", "Triceps",
-        "Quads", "Quads", "Quads",
-        "", "", ""
-    ];
-
-    const bG = [
-        "TOGGLE_FRONT", "", "", 
-        "Lats", "Lats", "Lats",
-        "Triceps", "Trapezoids", "Triceps",
-        "Glutes", "Glutes", "Glutes",
-        "Hamstrings", "", "Hamstrings",
-        "Calves", "", "Calves"
-    ];
-
+    const fG = ["", "", "TOGGLE_BACK", "Deltoids", "Pectorals", "Deltoids", "Biceps", "Abdominals", "Biceps", "Forearms", "Trapezoids", "Triceps", "Quads", "Quads", "Quads", "", "", ""];
+    const bG = ["TOGGLE_FRONT", "", "", "Lats", "Lats", "Lats", "Triceps", "Trapezoids", "Triceps", "Glutes", "Glutes", "Glutes", "Hamstrings", "", "Hamstrings", "Calves", "", "Calves"];
     const active = (currentView === "front") ? fG : bG;
-
     active.forEach((m) => {
         const div = document.createElement('div');
         div.className = "hit";
@@ -57,24 +85,16 @@ function generateHitMap() {
 
 function switchView(view) {
     currentView = view;
-    // Reset all muscle glows
     document.querySelectorAll('.muscle-overlay').forEach(img => img.style.opacity = 0);
-    
-    // Toggle all absolute layers
     document.querySelectorAll('.stack-layer').forEach(l => l.classList.remove('layer-visible'));
-    
     if (view === 'front') {
         document.getElementById('btn-to-back').classList.add('layer-visible');
-        const ms = ['trapezoids','deltoids','pectorals','biceps','triceps','forearms','abdominals','quads'];
-        ms.forEach(m => document.getElementById(`overlay-${m}`).classList.add('layer-visible'));
+        ['trapezoids','deltoids','pectorals','biceps','triceps','forearms','abdominals','quads'].forEach(m => document.getElementById(`overlay-${m}`).classList.add('layer-visible'));
     } else {
-        // Show the Back base image (layer 11) over the foundation
         document.getElementById('base-back').classList.add('layer-visible');
         document.getElementById('btn-to-front').classList.add('layer-visible');
-        const ms = ['lats','glutes','hamstrings','calves'];
-        ms.forEach(m => document.getElementById(`overlay-${m}`).classList.add('layer-visible'));
+        ['lats','glutes','hamstrings','calves'].forEach(m => document.getElementById(`overlay-${m}`).classList.add('layer-visible'));
     }
-
     generateHitMap();
 }
 
@@ -83,7 +103,6 @@ function selectMuscle(m) {
     document.querySelectorAll('.muscle-overlay').forEach(img => img.style.opacity = 0);
     const overlay = document.getElementById(`overlay-${m.toLowerCase()}`);
     if (overlay) overlay.style.opacity = 0.5;
-    
     document.getElementById('musc-header').innerText = "TARGET: " + m;
     const picker = document.getElementById('exercise-picker');
     picker.innerHTML = "";
@@ -101,17 +120,3 @@ function selectMuscle(m) {
 
 function closeAction() { document.getElementById('menu-action').classList.remove('visible'); }
 function startTraining() { isTrain = true; closeAction(); document.getElementById('exercise-picker').style.display = "none"; }
-
-async function startStream() {
-    try {
-        const device = await navigator.bluetooth.requestDevice({ filters: [{ services: ['heart_rate'] }] });
-        const server = await device.gatt.connect();
-        const service = await server.getPrimaryService('heart_rate');
-        const char = await service.getCharacteristic('heart_rate_measurement');
-        await char.startNotifications();
-        char.addEventListener('characteristicvaluechanged', (e) => {
-            bpm = e.target.value.getUint8(1);
-            document.getElementById('hr-val').innerText = bpm;
-        });
-    } catch (e) { alert("Sync Error: " + e.message); }
-}
