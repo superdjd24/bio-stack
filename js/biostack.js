@@ -1,6 +1,6 @@
 /**
- * BIOSTACK ELITE ENGINE v10.27 STABLE
- * HUD Spacing Fix + Cache Bust
+ * BIOSTACK ELITE ENGINE v10.28 STABLE
+ * Dynamic Rest Progress Button Logic + Cache Bust
  */
 
 let bpm = 0;
@@ -15,6 +15,12 @@ let setCounter = 0;
 let hrHistory = [];
 let totalCalories = 0;
 let lastTimestamp = null;
+
+// NEW REST TRACKING VARIABLES
+let isResting = false;
+let isLatchedReady = false;
+let peakHrAtSetEnd = 0;
+const REST_TARGET_BPM = 105;
 
 const DB = {
     'Trapezoids': ['Dumbbell Shrugs', 'Barbell Shrugs'], 'Deltoids': ['Lateral Raises', 'Military Press'],
@@ -63,6 +69,11 @@ async function initSystem() {
             hrHistory.push(bpm);
             if (hrHistory.length > 55) hrHistory.shift();
             drawSparkline();
+            
+            // Trigger REST UI updates if actively resting
+            if (isResting) {
+                updateRestUI();
+            }
         });
     } catch (e) { alert("Link Failed: " + e.message); }
 }
@@ -138,9 +149,13 @@ function startTraining() {
 }
 
 function resetSetHUD() {
+    isResting = false;
+    isLatchedReady = false;
     const btn = document.getElementById('set-main-btn');
+    btn.classList.remove('blinking-rest');
     btn.innerText = "END SET";
     btn.style.background = 'var(--glow-blue)';
+    btn.style.color = '#000';
     btn.onclick = startSetTimer;
     document.getElementById('set-timer-display').style.display = "none";
     peakBuffer = []; 
@@ -192,12 +207,53 @@ function processSetResult() {
         }, 50);
     });
 
+    // Initiate the dynamic REST sequence
+    isResting = true;
+    isLatchedReady = false;
+    peakHrAtSetEnd = peakInLast20;
+    
+    // Safety fallback in case peak was somehow lower than target
+    if (peakHrAtSetEnd <= REST_TARGET_BPM) peakHrAtSetEnd = REST_TARGET_BPM + 20; 
+
     const btn = document.getElementById('set-main-btn');
-    btn.innerText = "START NEXT SET";
-    btn.style.background = '#00ff88'; 
+    btn.onclick = resetSetHUD; // Allow starting early if they tap it
     btn.style.display = "block";
-    btn.onclick = resetSetHUD;
     document.getElementById('set-timer-display').style.display = "none";
+    
+    updateRestUI();
+}
+
+function updateRestUI() {
+    const btn = document.getElementById('set-main-btn');
+    
+    if (isLatchedReady) return; // Locked in ready state
+
+    if (bpm <= REST_TARGET_BPM) {
+        // Latch the ready state
+        isLatchedReady = true;
+        isResting = false;
+        btn.classList.remove('blinking-rest');
+        btn.innerText = "START NEXT SET";
+        btn.style.background = 'var(--glow-blue)';
+        btn.style.color = '#000';
+        return;
+    }
+
+    // Calculate progression towards 105
+    let range = peakHrAtSetEnd - REST_TARGET_BPM;
+    let currentDrop = peakHrAtSetEnd - bpm;
+    let pct = Math.max(0, Math.min(100, (currentDrop / Math.max(1, range)) * 100));
+
+    // Dynamic Color Gradient mapping
+    let fillColor = '#ff0044'; // Red
+    if (pct > 25) fillColor = '#ffaa00'; // Orange
+    if (pct > 50) fillColor = '#ffff00'; // Yellow
+    if (pct > 75) fillColor = '#00ff88'; // Green
+    
+    btn.innerText = "REST";
+    btn.classList.add('blinking-rest');
+    btn.style.color = '#fff';
+    btn.style.background = `linear-gradient(90deg, ${fillColor} ${pct}%, #222 ${pct}%)`;
 }
 
 function clearIntensityBars() {
@@ -207,6 +263,8 @@ function clearIntensityBars() {
 
 function exitTraining() {
     isTrain = false;
+    isResting = false;
+    isLatchedReady = false;
     document.getElementById('hud-in-flow').style.display = "none";
     document.getElementById('active-ex-context').style.display = 'none';
     clearIntensityBars();
