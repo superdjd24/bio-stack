@@ -1,6 +1,6 @@
 /**
- * BIOSTACK ELITE ENGINE v9.9 STABLE
- * Bar Color & language Reset Fix + Cache Bust
+ * BIOSTACK ELITE ENGINE v10.0 STABLE
+ * Errant border line fix + Cache Bust
  */
 
 let bpm = 0;
@@ -176,8 +176,6 @@ function processSetResult() {
 
     const bar = document.createElement('div');
     bar.className = 'set-bar';
-    
-    // JS color assignment has been completely removed to let CSS handle it
 
     const inner = document.createElement('span');
     inner.className = 'bar-inner-label';
