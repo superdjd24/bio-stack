@@ -1,6 +1,6 @@
 /**
- * BIOSTACK ELITE ENGINE v5.9
- * Upward Shift Calibration
+ * BIOSTACK ELITE ENGINE v6.0
+ * Aggressive Vertical Up-Shift
  */
 let bpm = 0;
 let currentMusc = "";
@@ -46,25 +46,25 @@ function generateHitMap() {
     const map = document.getElementById('touch-map');
     map.innerHTML = "";
     
-    /** * FRONT GRID UPWARD SHIFT (fG)
-     * We moved muscles UP one index row compared to v5.8
+    /** * FRONT GRID v6.0
+     * Concentrating targets in the top 4 rows.
      */
     const fG = [
-        "", "", "TOGGLE_BACK",              // Row 1 (Head/Toggle)
-        "Deltoids", "Trapezoids", "Deltoids", // Row 2 (Shoulders/Neck)
-        "Biceps", "Pectorals", "Biceps",      // Row 3 (Chest)
-        "Forearms", "Abdominals", "Forearms", // Row 4 (Stomach)
-        "Quads", "Quads", "Quads",            // Row 5 (Legs)
-        "", "", ""                          // Row 6 (Bottom Buffer)
+        "Trapezoids", "Trapezoids", "TOGGLE_BACK",   // Row 1 (Neck/Toggle)
+        "Deltoids", "Pectorals", "Deltoids",       // Row 2 (Chest)
+        "Biceps", "Abdominals", "Biceps",          // Row 3 (Abs/Arms)
+        "Forearms", "Quads", "Forearms",           // Row 4 (Legs/Forearms)
+        "", "Quads", "",                           // Row 5 (Lower Legs Buffer)
+        "", "", ""                                 // Row 6 (Bottom Buffer)
     ];
 
     const bG = [
-        "TOGGLE_FRONT", "", "",             // Row 1
-        "Deltoids", "Trapezoids", "Deltoids", // Row 2
-        "Triceps", "Lats", "Triceps",       // Row 3
-        "Glutes", "Glutes", "Glutes",       // Row 4
-        "Hamstrings", "Calves", "Hamstrings", // Row 5
-        "", "", ""                          // Row 6 (Bottom Buffer)
+        "TOGGLE_FRONT", "Trapezoids", "Trapezoids", // Row 1
+        "Deltoids", "Lats", "Deltoids",            // Row 2
+        "Triceps", "Lats", "Triceps",              // Row 3
+        "Glutes", "Glutes", "Glutes",              // Row 4
+        "Hamstrings", "Calves", "Hamstrings",      // Row 5
+        "", "", ""                                 // Row 6
     ];
 
     const active = (currentView === "front") ? fG : bG;
