@@ -1,6 +1,6 @@
 /**
- * BIOSTACK ELITE v5.6
- * Precision Grid Mapping Fix
+ * BIOSTACK ELITE v5.7
+ * Precision Traps Targeting
  */
 let bpm = 0, currentMusc = "", currentView = "front", isTrain = false, hrHistory = [];
 
@@ -42,26 +42,26 @@ function generateHitMap() {
     const map = document.getElementById('touch-map');
     map.innerHTML = "";
     
+    /** * FRONT GRID FIXED (fG)
+     * Row 1: View Toggle
+     * Row 2: Precision Trap Target (Neck)
+     */
     const fG = [
-        "", "", "TOGGLE_BACK", 
-        "Deltoids", "Pectorals", "Deltoids",
-        "Biceps", "Abdominals", "Biceps",
-        "Forearms", "Trapezoids", "Triceps",
-        "Quads", "Quads", "Quads",
-        "", "", ""
+        "", "", "TOGGLE_BACK",              // Row 1
+        "Deltoids", "Trapezoids", "Deltoids", // Row 2: FIX. Added Traps to center (neck).
+        "Biceps", "Pectorals", "Biceps",      // Row 3
+        "Forearms", "Abdominals", "Forearms", // Row 4
+        "Quads", "Quads", "Quads",           // Row 5
+        "", "", ""                          // Row 6
     ];
 
-    /** * BACK GRID FIX (bG)
+    /** * BACK GRID FIXED (bG)
      * Row 1: View Toggle
-     * Row 2: Upper Back (Traps/Lats)
-     * Row 3: Mid Back (Lats/Triceps)
-     * Row 4: Lower Back/Glutes
-     * Row 5: Legs (Hamstrings)
-     * Row 6: Lower Legs (Calves)
+     * Row 2: Traps (Shoulders/Upper Neck)
      */
     const bG = [
         "TOGGLE_FRONT", "", "",        // Row 1
-        "Trapezoids", "Lats", "Trapezoids", // Row 2 (Moved Lats up)
+        "Deltoids", "Trapezoids", "Deltoids", // Row 2: FIX. Moved Traps from legs to here.
         "Triceps", "Lats", "Triceps",    // Row 3 (Lats centered)
         "Glutes", "Glutes", "Glutes",    // Row 4
         "Hamstrings", "", "Hamstrings",  // Row 5
@@ -115,7 +115,7 @@ function selectMuscle(m) {
     });
 }
 
-// ... Smoothing Graph Engine (v5.5) remains same ...
+// ... Smoothed Graph Engine (v5.5) ...
 
 function drawSparkline() {
     const canvas = document.getElementById('sparkline-canvas');
