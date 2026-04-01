@@ -1,6 +1,6 @@
 /**
- * BIOSTACK ELITE ENGINE v10.22 STABLE
- * Front Grid Top/Bottom Realignment + Cache Bust
+ * BIOSTACK ELITE ENGINE v10.23 STABLE
+ * Front Grid Reversal & Top Shift + Cache Bust
  */
 
 let bpm = 0;
@@ -237,15 +237,16 @@ function generateHitMap() {
     map.innerHTML = "";
     
     if (currentView === "front") {
-        // FIX: Doubled Top Row (16%), Shrunk Bottom Row (25%)
-        map.style.gridTemplateRows = '16% 8% 17% 17% 17% 25%';
+        // FIX: Re-ordered the layout to push the muscles down.
+        // Row 1 is now the 25% empty buffer. 
+        map.style.gridTemplateRows = '25% 16% 8% 17% 17% 17%';
         const fG = [
-            "Deltoids", "", "TOGGLE_BACK",           // Row 1 (16%) <-- Expanded Top Row
-            "Biceps", "Pectorals", "Biceps",         // Row 2 (8%)
-            "Forearms", "Abdominals", "Forearms",    // Row 3 (17%)
-            "Quads", "Quads", "Quads",               // Row 4 (17%)
-            "", "", "",                              // Row 5 (17%) 
-            "", "", ""                               // Row 6 (25%) <-- Absorbed Bottom Row
+            "", "", "TOGGLE_BACK",                   // New Row 1 (25%) - Empty space pushing down
+            "Deltoids", "", "",                      // New Row 2 (16%) - Formerly Row 1
+            "Biceps", "Pectorals", "Biceps",         // New Row 3 (8%)  - Formerly Row 2
+            "Forearms", "Abdominals", "Forearms",    // New Row 4 (17%) - Formerly Row 3
+            "Quads", "Quads", "Quads",               // New Row 5 (17%) - Formerly Row 4
+            "", "", ""                               // New Row 6 (17%) - Formerly Row 5
         ];
         fG.forEach((m) => {
             const div = document.createElement('div');
@@ -255,7 +256,6 @@ function generateHitMap() {
             map.appendChild(div);
         });
     } else {
-        // Untouched Back Grid
         map.style.gridTemplateRows = '12% 10% 22% 8% 4% 20% 24%';
         const bG = [
             "TOGGLE_FRONT", "", "",                   
