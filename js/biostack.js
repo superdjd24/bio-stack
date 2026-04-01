@@ -1,9 +1,7 @@
 /**
- * BIOSTACK ELITE v4.4
- * Icon-Based View Toggling
+ * BIOSTACK ELITE v4.5
  */
-let bpm = 0, currentMusc = "", currentView = "front", isTrain = false;
-let hrHistory = [];
+let bpm = 0, currentMusc = "", currentView = "front", isTrain = false, hrHistory = [];
 
 const DB = {
     'Trapezoids': ['Dumbbell Shrugs', 'Barbell Shrugs'],
@@ -22,12 +20,27 @@ const DB = {
 
 window.onload = () => { generateHitMap(); };
 
+async function startStream() {
+    try {
+        const device = await navigator.bluetooth.requestDevice({ filters: [{ services: ['heart_rate'] }] });
+        const server = await device.gatt.connect();
+        const service = await server.getPrimaryService('heart_rate');
+        const char = await service.getCharacteristic('heart_rate_measurement');
+        await char.startNotifications();
+        char.addEventListener('characteristicvaluechanged', (e) => {
+            bpm = e.target.value.getUint8(1);
+            document.getElementById('hr-val').innerText = bpm;
+            hrHistory.push(bpm);
+            if (hrHistory.length > 30) hrHistory.shift();
+            drawSparkline();
+        });
+    } catch (e) { alert("Link Error: " + e.message); }
+}
+
 function generateHitMap() {
     const map = document.getElementById('touch-map');
     map.innerHTML = "";
     
-    // Grid Setup: 3 columns, 6 rows
-    // On FRONT: Top Right (index 2) is the toggle to BACK
     const fG = [
         "", "", "TOGGLE_BACK", 
         "Deltoids", "Pectorals", "Deltoids",
@@ -37,7 +50,6 @@ function generateHitMap() {
         "", "", ""
     ];
 
-    // On BACK: Top Left (index 0) is the toggle to FRONT
     const bG = [
         "TOGGLE_FRONT", "", "", 
         "Lats", "Lats", "Lats",
@@ -61,46 +73,15 @@ function generateHitMap() {
 
 function switchView(view) {
     currentView = view;
-    
-    // Toggle Layer Visibility
     document.querySelectorAll('.stack-layer').forEach(l => l.classList.remove('layer-visible'));
     document.getElementById(`base-${view}`).classList.add('layer-visible');
     
-    // Show UI Button for that view
     if (view === 'front') document.getElementById('btn-to-back').classList.add('layer-visible');
     else document.getElementById('btn-to-front').classList.add('layer-visible');
 
-    // Show Muscles for that view
-    const ms = (view === 'front') 
-        ? ['trapezoids','deltoids','pectorals','biceps','triceps','forearms','abdominals','quads'] 
-        : ['lats','glutes','hamstrings','calves'];
-    
-    ms.forEach(m => {
-        const el = document.getElementById(`overlay-${m}`);
-        if(el) el.classList.add('layer-visible');
-    });
-
+    const ms = (view === 'front') ? ['trapezoids','deltoids','pectorals','biceps','triceps','forearms','abdominals','quads'] : ['lats','glutes','hamstrings','calves'];
+    ms.forEach(m => { const el = document.getElementById(`overlay-${m}`); if(el) el.classList.add('layer-visible'); });
     generateHitMap();
-}
-
-// ... (Rest of Engine: startStream, updateEngine, selectMuscle, etc.) ...
-
-async function startStream() {
-    try {
-        const device = await navigator.bluetooth.requestDevice({ filters: [{ services: ['heart_rate'] }] });
-        const server = await device.gatt.connect();
-        const service = await server.getPrimaryService('heart_rate');
-        const char = await service.getCharacteristic('heart_rate_measurement');
-        await char.startNotifications();
-        char.addEventListener('characteristicvaluechanged', (e) => {
-            bpm = e.target.value.getUint8(1);
-            document.getElementById('hr-val').innerText = bpm;
-            // Simplified engine for this test
-            hrHistory.push(bpm);
-            if (hrHistory.length > 30) hrHistory.shift();
-            drawSparkline();
-        });
-    } catch (e) { alert("Link Error: " + e.message); }
 }
 
 function selectMuscle(m) {
@@ -108,7 +89,7 @@ function selectMuscle(m) {
     document.querySelectorAll('.muscle-overlay').forEach(img => img.style.opacity = 0);
     const overlay = document.getElementById(`overlay-${m.toLowerCase()}`);
     if (overlay) overlay.style.opacity = 0.5;
-    document.getElementById('musc-header').innerText = m;
+    document.getElementById('musc-header').innerText = "TARGET: " + m;
     const picker = document.getElementById('exercise-picker');
     picker.innerHTML = "";
     DB[m].forEach(ex => {
