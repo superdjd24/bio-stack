@@ -1,6 +1,6 @@
 /**
  * BIOSTACK ELITE ENGINE v9.9 STABLE
- * Bar Color & language Reset Fix
+ * Bar Color & language Reset Fix + Cache Bust
  */
 
 let bpm = 0;
@@ -99,7 +99,6 @@ function startCalTimer() {
     let timeLeft = 20;
     const countdown = setInterval(() => {
         timeLeft--;
-        // v9.9 UPDATED language
         timerText.innerText = `Analyzing vitals... ${timeLeft}s`;
         if (timeLeft <= 0) { clearInterval(countdown); lockMaxHr(); }
     }, 1000);
@@ -154,21 +153,18 @@ function startSetTimer() {
     let timeLeft = 20;
     const countdown = setInterval(() => {
         timeLeft--;
-        timerText.innerText = `Analyzing... ${timeLeft}s`;
+        timerText.innerText = `Analyzing vitals... ${timeLeft}s`;
         if (timeLeft <= 0) { clearInterval(countdown); processSetResult(); }
     }, 1000);
 }
 
-/** * processSetResult v9.9 STABLE
- * HARD-CODED TEAL/BLUE DEFAULT FIXED
- */
 function processSetResult() {
     const savedMax = localStorage.getItem('maxhr_' + activeExercise) || 190;
     const peakInLast20 = peakBuffer.length > 0 ? Math.max(...peakBuffer.map(p => p.bpm)) : bpm;
     setCounter++;
     const ratio = peakInLast20 / savedMax;
     const percent = Math.round(ratio * 100);
-    const barPx = Math.round(ratio * 110); 
+    const barPx = Math.round(ratio * 115); 
 
     const container = document.getElementById('set-bar-sidebar');
     const hud = document.getElementById('hud-in-flow');
@@ -181,10 +177,7 @@ function processSetResult() {
     const bar = document.createElement('div');
     bar.className = 'set-bar';
     
-    // FIX: hard-coded default to Teal/Blue unless logic dictates otherwise
-    if (ratio > 0.85) bar.style.background = '#ff0044';
-    else if (ratio > 0.70) bar.style.background = '#ffaa00';
-    else bar.style.background = 'var(--glow-blue)';
+    // JS color assignment has been completely removed to let CSS handle it
 
     const inner = document.createElement('span');
     inner.className = 'bar-inner-label';
