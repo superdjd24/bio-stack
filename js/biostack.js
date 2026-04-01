@@ -1,6 +1,6 @@
 /**
- * BIOSTACK ELITE ENGINE v8.0
- * 20s Post-Set Peak Calibration Logic
+ * BIOSTACK ELITE ENGINE v8.1
+ * Delayed Set/Calibration Processing
  */
 
 let bpm = 0;
@@ -9,7 +9,7 @@ let isTrain = false;
 let isCalibrating = false;
 let activeExercise = null;
 let tempMaxHr = 0;
-let peakBuffer = []; // Objects: { bpm: val, time: timestamp }
+let peakBuffer = [];
 
 let hrHistory = [];
 let totalCalories = 0;
@@ -28,34 +28,26 @@ async function initSystem() {
     const w = document.getElementById('user-weight').value;
     const a = document.getElementById('user-age').value;
     if (!w || !a) return alert("Fields required.");
-
     try {
         const device = await navigator.bluetooth.requestDevice({ filters: [{ services: ['heart_rate'] }] });
         const server = await device.gatt.connect();
         const service = await server.getPrimaryService('heart_rate');
         const char = await service.getCharacteristic('heart_rate_measurement');
         await char.startNotifications();
-        
         localStorage.setItem('bio_weight', w);
         localStorage.setItem('bio_age', a);
-        
         document.getElementById('login-screen').style.display = 'none';
         const dash = document.getElementById('main-dashboard');
         dash.style.display = 'block';
         setTimeout(() => { dash.style.opacity = '1'; }, 50);
-
         generateHitMap();
-
         char.addEventListener('characteristicvaluechanged', (e) => {
             bpm = e.target.value.getUint8(1);
             document.getElementById('hr-val').innerText = bpm;
             const now = Date.now();
-
             if (isCalibrating && bpm > tempMaxHr) tempMaxHr = bpm;
-            
             peakBuffer.push({ bpm: bpm, time: now });
             peakBuffer = peakBuffer.filter(p => now - p.time < 20000);
-
             calculateCals(bpm);
             hrHistory.push(bpm);
             if (hrHistory.length > 55) hrHistory.shift();
@@ -79,15 +71,11 @@ function calculateCals(currentBpm) {
     if (calDisplay) calDisplay.innerText = Math.round(totalCalories);
 }
 
-/**
- * CALIBRATION FLOW v8.0
- */
+/** CALIBRATION HUD LOGIC **/
 function calibrateExercise() {
-    isCalibrating = true;
-    tempMaxHr = 0;
+    isCalibrating = true; isTrain = false; tempMaxHr = 0;
     activeExercise = document.getElementById('ex-name-modal').innerText;
     document.getElementById('active-ex-tag').innerText = "CALIBRATING: " + activeExercise;
-    
     closeAction();
     document.getElementById('sidebar').style.display = "none";
     document.getElementById('calibration-hud').style.display = "block";
@@ -99,47 +87,50 @@ function startCalTimer() {
     document.getElementById('cal-main-btn').style.display = "none";
     const timerText = document.getElementById('cal-timer-display');
     timerText.style.display = "block";
-    
     let timeLeft = 20;
     const countdown = setInterval(() => {
         timeLeft--;
         timerText.innerText = "LOOK-BACK ACTIVE: " + timeLeft + "s";
-        if (timeLeft <= 0) {
-            clearInterval(countdown);
-            lockMaxHr();
-        }
+        if (timeLeft <= 0) { clearInterval(countdown); lockMaxHr(); }
     }, 1000);
 }
 
 function lockMaxHr() {
     isCalibrating = false;
-    // Final check of the rolling buffer for the highest peak seen in the last 20s
     const bufferMax = peakBuffer.length > 0 ? Math.max(...peakBuffer.map(p => p.bpm)) : 0;
     const trueMax = Math.max(tempMaxHr, bufferMax);
-    
     localStorage.setItem('maxhr_' + activeExercise, trueMax);
-    
     document.getElementById('active-ex-tag').innerText = "CALIBRATED: " + trueMax + " BPM";
     document.getElementById('calibration-hud').style.display = "none";
     document.getElementById('sidebar').style.display = "block";
 }
 
-/**
- * TRAINING FLOW
- */
+/** TRAINING HUD LOGIC **/
 function startTraining() {
-    isTrain = true;
-    isCalibrating = false;
-    peakBuffer = []; 
+    isTrain = true; isCalibrating = false; peakBuffer = []; 
     activeExercise = document.getElementById('ex-name-modal').innerText;
     document.getElementById('active-ex-tag').innerText = "WORK SET: " + activeExercise;
     document.getElementById('training-hud').style.display = "block";
+    document.getElementById('set-main-btn').style.display = "block";
+    document.getElementById('set-timer-display').style.display = "none";
     document.getElementById('set-bar-sidebar').innerHTML = ""; 
     closeAction();
     document.getElementById('sidebar').style.display = "none";
 }
 
-function endSet() {
+function startSetTimer() {
+    document.getElementById('set-main-btn').style.display = "none";
+    const timerText = document.getElementById('set-timer-display');
+    timerText.style.display = "block";
+    let timeLeft = 20;
+    const countdown = setInterval(() => {
+        timeLeft--;
+        timerText.innerText = "PEAK CAPTURE: " + timeLeft + "s";
+        if (timeLeft <= 0) { clearInterval(countdown); processSetResult(); }
+    }, 1000);
+}
+
+function processSetResult() {
     const savedMax = localStorage.getItem('maxhr_' + activeExercise) || 190;
     const peakInLast20 = peakBuffer.length > 0 ? Math.max(...peakBuffer.map(p => p.bpm)) : bpm;
     const intensityPercent = (peakInLast20 / savedMax) * 100;
@@ -147,10 +138,14 @@ function endSet() {
     const bar = document.createElement('div');
     bar.className = 'set-bar';
     bar.style.width = Math.min(intensityPercent, 100) + '%';
-    
     if (intensityPercent > 85) bar.style.background = '#ff0044';
     else if (intensityPercent > 70) bar.style.background = '#ffaa00';
     document.getElementById('set-bar-sidebar').appendChild(bar);
+
+    // Reset UI for next set
+    document.getElementById('set-main-btn').style.display = "block";
+    document.getElementById('set-timer-display').style.display = "none";
+    document.getElementById('set-timer-display').innerText = "PEAK CAPTURE: 20s";
 }
 
 function exitTraining() {
@@ -160,9 +155,7 @@ function exitTraining() {
     document.getElementById('active-ex-tag').innerText = "NO ACTIVE EXERCISE";
 }
 
-/**
- * VIS & GRID (STABLE)
- */
+/** VIS & GRID **/
 function drawSparkline() {
     const canvas = document.getElementById('sparkline-canvas');
     if (!canvas) return;
@@ -170,8 +163,7 @@ function drawSparkline() {
     const dpr = window.devicePixelRatio || 1;
     const rect = canvas.getBoundingClientRect();
     canvas.width = rect.width * dpr; canvas.height = rect.height * dpr;
-    ctx.scale(dpr, dpr);
-    ctx.clearRect(0, 0, rect.width, rect.height);
+    ctx.scale(dpr, dpr); ctx.clearRect(0, 0, rect.width, rect.height);
     if (hrHistory.length < 3) return;
     const savedMax = activeExercise ? localStorage.getItem('maxhr_' + activeExercise) : null;
     const baselineMax = savedMax ? parseInt(savedMax) : 190;
@@ -180,8 +172,7 @@ function drawSparkline() {
     else if (bpm > (baselineMax * 0.70)) { color = '#ffaa00'; glow = 'rgba(255, 170, 0, 0.4)'; }
     const step = rect.width / (hrHistory.length - 1);
     const points = hrHistory.map((val, i) => ({ x: i * step, y: rect.height - ((val - 60) / (baselineMax - 60)) * rect.height }));
-    drawCurve(ctx, points, glow, 8);
-    drawCurve(ctx, points, color, 3);
+    drawCurve(ctx, points, glow, 8); drawCurve(ctx, points, color, 3);
 }
 
 function generateHitMap() {
