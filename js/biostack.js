@@ -1,6 +1,6 @@
 /**
- * BIOSTACK ELITE ENGINE v10.28 STABLE
- * Dynamic Rest Progress Button Logic + Cache Bust
+ * BIOSTACK ELITE ENGINE v10.29 STABLE
+ * Text Stroke Implementation for REST button + Cache Bust
  */
 
 let bpm = 0;
@@ -16,7 +16,7 @@ let hrHistory = [];
 let totalCalories = 0;
 let lastTimestamp = null;
 
-// NEW REST TRACKING VARIABLES
+// REST TRACKING VARIABLES
 let isResting = false;
 let isLatchedReady = false;
 let peakHrAtSetEnd = 0;
@@ -156,6 +156,7 @@ function resetSetHUD() {
     btn.innerText = "END SET";
     btn.style.background = 'var(--glow-blue)';
     btn.style.color = '#000';
+    btn.style.webkitTextStroke = '0px'; // Remove stroke
     btn.onclick = startSetTimer;
     document.getElementById('set-timer-display').style.display = "none";
     peakBuffer = []; 
@@ -236,6 +237,7 @@ function updateRestUI() {
         btn.innerText = "START NEXT SET";
         btn.style.background = 'var(--glow-blue)';
         btn.style.color = '#000';
+        btn.style.webkitTextStroke = '0px'; // Remove stroke when ready
         return;
     }
 
@@ -253,6 +255,7 @@ function updateRestUI() {
     btn.innerText = "REST";
     btn.classList.add('blinking-rest');
     btn.style.color = '#fff';
+    btn.style.webkitTextStroke = '1px black'; // Apply 1px black stroke
     btn.style.background = `linear-gradient(90deg, ${fillColor} ${pct}%, #222 ${pct}%)`;
 }
 
@@ -295,6 +298,7 @@ function generateHitMap() {
     map.innerHTML = "";
     
     if (currentView === "front") {
+        // Pixel-perfect mapping extracted directly from user's ruler overlay
         map.style.gridTemplateRows = '19% 10% 9% 11% 23% 28%';
         const fG = [
             "", "", "TOGGLE_BACK",                   // R1 (19%) 
