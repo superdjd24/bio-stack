@@ -1,6 +1,6 @@
 /**
- * BIOSTACK ELITE ENGINE v10.10 STABLE
- * Back Matrix Grid Calves/Hamstrings Realignment + Cache Bust
+ * BIOSTACK ELITE ENGINE v10.11 STABLE
+ * Dynamic 7-Row Back Grid + Trapezoids Visibility Fix + Cache Bust
  */
 
 let bpm = 0;
@@ -236,35 +236,44 @@ function generateHitMap() {
     if (!map) return;
     map.innerHTML = "";
     
-    const fG = [
-        "Deltoids", "Trapezoids", "TOGGLE_BACK", // Row 1
-        "Biceps", "Pectorals", "Biceps",         // Row 2
-        "Forearms", "Abdominals", "Forearms",    // Row 3
-        "Quads", "Quads", "Quads",               // Row 4
-        "", "", "",                              // Row 5
-        "", "", ""                               // Row 6
-    ];
-    
-    // BUG FIX: Redefined the back grid to follow anatomical proportions and your realignment images.
-    // Lats/Triceps are kept in Row 2. Row 3 is kept clear for torso mapping.
-    const bG = [
-        "TOGGLE_FRONT", "Trapezoids", "Trapezoids",  // Row 1
-        "Triceps", "Lats", "Triceps",                // Row 2
-        "", "", "",                                  // Row 3
-        "Glutes", "Glutes", "Glutes",                // Row 4
-        "Hamstrings", "Hamstrings", "Hamstrings",    // Row 5 (Desired Hamstrings Zone - image_5.png)
-        "Calves", "Calves", "Calves"                 // Row 6 (Desired Calves Zone - image_6.png)
-    ];
-
-    const active = (currentView === "front") ? fG : bG;
-    active.forEach((m) => {
-        const div = document.createElement('div');
-        div.className = "hit";
-        if (m === "TOGGLE_BACK") div.onclick = () => switchView('back');
-        else if (m === "TOGGLE_FRONT") div.onclick = () => switchView('front');
-        else if (m !== "") div.onclick = () => selectMuscle(m);
-        map.appendChild(div);
-    });
+    // FIX: Dynamically swap between a 6-row front grid and a 7-row back grid
+    if (currentView === "front") {
+        map.style.gridTemplateRows = 'repeat(6, 1fr)';
+        const fG = [
+            "Deltoids", "Trapezoids", "TOGGLE_BACK", // Row 1
+            "Biceps", "Pectorals", "Biceps",         // Row 2
+            "Forearms", "Abdominals", "Forearms",    // Row 3
+            "Quads", "Quads", "Quads",               // Row 4
+            "", "", "",                              // Row 5
+            "", "", ""                               // Row 6
+        ];
+        fG.forEach((m) => {
+            const div = document.createElement('div');
+            div.className = "hit";
+            if (m === "TOGGLE_BACK") div.onclick = () => switchView('back');
+            else if (m !== "") div.onclick = () => selectMuscle(m);
+            map.appendChild(div);
+        });
+    } else {
+        // FIX: The Back grid is now natively 7 rows tall to match your exact visual breakdown
+        map.style.gridTemplateRows = 'repeat(7, 1fr)';
+        const bG = [
+            "TOGGLE_FRONT", "", "",                   // Row 1
+            "Trapezoids", "Trapezoids", "Trapezoids", // Row 2
+            "", "Lats", "",                           // Row 3
+            "", "", "",                               // Row 4
+            "Glutes", "Glutes", "Glutes",             // Row 5
+            "Hamstrings", "Hamstrings", "Hamstrings", // Row 6
+            "Calves", "Calves", "Calves"              // Row 7
+        ];
+        bG.forEach((m) => {
+            const div = document.createElement('div');
+            div.className = "hit";
+            if (m === "TOGGLE_FRONT") div.onclick = () => switchView('front');
+            else if (m !== "") div.onclick = () => selectMuscle(m);
+            map.appendChild(div);
+        });
+    }
 }
 
 function switchView(view) {
@@ -280,7 +289,8 @@ function switchView(view) {
     } else {
         document.getElementById('base-back').classList.add('layer-visible');
         document.getElementById('btn-to-front').classList.add('layer-visible');
-        ['lats','triceps','glutes','hamstrings','calves'].forEach(m => {
+        // FIX: Added 'trapezoids' to the array below so they turn visible on the back view!
+        ['trapezoids', 'lats','triceps','glutes','hamstrings','calves'].forEach(m => {
             const el = document.getElementById(`overlay-${m}`);
             if (el) el.classList.add('layer-visible');
         });
