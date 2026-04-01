@@ -1,6 +1,6 @@
 /**
- * BIOSTACK ELITE ENGINE v10.12 STABLE
- * Standardized 6-Row Back Grid Realignment + Cache Bust
+ * BIOSTACK ELITE ENGINE v10.13 STABLE
+ * Percentage-Based Asymmetrical Grid + Cache Bust
  */
 
 let bpm = 0;
@@ -236,34 +236,44 @@ function generateHitMap() {
     if (!map) return;
     map.innerHTML = "";
     
-    const fG = [
-        "Deltoids", "Trapezoids", "TOGGLE_BACK", // Row 1
-        "Biceps", "Pectorals", "Biceps",         // Row 2
-        "Forearms", "Abdominals", "Forearms",    // Row 3
-        "Quads", "Quads", "Quads",               // Row 4
-        "", "", "",                              // Row 5
-        "", "", ""                               // Row 6
-    ];
-    
-    // FIX: Back grid shifted up to align exactly with front anatomy on the 6-row layout.
-    const bG = [
-        "TOGGLE_FRONT", "Trapezoids", "Trapezoids",  // Row 1
-        "Triceps", "Lats", "Triceps",                // Row 2
-        "Glutes", "Glutes", "Glutes",                // Row 3
-        "Hamstrings", "Hamstrings", "Hamstrings",    // Row 4
-        "Calves", "Calves", "Calves",                // Row 5
-        "", "", ""                                   // Row 6
-    ];
-
-    const active = (currentView === "front") ? fG : bG;
-    active.forEach((m) => {
-        const div = document.createElement('div');
-        div.className = "hit";
-        if (m === "TOGGLE_BACK") div.onclick = () => switchView('back');
-        else if (m === "TOGGLE_FRONT") div.onclick = () => switchView('front');
-        else if (m !== "") div.onclick = () => selectMuscle(m);
-        map.appendChild(div);
-    });
+    if (currentView === "front") {
+        // Keep the front grid symmetrical 6-rows
+        map.style.gridTemplateRows = 'repeat(6, 1fr)';
+        const fG = [
+            "Deltoids", "Trapezoids", "TOGGLE_BACK", // Row 1
+            "Biceps", "Pectorals", "Biceps",         // Row 2
+            "Forearms", "Abdominals", "Forearms",    // Row 3
+            "Quads", "Quads", "Quads",               // Row 4
+            "", "", "",                              // Row 5
+            "", "", ""                               // Row 6
+        ];
+        fG.forEach((m) => {
+            const div = document.createElement('div');
+            div.className = "hit";
+            if (m === "TOGGLE_BACK") div.onclick = () => switchView('back');
+            else if (m !== "") div.onclick = () => selectMuscle(m);
+            map.appendChild(div);
+        });
+    } else {
+        // FIX: The Back grid now uses specific percentages for row heights to match human anatomy
+        map.style.gridTemplateRows = '12% 10% 22% 8% 13% 20% 15%';
+        const bG = [
+            "TOGGLE_FRONT", "", "",                   // Row 1 (12%): Head/Neck
+            "Trapezoids", "Trapezoids", "Trapezoids", // Row 2 (10%): Traps
+            "Triceps", "Lats", "Triceps",             // Row 3 (22%): Lats / Triceps
+            "", "", "",                               // Row 4 (8%): Lower Back (Empty)
+            "Glutes", "Glutes", "Glutes",             // Row 5 (13%): Glutes
+            "Hamstrings", "Hamstrings", "Hamstrings", // Row 6 (20%): Hamstrings
+            "Calves", "Calves", "Calves"              // Row 7 (15%): Calves
+        ];
+        bG.forEach((m) => {
+            const div = document.createElement('div');
+            div.className = "hit";
+            if (m === "TOGGLE_FRONT") div.onclick = () => switchView('front');
+            else if (m !== "") div.onclick = () => selectMuscle(m);
+            map.appendChild(div);
+        });
+    }
 }
 
 function switchView(view) {
