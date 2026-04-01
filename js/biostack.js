@@ -1,5 +1,5 @@
 /**
- * BIOSTACK ELITE v4.9
+ * BIOSTACK ELITE v5.0
  */
 let bpm = 0, currentMusc = "", currentView = "front", isTrain = false, hrHistory = [];
 
@@ -31,7 +31,7 @@ async function startStream() {
             bpm = e.target.value.getUint8(1);
             document.getElementById('hr-val').innerText = bpm;
             hrHistory.push(bpm);
-            if (hrHistory.length > 40) hrHistory.shift();
+            if (hrHistory.length > 50) hrHistory.shift();
             drawSparkline();
         });
     } catch (e) { alert("Sync Error: " + e.message); }
@@ -42,25 +42,27 @@ function drawSparkline() {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     
-    // Scale for High-DPI displays
+    // Scale for High-DPI
     const dpr = window.devicePixelRatio || 1;
-    canvas.width = 120 * dpr;
-    canvas.height = 40 * dpr;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
     ctx.scale(dpr, dpr);
 
-    ctx.clearRect(0, 0, 120, 40);
+    ctx.clearRect(0, 0, rect.width, rect.height);
     if (hrHistory.length < 2) return;
 
     ctx.beginPath();
     ctx.strokeStyle = '#00f2ff';
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 3; // Thicker for visibility
+    ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
 
-    const step = 120 / (hrHistory.length - 1);
+    const step = rect.width / (hrHistory.length - 1);
     hrHistory.forEach((val, i) => {
-        // Map HR (60-180) to canvas height (40-0)
         const x = i * step;
-        const y = 40 - ((val - 60) / 120) * 40;
+        // Range 60-160 mapped to height
+        const y = rect.height - ((val - 60) / 100) * rect.height;
         if (i === 0) ctx.moveTo(x, y);
         else ctx.lineTo(x, y);
     });
