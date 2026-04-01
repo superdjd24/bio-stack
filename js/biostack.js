@@ -1,6 +1,6 @@
 /**
- * BIOSTACK ELITE ENGINE v6.4
- * Re-centering and Arm-Focus
+ * BIOSTACK ELITE ENGINE v6.5
+ * Hamstring Mapping Precision
  */
 let bpm = 0, currentMusc = "", currentView = "front", isTrain = false, hrHistory = [];
 
@@ -42,24 +42,26 @@ function generateHitMap() {
     const map = document.getElementById('touch-map');
     map.innerHTML = "";
     
-    // FRONT GRID: Lowering slightly to align with torso, expanding biceps
     const fG = [
-        "", "Trapezoids", "TOGGLE_BACK",       // Row 1 (Neck/Toggle)
-        "Deltoids", "Pectorals", "Deltoids",     // Row 2 (Chest)
-        "Biceps", "Abdominals", "Biceps",        // Row 3 (Upper Arms/Abs)
-        "Biceps", "Abdominals", "Biceps",        // Row 4 (Lower Arms/Lower Abs)
-        "Forearms", "Quads", "Forearms",         // Row 5 (Legs)
-        "", "Quads", ""                          // Row 6
+        "", "Trapezoids", "TOGGLE_BACK",       
+        "Deltoids", "Pectorals", "Deltoids",     
+        "Biceps", "Abdominals", "Biceps",        
+        "Biceps", "Abdominals", "Biceps",        
+        "Forearms", "Quads", "Forearms",         
+        "", "Quads", ""                          
     ];
 
-    // BACK GRID: Triceps take the outer slots of Rows 2 and 3
+    /** * BACK GRID v6.5
+     * Row 5: Now shares Glutes and Hamstrings for better vertical coverage
+     * Row 6: Primary Hamstring and Calf zone
+     */
     const bG = [
         "TOGGLE_FRONT", "Trapezoids", "",       // Row 1
         "Triceps", "Lats", "Triceps",            // Row 2
         "Triceps", "Lats", "Triceps",            // Row 3
         "Deltoids", "Glutes", "Deltoids",        // Row 4
-        "Hamstrings", "Glutes", "Hamstrings",    // Row 5
-        "Calves", "", "Calves"                   // Row 6
+        "Hamstrings", "Glutes", "Hamstrings",    // Row 5: FIX - Expanded Hamstrings
+        "Hamstrings", "Calves", "Hamstrings"     // Row 6: FIX - Expanded Hamstrings
     ];
 
     const active = (currentView === "front") ? fG : bG;
@@ -113,7 +115,6 @@ function selectMuscle(m) {
     });
 }
 
-// Graph Engine (v5.5 Logic) - Standard Sparkline drawing...
 function drawSparkline() {
     const canvas = document.getElementById('sparkline-canvas');
     if (!canvas) return;
