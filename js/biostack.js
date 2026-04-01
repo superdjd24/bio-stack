@@ -1,6 +1,6 @@
 /**
- * BIOSTACK ELITE v5.4
- * Ultra-Wide Graph Engine
+ * BIOSTACK ELITE v5.5
+ * Dynamic Color & Smoothed Curve
  */
 let bpm = 0, currentMusc = "", currentView = "front", isTrain = false, hrHistory = [];
 
@@ -32,8 +32,7 @@ async function startStream() {
             bpm = e.target.value.getUint8(1);
             document.getElementById('hr-val').innerText = bpm;
             hrHistory.push(bpm);
-            // Increased history for the wider canvas
-            if (hrHistory.length > 60) hrHistory.shift();
+            if (hrHistory.length > 50) hrHistory.shift();
             drawSparkline();
         });
     } catch (e) { alert("Sync Error: " + e.message); }
@@ -51,34 +50,54 @@ function drawSparkline() {
     ctx.scale(dpr, dpr);
 
     ctx.clearRect(0, 0, rect.width, rect.height);
-    if (hrHistory.length < 2) return;
+    if (hrHistory.length < 3) return;
+
+    // STEP 1: Determine Color based on current BPM
+    let color = '#00f2ff'; // Default Cyan
+    let glow = 'rgba(0, 242, 255, 0.4)';
+    
+    if (bpm > 140) { 
+        color = '#ff0044'; glow = 'rgba(255, 0, 68, 0.4)'; // Red Alert
+    } else if (bpm > 110) { 
+        color = '#ffaa00'; glow = 'rgba(255, 170, 0, 0.4)'; // Warning Orange
+    }
 
     const step = rect.width / (hrHistory.length - 1);
+    const points = hrHistory.map((val, i) => ({
+        x: i * step,
+        y: rect.height - ((val - 60) / 100) * rect.height
+    }));
 
-    // GLOW PASS
+    // STEP 2: Draw Glow Pass (Smooth)
+    drawCurve(ctx, points, glow, 7);
+
+    // STEP 3: Draw Core Pass (Smooth)
+    drawCurve(ctx, points, color, 3);
+}
+
+// Function to calculate smooth Quadratic curves between points
+function drawCurve(ctx, p, style, width) {
     ctx.beginPath();
-    ctx.strokeStyle = 'rgba(0, 242, 255, 0.3)';
-    ctx.lineWidth = 6;
+    ctx.strokeStyle = style;
+    ctx.lineWidth = width;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
-    hrHistory.forEach((val, i) => {
-        const x = i * step;
-        const y = rect.height - ((val - 60) / 100) * rect.height;
-        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-    });
-    ctx.stroke();
 
-    // CORE PASS
-    ctx.beginPath();
-    ctx.strokeStyle = '#00f2ff';
-    ctx.lineWidth = 2.5;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    hrHistory.forEach((val, i) => {
-        const x = i * step;
-        const y = rect.height - ((val - 60) / 100) * rect.height;
-        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-    });
+    ctx.moveTo(p[0].x, p[0].y);
+
+    for (let i = 1; i < p.length - 2; i++) {
+        const xc = (p[i].x + p[i + 1].x) / 2;
+        const yc = (p[i].y + p[i + 1].y) / 2;
+        ctx.quadraticCurveTo(p[i].x, p[i].y, xc, yc);
+    }
+
+    // curve through the last two points
+    ctx.quadraticCurveTo(
+        p[p.length - 2].x, 
+        p[p.length - 2].y, 
+        p[p.length - 1].x, 
+        p[p.length - 1].y
+    );
     ctx.stroke();
 }
 
