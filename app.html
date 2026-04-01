@@ -3,115 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BioStack Elite v7.0</title>
+    <title>BioStack Elite v7.5</title>
     <style>
         :root { --glow-blue: #00f2ff; --bg-dark: #05070a; --glass: rgba(15, 20, 30, 0.95); --border: #30363d; }
+        body { margin: 0; background: var(--bg-dark); color: white; font-family: -apple-system, system-ui, sans-serif; overflow: hidden; height: 100vh; }
         
-        body { 
-            margin: 0; 
-            background: var(--bg-dark); 
-            color: white; 
-            font-family: -apple-system, system-ui, sans-serif; 
-            overflow: hidden; 
-            height: 100vh; 
-        }
-        
-        /* INITIALIZATION SCREEN */
-        #login-screen {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--bg-dark); z-index: 10000;
-            display: flex; align-items: center; justify-content: center;
-        }
-        .login-card { 
-            background: var(--glass); 
-            padding: 40px; 
-            border-radius: 30px; 
-            border: 1px solid var(--border); 
-            text-align: center; 
-            width: 85%; 
-            max-width: 400px; 
-            backdrop-filter: blur(20px);
-        }
-        .login-card h2 { color: var(--glow-blue); margin-bottom: 25px; letter-spacing: 2px; }
-        input { 
-            width: 100%; padding: 15px; margin-bottom: 15px; 
-            border-radius: 12px; border: 1px solid #444; 
-            background: #000; color: #fff; box-sizing: border-box;
-            font-size: 1rem;
-        }
-        #init-btn {
-            width: 100%; padding: 18px; background: var(--glow-blue); 
-            border-radius: 50px; font-weight: 800; border: none; 
-            cursor: pointer; text-transform: uppercase; margin-top: 10px;
-        }
+        #login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-dark); z-index: 10000; display: flex; align-items: center; justify-content: center; }
+        .login-card { background: var(--glass); padding: 40px; border-radius: 30px; border: 1px solid var(--border); text-align: center; width: 85%; max-width: 400px; backdrop-filter: blur(20px); }
+        input { width: 100%; padding: 15px; margin-bottom: 15px; border-radius: 12px; border: 1px solid #444; background: #000; color: #fff; box-sizing: border-box; }
+        #init-btn { width: 100%; padding: 18px; background: var(--glow-blue); border-radius: 50px; font-weight: 800; border: none; cursor: pointer; text-transform: uppercase; }
 
-        /* MAIN DASHBOARD (HIDDEN UNTIL LINKED) */
         #main-dashboard { display: none; opacity: 0; transition: opacity 0.8s ease; }
-
-        /* TOP TELEMETRY */
-        #top-dash { 
-            position: fixed; top: 0; width: 100%; height: 100px; 
-            display: flex; align-items: center; justify-content: space-between; 
-            padding: 20px; box-sizing: border-box; z-index: 9000; 
-        }
+        #top-dash { position: fixed; top: 0; width: 100%; height: 100px; display: flex; align-items: center; justify-content: space-between; padding: 20px; box-sizing: border-box; z-index: 9000; }
         #tel-group { display: flex; align-items: center; gap: 12px; }
-        #hr-pill { 
-            background: var(--glass); width: 110px; height: 60px; 
-            border-radius: 50px; border: 1px solid var(--border); 
-            display: flex; align-items: center; justify-content: center; 
-        }
+        #hr-pill { background: var(--glass); width: 110px; height: 60px; border-radius: 50px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; }
         #hr-val { font-size: 2.2rem; font-weight: 900; color: var(--glow-blue); text-shadow: 0 0 10px rgba(0, 242, 255, 0.5); }
         #graph-box { width: 220px; height: 45px; position: relative; }
         #sparkline-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
 
-        /* STATS & CALORIES */
         #mid-dash { position: fixed; top: 110px; left: 20px; z-index: 900; }
         #total-cal { color: var(--glow-blue); font-size: 1.4rem; font-weight: 700; }
         #musc-header { font-size: 0.8rem; margin-top: 10px; color: var(--glow-blue); letter-spacing: 1px; }
 
-        /* SIDEBAR */
         #sidebar { position: fixed; top: 200px; left: 20px; width: 140px; z-index: 500; }
-        .list-btn { 
-            width: 100%; padding: 12px; margin-bottom: 8px; border-radius: 12px; 
-            border: 1px solid var(--border); background: var(--glass); 
-            color: white; font-size: 0.7rem; text-align: left; text-transform: uppercase; 
-        }
+        .list-btn { width: 100%; padding: 12px; margin-bottom: 8px; border-radius: 12px; border: 1px solid var(--border); background: var(--glass); color: white; font-size: 0.7rem; text-align: left; text-transform: uppercase; }
 
-        /* STAGE AREA & SKELETON */
-        #stage-area { 
-            position: fixed; top: 120px; right: 0; width: 45vw; 
-            height: 65vh; display: flex; justify-content: flex-end; z-index: 10; 
-        }
+        #stage-area { position: fixed; top: 120px; right: 0; width: 45vw; height: 65vh; display: flex; justify-content: flex-end; z-index: 10; }
         #image-container { position: relative; height: 100%; width: auto; display: inline-block; }
         #base-front { height: 100%; width: auto; display: block; }
-        .stack-layer { 
-            position: absolute; top: 0; right: 0; height: 100%; width: auto; 
-            pointer-events: none; transition: opacity 0.4s ease; display: none; 
-        }
+        .stack-layer { position: absolute; top: 0; right: 0; height: 100%; width: auto; pointer-events: none; transition: opacity 0.4s ease; display: none; }
         .layer-visible { display: block; }
         .muscle-overlay { z-index: 12; opacity: 0; mix-blend-mode: screen; }
 
-        /* TOUCH GRID - CALIBRATED */
-        #touch-map { 
-            position: absolute; top: 0; right: 10%; width: 80%; 
-            height: 100%; z-index: 2000; display: grid; 
-            grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(6, 1fr); 
-        }
+        #touch-map { position: absolute; top: 0; right: 10%; width: 80%; height: 100%; z-index: 2000; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(6, 1fr); }
         .hit { width: 100%; height: 100%; pointer-events: auto; }
 
-        /* EXERCISE MODAL */
-        .overlay { 
-            position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); 
-            width: 92%; max-width: 400px; background: var(--glass); border-radius: 35px; 
-            padding: 30px; border: 1px solid var(--border); backdrop-filter: blur(25px); 
-            display: none; text-align: center; z-index: 9500; 
-        }
+        .overlay { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); width: 92%; max-width: 400px; background: var(--glass); border-radius: 35px; padding: 30px; border: 1px solid var(--border); backdrop-filter: blur(25px); display: none; text-align: center; z-index: 9500; }
+        .btn-modal { width: 100%; padding: 18px; border-radius: 50px; font-weight: 800; border: none; cursor: pointer; text-transform: uppercase; margin-bottom: 12px; display: block; }
         #version-tag { position: fixed; bottom: 15px; left: 15px; font-size: 0.6rem; color: #333; }
     </style>
 </head>
 <body>
 
-    <div id="version-tag">BIOSTACK_v7.0_SPA_FINAL</div>
+    <div id="version-tag">BIOSTACK_v7.5_EXERCISE_CALIB</div>
 
     <div id="login-screen">
         <div class="login-card">
@@ -135,6 +69,7 @@
         <div id="mid-dash">
             <div><span id="total-cal">0</span> <span style="font-size:0.7rem; opacity:0.5;">CALORIES</span></div>
             <div id="musc-header">TARGET: --</div>
+            <div id="active-ex-tag" style="font-size: 0.6rem; color: #666; margin-top: 5px;">NO ACTIVE EXERCISE</div>
         </div>
 
         <div id="sidebar"><div id="exercise-picker"></div></div>
@@ -144,7 +79,6 @@
                 <img src="assets/base_front.png" id="base-front">
                 <img src="assets/back_button.png" id="btn-to-back" class="stack-layer layer-visible" style="z-index:20;">
                 <img src="assets/front_button.png" id="btn-to-front" class="stack-layer" style="z-index:20;">
-                
                 <img src="assets/trapezoids.png" id="overlay-trapezoids" class="muscle-overlay stack-layer layer-visible">
                 <img src="assets/deltoids.png" id="overlay-deltoids" class="muscle-overlay stack-layer layer-visible">
                 <img src="assets/pectorals.png" id="overlay-pectorals" class="muscle-overlay stack-layer layer-visible">
@@ -152,21 +86,20 @@
                 <img src="assets/forearms.png" id="overlay-forearms" class="muscle-overlay stack-layer layer-visible">
                 <img src="assets/abdominals.png" id="overlay-abdominals" class="muscle-overlay stack-layer layer-visible">
                 <img src="assets/quads.png" id="overlay-quads" class="muscle-overlay stack-layer layer-visible">
-                
                 <img src="assets/base_back.png" id="base-back" class="stack-layer" style="z-index: 11;">
                 <img src="assets/lats.png" id="overlay-lats" class="muscle-overlay stack-layer">
                 <img src="assets/triceps.png" id="overlay-triceps" class="muscle-overlay stack-layer">
                 <img src="assets/glutes.png" id="overlay-glutes" class="muscle-overlay stack-layer">
                 <img src="assets/hamstrings.png" id="overlay-hamstrings" class="muscle-overlay stack-layer">
                 <img src="assets/calves.png" id="overlay-calves" class="muscle-overlay stack-layer">
-
                 <div id="touch-map"></div>
             </div>
         </div>
 
         <div id="menu-action" class="overlay">
-            <h2 id="ex-name-modal" style="margin-bottom:20px;">EXERCISE</h2>
-            <button onclick="startTraining()" style="width:100%; padding:18px; background:var(--glow-blue); border-radius:50px; font-weight:800; border:none; cursor:pointer;">START SETS</button>
+            <h2 id="ex-name-modal" style="margin-bottom:25px;">EXERCISE</h2>
+            <button class="btn-modal" style="background: var(--glow-blue); color: #000;" onclick="startTraining()">START SETS</button>
+            <button class="btn-modal" style="background: transparent; border: 1px solid var(--glow-blue); color: var(--glow-blue);" onclick="calibrateExercise()">CALIBRATE MAX HR</button>
             <p onclick="closeAction()" style="margin-top:15px; font-size:0.8rem; opacity:0.5; cursor:pointer;">CANCEL</p>
         </div>
     </div>
