@@ -1,6 +1,6 @@
 /**
- * BIOSTACK ELITE ENGINE v10.3 STABLE
- * Front Anatomy Grid Map Realignment + Cache Bust
+ * BIOSTACK ELITE ENGINE v10.5 STABLE
+ * True Thigh Quad Mapping Fix + Cache Bust
  */
 
 let bpm = 0;
@@ -236,13 +236,13 @@ function generateHitMap() {
     if (!map) return;
     map.innerHTML = "";
     
-    // BUG FIX: Re-mapped the grid to anatomically match the front silhouette. 
-    // Forearms moved to row 4, Quads occupy all of row 5, Shins (row 6) cleared.
+    // BUG FIX: Shifted Quads up into the middle of row 4, and across all of row 5. 
+    // This perfectly overlays the thighs in the center of the silhouette.
     const fG = [
         "Trapezoids", "Trapezoids", "TOGGLE_BACK",
         "Deltoids", "Pectorals", "Deltoids", 
         "Biceps", "Abdominals", "Biceps", 
-        "Forearms", "Abdominals", "Forearms", 
+        "Forearms", "Quads", "Forearms", 
         "Quads", "Quads", "Quads", 
         "", "", ""
     ];
