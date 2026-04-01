@@ -1,6 +1,6 @@
 /**
- * BIOSTACK ELITE ENGINE v8.9
- * Hard-Paint Unit Fix
+ * BIOSTACK ELITE ENGINE v9.1
+ * Visual Expectations Logic
  */
 
 let bpm = 0;
@@ -10,6 +10,7 @@ let isCalibrating = false;
 let activeExercise = null;
 let tempMaxHr = 0;
 let peakBuffer = [];
+let setCounter = 0; // NEW for v9.1 tracking
 
 let hrHistory = [];
 let totalCalories = 0;
@@ -103,11 +104,24 @@ function lockMaxHr() {
 }
 
 function startTraining() {
-    isTrain = true;
+    isTrain = true; isCalibrating = false;
     const newEx = document.getElementById('ex-name-modal').innerText;
-    if (newEx !== activeExercise) { document.getElementById('set-bar-sidebar').innerHTML = ""; }
+    
     activeExercise = newEx;
     document.getElementById('active-ex-tag').innerText = "WORK SET: " + activeExercise;
+    
+    // TRAINING HUD UPGRADE for v9.1 context
+    const savedMax = localStorage.getItem('maxhr_' + activeExercise) || 190;
+    const contextText = document.getElementById('active-ex-context');
+    contextText.innerText = `Target HR for ${activeExercise}: ${savedMax}`;
+    contextText.style.display = 'block';
+
+    setCounter = 0; // Reset counter for new session
+    
+    // Clear dynamic list items, keeping context
+    const listItems = document.querySelectorAll('#set-bar-sidebar .intensity-item');
+    listItems.forEach(el => el.remove());
+
     document.getElementById('training-hud').style.display = "block";
     document.getElementById('set-main-btn').style.display = "block";
     document.getElementById('set-timer-display').style.display = "none";
@@ -127,29 +141,56 @@ function startSetTimer() {
     }, 1000);
 }
 
+/**
+ * processSetResult v9.1 - Building the Complex Expectations Structure
+ */
 function processSetResult() {
     const savedMax = localStorage.getItem('maxhr_' + activeExercise) || 190;
     const peakInLast20 = peakBuffer.length > 0 ? Math.max(...peakBuffer.map(p => p.bpm)) : bpm;
     
-    // Calculate Pixel width based on 100px sidebar
-    const intensityPercent = (peakInLast20 / savedMax);
-    const targetPx = Math.round(intensityPercent * 100);
-    
+    setCounter++; // Increment set
+    const ratio = peakInLast20 / savedMax;
+    const intensityPercent = Math.round(ratio * 100);
+    const barWidth = Math.round(ratio * 100); // 100px base max width in v9.1 sidebar
+
     const barContainer = document.getElementById('set-bar-sidebar');
+    if (!barContainer) return;
+
+    // 1. Create the container item
+    const item = document.createElement('div');
+    item.className = 'intensity-item';
+
+    // 2. Create the 'Set X' label
+    const label = document.createElement('span');
+    label.className = 'intensity-label';
+    label.innerText = `Set${setCounter}`;
+
+    // 3. Create the bar
     const bar = document.createElement('div');
     bar.className = 'set-bar';
-    bar.style.width = "0px"; // Unit Unit Unit!
+    bar.style.width = "0px";
     
-    if (intensityPercent > 0.85) bar.style.background = '#ff0044';
-    else if (intensityPercent > 0.70) bar.style.background = '#ffaa00';
+    // Intensity Color Logic
+    if (ratio > 0.85) bar.style.background = '#ff0044';
+    else if (ratio > 0.70) bar.style.background = '#ffaa00';
     else bar.style.background = '#00f2ff';
 
-    barContainer.appendChild(bar);
+    // 4. Create the internal intensity percentage label
+    const innerLabel = document.createElement('span');
+    innerLabel.className = 'bar-inner-label';
+    innerLabel.innerText = `${intensityPercent}%`;
+    bar.appendChild(innerLabel);
+
+    // Assemble the item
+    item.appendChild(label);
+    item.appendChild(bar);
+    barContainer.appendChild(item);
     
-    // HARD-PAINT: Force width update in the next frame
-    window.requestAnimationFrame(() => {
+    // HARD-PAINT & ANIMATION TRIGGER
+    requestAnimationFrame(() => {
         setTimeout(() => {
-            bar.style.width = Math.max(10, Math.min(targetPx, 100)) + "px";
+            bar.style.width = Math.max(10, barWidth) + "px"; // min-width fallback
+            bar.classList.add('revealed'); // Triggers inner label opacity
         }, 50);
     });
 
@@ -160,8 +201,8 @@ function processSetResult() {
 function exitTraining() {
     isTrain = false;
     document.getElementById('training-hud').style.display = "none";
+    document.getElementById('active-ex-context').style.display = 'none';
     document.getElementById('sidebar').style.display = "block";
-    document.getElementById('active-ex-tag').innerText = "NO ACTIVE EXERCISE";
 }
 
 function drawSparkline() {
