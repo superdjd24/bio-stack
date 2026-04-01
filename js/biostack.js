@@ -1,6 +1,6 @@
 /**
- * BIOSTACK ELITE ENGINE v10.8 STABLE
- * Pectorals & Abs Vertical Realignment + Cache Bust
+ * BIOSTACK ELITE ENGINE v10.9 STABLE
+ * Custom User Matrix Grid Applied (Back) + Cache Bust
  */
 
 let bpm = 0;
@@ -236,8 +236,6 @@ function generateHitMap() {
     if (!map) return;
     map.innerHTML = "";
     
-    // BUG FIX: Shifted Pectorals down to 2b. Shifted Abdominals down to 3b.
-    // Inserted Trapezoids at 1b to maintain functionality for the upper shoulder/neck area.
     const fG = [
         "Deltoids", "Trapezoids", "TOGGLE_BACK", // Row 1
         "Biceps", "Pectorals", "Biceps",         // Row 2
@@ -247,7 +245,16 @@ function generateHitMap() {
         "", "", ""                               // Row 6
     ];
     
-    const bG = ["TOGGLE_FRONT", "Trapezoids", "Trapezoids", "Triceps", "Lats", "Triceps", "Triceps", "Lats", "Triceps", "Glutes", "Glutes", "Glutes", "Hamstrings", "Hamstrings", "Hamstrings", "Hamstrings", "Calves", "Hamstrings"];
+    // BUG FIX: Back Grid customized to user's 6-row constraints
+    const bG = [
+        "TOGGLE_FRONT", "Trapezoids", "Trapezoids",  // Row 1 (User's Row 1 & 2)
+        "Triceps", "Lats", "Triceps",                // Row 2 (Kept Triceps/Lats from previous map)
+        "", "", "",                                  // Row 3 (User's Row 4 - Not used)
+        "Glutes", "Glutes", "Glutes",                // Row 4 (User's Row 5)
+        "Hamstrings", "Hamstrings", "Hamstrings",    // Row 5 (User's Row 6)
+        "Calves", "Calves", "Calves"                 // Row 6 (User's Row 7)
+    ];
+
     const active = (currentView === "front") ? fG : bG;
     active.forEach((m) => {
         const div = document.createElement('div');
