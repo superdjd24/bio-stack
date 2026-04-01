@@ -1,6 +1,6 @@
 /**
- * BIOSTACK ELITE ENGINE v10.7 STABLE
- * Custom User Matrix Grid Applied + Cache Bust
+ * BIOSTACK ELITE ENGINE v10.8 STABLE
+ * Pectorals & Abs Vertical Realignment + Cache Bust
  */
 
 let bpm = 0;
@@ -236,12 +236,11 @@ function generateHitMap() {
     if (!map) return;
     map.innerHTML = "";
     
-    // BUG FIX: Custom matrix implemented per user spec
-    // Row 1c (index 2) remains TOGGLE_BACK for app functionality.
-    // Row 3a/3c (indices 6, 8) default to Forearms.
+    // BUG FIX: Shifted Pectorals down to 2b. Shifted Abdominals down to 3b.
+    // Inserted Trapezoids at 1b to maintain functionality for the upper shoulder/neck area.
     const fG = [
-        "Deltoids", "Pectorals", "TOGGLE_BACK",  // Row 1
-        "Biceps", "Abdominals", "Biceps",        // Row 2
+        "Deltoids", "Trapezoids", "TOGGLE_BACK", // Row 1
+        "Biceps", "Pectorals", "Biceps",         // Row 2
         "Forearms", "Abdominals", "Forearms",    // Row 3
         "Quads", "Quads", "Quads",               // Row 4
         "", "", "",                              // Row 5
