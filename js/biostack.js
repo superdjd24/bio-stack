@@ -1,6 +1,6 @@
 /**
- * BIOSTACK ELITE ENGINE v10.9 STABLE
- * Custom User Matrix Grid Applied (Back) + Cache Bust
+ * BIOSTACK ELITE ENGINE v10.10 STABLE
+ * Back Matrix Grid Calves/Hamstrings Realignment + Cache Bust
  */
 
 let bpm = 0;
@@ -245,14 +245,15 @@ function generateHitMap() {
         "", "", ""                               // Row 6
     ];
     
-    // BUG FIX: Back Grid customized to user's 6-row constraints
+    // BUG FIX: Redefined the back grid to follow anatomical proportions and your realignment images.
+    // Lats/Triceps are kept in Row 2. Row 3 is kept clear for torso mapping.
     const bG = [
-        "TOGGLE_FRONT", "Trapezoids", "Trapezoids",  // Row 1 (User's Row 1 & 2)
-        "Triceps", "Lats", "Triceps",                // Row 2 (Kept Triceps/Lats from previous map)
-        "", "", "",                                  // Row 3 (User's Row 4 - Not used)
-        "Glutes", "Glutes", "Glutes",                // Row 4 (User's Row 5)
-        "Hamstrings", "Hamstrings", "Hamstrings",    // Row 5 (User's Row 6)
-        "Calves", "Calves", "Calves"                 // Row 6 (User's Row 7)
+        "TOGGLE_FRONT", "Trapezoids", "Trapezoids",  // Row 1
+        "Triceps", "Lats", "Triceps",                // Row 2
+        "", "", "",                                  // Row 3
+        "Glutes", "Glutes", "Glutes",                // Row 4
+        "Hamstrings", "Hamstrings", "Hamstrings",    // Row 5 (Desired Hamstrings Zone - image_5.png)
+        "Calves", "Calves", "Calves"                 // Row 6 (Desired Calves Zone - image_6.png)
     ];
 
     const active = (currentView === "front") ? fG : bG;
