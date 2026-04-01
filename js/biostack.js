@@ -1,12 +1,8 @@
 /**
- * BIOSTACK ELITE ENGINE v6.3
- * Exclusive Back-View Triceps
+ * BIOSTACK ELITE ENGINE v6.4
+ * Re-centering and Arm-Focus
  */
-let bpm = 0;
-let currentMusc = "";
-let currentView = "front";
-let isTrain = false;
-let hrHistory = [];
+let bpm = 0, currentMusc = "", currentView = "front", isTrain = false, hrHistory = [];
 
 const DB = {
     'Trapezoids': ['Dumbbell Shrugs', 'Barbell Shrugs'],
@@ -46,24 +42,24 @@ function generateHitMap() {
     const map = document.getElementById('touch-map');
     map.innerHTML = "";
     
-    // Front Grid: Triceps removed to clear space for Delts/Arms
+    // FRONT GRID: Lowering slightly to align with torso, expanding biceps
     const fG = [
-        "Trapezoids", "Trapezoids", "TOGGLE_BACK",
-        "Deltoids", "Pectorals", "Deltoids",
-        "Biceps", "Abdominals", "Biceps",
-        "Forearms", "Quads", "Forearms",
-        "", "Quads", "",
-        "", "", ""
+        "", "Trapezoids", "TOGGLE_BACK",       // Row 1 (Neck/Toggle)
+        "Deltoids", "Pectorals", "Deltoids",     // Row 2 (Chest)
+        "Biceps", "Abdominals", "Biceps",        // Row 3 (Upper Arms/Abs)
+        "Biceps", "Abdominals", "Biceps",        // Row 4 (Lower Arms/Lower Abs)
+        "Forearms", "Quads", "Forearms",         // Row 5 (Legs)
+        "", "Quads", ""                          // Row 6
     ];
 
-    // Back Grid: Triceps now anchor the outer upper arms
+    // BACK GRID: Triceps take the outer slots of Rows 2 and 3
     const bG = [
-        "TOGGLE_FRONT", "Trapezoids", "Trapezoids",
-        "Triceps", "Lats", "Triceps",
-        "Triceps", "Lats", "Triceps",
-        "Glutes", "Glutes", "Glutes",
-        "Hamstrings", "Calves", "Hamstrings",
-        "", "", ""
+        "TOGGLE_FRONT", "Trapezoids", "",       // Row 1
+        "Triceps", "Lats", "Triceps",            // Row 2
+        "Triceps", "Lats", "Triceps",            // Row 3
+        "Deltoids", "Glutes", "Deltoids",        // Row 4
+        "Hamstrings", "Glutes", "Hamstrings",    // Row 5
+        "Calves", "", "Calves"                   // Row 6
     ];
 
     const active = (currentView === "front") ? fG : bG;
@@ -82,7 +78,6 @@ function switchView(view) {
     currentView = view;
     document.querySelectorAll('.muscle-overlay').forEach(img => img.style.opacity = 0);
     document.querySelectorAll('.stack-layer').forEach(l => l.classList.remove('layer-visible'));
-    
     if (view === 'front') {
         document.getElementById('btn-to-back').classList.add('layer-visible');
         ['trapezoids','deltoids','pectorals','biceps','forearms','abdominals','quads'].forEach(m => {
@@ -118,7 +113,7 @@ function selectMuscle(m) {
     });
 }
 
-// Graph Engine (v5.5 Logic)
+// Graph Engine (v5.5 Logic) - Standard Sparkline drawing...
 function drawSparkline() {
     const canvas = document.getElementById('sparkline-canvas');
     if (!canvas) return;
