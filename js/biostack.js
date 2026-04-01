@@ -1,6 +1,6 @@
 /**
- * BIOSTACK ELITE ENGINE v9.3
- * Final Color Mapping & UI Consolidations
+ * BIOSTACK ELITE ENGINE v9.4
+ * Calorie Fix, Color Refinement, Ergo HUD
  */
 
 let bpm = 0;
@@ -25,13 +25,13 @@ const DB = {
     'Hamstrings': ['Deadlifts'], 'Calves': ['Calf Raises']
 };
 
-/** COLOR MAPPING v9.3 CUSTOM THRESHOLDS **/
+/** UPDATED COLOR MAP v9.4 **/
 function getEliteColor(val) {
-    if (val < 80) return '#00f2ff'; // Blue
+    if (val < 80) return '#00f2ff';  // Blue
     if (val < 100) return '#00ff88'; // Green
     if (val < 115) return '#ffff00'; // Yellow
     if (val < 130) return '#ffaa00'; // Orange
-    return '#ff0044'; // Red (Over 145/Default High)
+    return '#ff0044';                // Red (Over 130/145)
 }
 
 async function initSystem() {
@@ -61,6 +61,7 @@ async function initSystem() {
             if (isCalibrating && bpm > tempMaxHr) tempMaxHr = bpm;
             peakBuffer.push({ bpm: bpm, time: now });
             peakBuffer = peakBuffer.filter(p => now - p.time < 20000);
+            
             calculateCals(bpm);
             hrHistory.push(bpm);
             if (hrHistory.length > 55) hrHistory.shift();
@@ -69,6 +70,7 @@ async function initSystem() {
     } catch (e) { alert("Link Failed: " + e.message); }
 }
 
+/** CALORIE MATH v9.4 - Factor of 10 applied **/
 function calculateCals(currentBpm) {
     const weight = localStorage.getItem('bio_weight') || 180;
     const age = localStorage.getItem('bio_age') || 30;
@@ -76,9 +78,13 @@ function calculateCals(currentBpm) {
     if (!lastTimestamp) { lastTimestamp = now; return; }
     const durationHours = (now - lastTimestamp) / (1000 * 60 * 60);
     lastTimestamp = now;
-    let calPerMinute = ( (age * 0.2017) + (weight * 0.09036) + (currentBpm * 0.6309) - 55.0969 );
+    
+    // Base ACSM formula
+    let calPerMinute = ( (age * 0.2017) + (weight * 0.09036) + (currentBpm * 0.6309) - 55.0969 ) / 4.184;
     if (calPerMinute < 0) calPerMinute = 0;
-    const sliceCals = (calPerMinute / 60) * (durationHours * 60);
+    
+    // Apply the 10x Correction Factor
+    const sliceCals = ((calPerMinute / 60) * (durationHours * 60)) * 10;
     totalCalories += sliceCals;
     document.getElementById('total-cal').innerText = Math.round(totalCalories);
 }
@@ -99,7 +105,7 @@ function startCalTimer() {
     let timeLeft = 20;
     const countdown = setInterval(() => {
         timeLeft--;
-        timerText.innerText = "LOOK-BACK ACTIVE: " + timeLeft + "s";
+        timerText.innerText = "LOOK-BACK: " + timeLeft + "s";
         if (timeLeft <= 0) { clearInterval(countdown); lockMaxHr(); }
     }, 1000);
 }
@@ -123,23 +129,24 @@ function startTraining() {
     const contextBox = document.getElementById('active-ex-context');
     contextBox.innerText = `Target HR for ${activeExercise}: ${savedMax}`;
     contextBox.style.display = 'block';
+    
     setCounter = 0;
     const items = document.querySelectorAll('#set-bar-sidebar .intensity-item');
     items.forEach(i => i.remove());
-    document.getElementById('training-hud').style.display = "block";
+    
+    document.getElementById('hud-in-flow').style.display = "block";
     resetSetHUD();
     closeAction();
     document.getElementById('sidebar').style.display = "none";
 }
 
-/** START NEXT SET LOGIC **/
 function resetSetHUD() {
     const btn = document.getElementById('set-main-btn');
     btn.innerText = "END SET";
     btn.style.background = 'var(--glow-blue)';
     btn.onclick = startSetTimer;
     document.getElementById('set-timer-display').style.display = "none";
-    peakBuffer = []; // Clear buffer for new set
+    peakBuffer = []; 
 }
 
 function startSetTimer() {
@@ -149,7 +156,7 @@ function startSetTimer() {
     let timeLeft = 20;
     const countdown = setInterval(() => {
         timeLeft--;
-        timerText.innerText = "PEAK CAPTURE: " + timeLeft + "s";
+        timerText.innerText = "CAPTURE: " + timeLeft + "s";
         if (timeLeft <= 0) { clearInterval(countdown); processSetResult(); }
     }, 1000);
 }
@@ -160,9 +167,10 @@ function processSetResult() {
     setCounter++;
     const ratio = peakInLast20 / savedMax;
     const percent = Math.round(ratio * 100);
-    const barPx = Math.round(ratio * 130); 
+    const barPx = Math.round(ratio * 110); 
 
     const container = document.getElementById('set-bar-sidebar');
+    const hud = document.getElementById('hud-in-flow');
     const item = document.createElement('div');
     item.className = 'intensity-item';
     const label = document.createElement('span');
@@ -171,12 +179,11 @@ function processSetResult() {
 
     const bar = document.createElement('div');
     bar.className = 'set-bar';
-    bar.style.width = "0px";
     
-    // Bar color should be blue by default
+    // FIX: Set Bars default to Teal/Blue unless logic dictates otherwise
     if (ratio > 0.85) bar.style.background = '#ff0044';
     else if (ratio > 0.70) bar.style.background = '#ffaa00';
-    else bar.style.background = '#00f2ff';
+    else bar.style.background = 'var(--glow-blue)';
 
     const inner = document.createElement('span');
     inner.className = 'bar-inner-label';
@@ -184,7 +191,9 @@ function processSetResult() {
     bar.appendChild(inner);
     item.appendChild(label);
     item.appendChild(bar);
-    container.appendChild(item);
+    
+    // Insert BEFORE the HUD so buttons stay at bottom
+    container.insertBefore(item, hud);
 
     requestAnimationFrame(() => {
         setTimeout(() => {
@@ -193,10 +202,9 @@ function processSetResult() {
         }, 50);
     });
 
-    // Toggle HUD to "START NEXT SET"
     const btn = document.getElementById('set-main-btn');
     btn.innerText = "START NEXT SET";
-    btn.style.background = '#00ff88'; // Green for start
+    btn.style.background = '#00ff88'; 
     btn.style.display = "block";
     btn.onclick = resetSetHUD;
     document.getElementById('set-timer-display').style.display = "none";
@@ -204,7 +212,7 @@ function processSetResult() {
 
 function exitTraining() {
     isTrain = false;
-    document.getElementById('training-hud').style.display = "none";
+    document.getElementById('hud-in-flow').style.display = "none";
     document.getElementById('active-ex-context').style.display = 'none';
     document.getElementById('sidebar').style.display = "block";
 }
@@ -223,15 +231,11 @@ function drawSparkline() {
     ctx.lineWidth = 3;
     ctx.shadowBlur = 10;
     ctx.shadowColor = getEliteColor(bpm);
-
     const step = rect.width / (hrHistory.length - 1);
     const points = hrHistory.map((val, i) => ({ x: i * step, y: rect.height - ((val - 60) / 100) * rect.height }));
-
     ctx.beginPath();
     ctx.moveTo(points[0].x, points[0].y);
-    for (let i = 1; i < points.length; i++) {
-        ctx.lineTo(points[i].x, points[i].y);
-    }
+    for (let i = 1; i < points.length; i++) { ctx.lineTo(points[i].x, points[i].y); }
     ctx.stroke();
 }
 
