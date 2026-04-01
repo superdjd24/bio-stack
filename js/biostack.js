@@ -1,6 +1,6 @@
 /**
- * BIOSTACK ELITE ENGINE v10.21 STABLE
- * Front Grid Empty Row Reversal + Cache Bust
+ * BIOSTACK ELITE ENGINE v10.22 STABLE
+ * Front Grid Top/Bottom Realignment + Cache Bust
  */
 
 let bpm = 0;
@@ -237,15 +237,15 @@ function generateHitMap() {
     map.innerHTML = "";
     
     if (currentView === "front") {
-        // FIX: Reversed the operation. Row 6 increases (+20%), Row 5 decreases (-20%)
-        map.style.gridTemplateRows = '8% 8% 17% 17% 17% 33%';
+        // FIX: Doubled Top Row (16%), Shrunk Bottom Row (25%)
+        map.style.gridTemplateRows = '16% 8% 17% 17% 17% 25%';
         const fG = [
-            "Deltoids", "", "TOGGLE_BACK",           // Row 1 (8%)
+            "Deltoids", "", "TOGGLE_BACK",           // Row 1 (16%) <-- Expanded Top Row
             "Biceps", "Pectorals", "Biceps",         // Row 2 (8%)
             "Forearms", "Abdominals", "Forearms",    // Row 3 (17%)
             "Quads", "Quads", "Quads",               // Row 4 (17%)
-            "", "", "",                              // Row 5 (17%) <-- Shrunk
-            "", "", ""                               // Row 6 (33%) <-- Expanded
+            "", "", "",                              // Row 5 (17%) 
+            "", "", ""                               // Row 6 (25%) <-- Absorbed Bottom Row
         ];
         fG.forEach((m) => {
             const div = document.createElement('div');
@@ -255,15 +255,16 @@ function generateHitMap() {
             map.appendChild(div);
         });
     } else {
+        // Untouched Back Grid
         map.style.gridTemplateRows = '12% 10% 22% 8% 4% 20% 24%';
         const bG = [
-            "TOGGLE_FRONT", "", "",                   // Row 1 (12%)
-            "Trapezoids", "Trapezoids", "Trapezoids", // Row 2 (10%)
-            "Triceps", "Lats", "Triceps",             // Row 3 (22%)
-            "", "", "",                               // Row 4 (8%)
-            "Glutes", "Glutes", "Glutes",             // Row 5 (4%)  
-            "Hamstrings", "Hamstrings", "Hamstrings", // Row 6 (20%) 
-            "Calves", "Calves", "Calves"              // Row 7 (24%) 
+            "TOGGLE_FRONT", "", "",                   
+            "Trapezoids", "Trapezoids", "Trapezoids", 
+            "Triceps", "Lats", "Triceps",             
+            "", "", "",                               
+            "Glutes", "Glutes", "Glutes",             
+            "Hamstrings", "Hamstrings", "Hamstrings", 
+            "Calves", "Calves", "Calves"              
         ];
         bG.forEach((m) => {
             const div = document.createElement('div');
