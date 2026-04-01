@@ -8,34 +8,32 @@
     </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BioStack Elite v5.2</title>
+    <title>BioStack Elite v5.3</title>
     <style>
         :root { --glow-blue: #00f2ff; --bg-dark: #05070a; --glass: rgba(15, 20, 30, 0.95); --border: #30363d; }
         body { margin: 0; background: var(--bg-dark); color: white; font-family: -apple-system, system-ui, sans-serif; overflow: hidden; height: 100vh; }
         
-        /* TOP DASHBOARD */
         #top-dash { position: fixed; top: 0; width: 100%; height: 100px; display: flex; align-items: center; justify-content: space-between; padding: 20px; box-sizing: border-box; z-index: 1000; }
         
-        /* Telemetry Grouping */
-        #tel-group { display: flex; align-items: center; gap: 10px; }
+        #tel-group { display: flex; align-items: center; gap: 12px; }
         
         #hr-pill { 
             background: var(--glass); 
             width: 110px; height: 60px; 
             border-radius: 50px; border: 1px solid var(--border); 
             display: flex; align-items: center; justify-content: center; 
-            cursor: pointer; flex-shrink: 0;
+            cursor: pointer;
         }
-        #hr-val { font-size: 2.2rem; font-weight: 900; color: var(--glow-blue); text-align: center; width: 100%; }
+        #hr-val { font-size: 2.2rem; font-weight: 900; color: var(--glow-blue); text-shadow: 0 0 10px rgba(0, 242, 255, 0.5); }
         
-        #hr-icon { width: 22px; height: auto; opacity: 0.7; }
+        #hr-icon { width: 24px; height: auto; opacity: 1; filter: drop-shadow(0 0 5px var(--glow-blue)); }
 
-        /* WIDENED GRAPH BOX (+30%) */
+        /* WIDENED GRAPH BOX */
         #graph-box { 
-            width: 160px; 
+            width: 170px; 
             height: 45px; 
-            border-bottom: 1px solid #111; 
             position: relative; 
+            overflow: visible;
         }
         #sparkline-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
         
@@ -43,15 +41,9 @@
         #sidebar { position: fixed; top: 200px; left: 20px; width: 140px; z-index: 500; }
         .list-btn { width: 100%; padding: 10px; margin-bottom: 8px; border-radius: 12px; border: 1px solid var(--border); background: var(--glass); color: white; font-size: 0.7rem; text-align: left; }
 
-        #version-tag { position: fixed; bottom: 15px; left: 15px; font-size: 0.6rem; color: #333; z-index: 1000; }
+        #version-tag { position: fixed; bottom: 15px; left: 15px; font-size: 0.6rem; color: #444; z-index: 1000; }
 
-        /* THE STAGE */
-        #stage-area { 
-            position: fixed; top: 120px; right: 0; 
-            width: 45vw; height: 65vh; 
-            display: flex; justify-content: flex-end; z-index: 10; 
-        }
-
+        #stage-area { position: fixed; top: 120px; right: 0; width: 42vw; height: 65vh; display: flex; justify-content: flex-end; z-index: 10; }
         #image-container { position: relative; height: 100%; width: auto; display: inline-block; }
         #base-front { height: 100%; width: auto; display: block; opacity: 1; }
         .stack-layer { position: absolute; top: 0; right: 0; height: 100%; width: auto; pointer-events: none; transition: opacity 0.4s ease; display: none; }
@@ -59,12 +51,7 @@
         .muscle-overlay { z-index: 12; opacity: 0; mix-blend-mode: screen; }
         .ui-overlay { z-index: 15; opacity: 1; pointer-events: none; }
 
-        #touch-map { 
-            position: absolute; top: 0; right: 0; width: 100%; height: 100%; 
-            z-index: 2000; display: grid; 
-            grid-template-columns: repeat(3, 1fr); 
-            grid-template-rows: repeat(6, 1fr); 
-        }
+        #touch-map { position: absolute; top: 0; right: 0; width: 100%; height: 100%; z-index: 2000; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(6, 1fr); }
         .hit { width: 100%; height: 100%; pointer-events: auto; }
 
         .overlay { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); width: 92%; max-width: 400px; background: var(--glass); border-radius: 35px; padding: 30px; border: 1px solid var(--border); backdrop-filter: blur(25px); display: none; text-align: center; z-index: 3000; }
@@ -72,7 +59,7 @@
 </head>
 <body>
 
-    <div id="version-tag">BIOSTACK_v5.2_STABLE</div>
+    <div id="version-tag">BIOSTACK_v5.3_STABLE</div>
 
     <div id="top-dash">
         <div id="tel-group">
