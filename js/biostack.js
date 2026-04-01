@@ -1,6 +1,6 @@
 /**
- * BIOSTACK ELITE ENGINE v10.23 STABLE
- * Front Grid Reversal & Top Shift + Cache Bust
+ * BIOSTACK ELITE ENGINE v10.24 STABLE
+ * Front Grid Fine-Tuning Shift Up + Cache Bust
  */
 
 let bpm = 0;
@@ -237,16 +237,15 @@ function generateHitMap() {
     map.innerHTML = "";
     
     if (currentView === "front") {
-        // FIX: Re-ordered the layout to push the muscles down.
-        // Row 1 is now the 25% empty buffer. 
-        map.style.gridTemplateRows = '25% 16% 8% 17% 17% 17%';
+        // FIX: Top row (Empty) shrunk by 25% (25% -> 19%). Absorbed by Bottom Row (17% -> 23%).
+        map.style.gridTemplateRows = '19% 16% 8% 17% 17% 23%';
         const fG = [
-            "", "", "TOGGLE_BACK",                   // New Row 1 (25%) - Empty space pushing down
-            "Deltoids", "", "",                      // New Row 2 (16%) - Formerly Row 1
-            "Biceps", "Pectorals", "Biceps",         // New Row 3 (8%)  - Formerly Row 2
-            "Forearms", "Abdominals", "Forearms",    // New Row 4 (17%) - Formerly Row 3
-            "Quads", "Quads", "Quads",               // New Row 5 (17%) - Formerly Row 4
-            "", "", ""                               // New Row 6 (17%) - Formerly Row 5
+            "", "", "TOGGLE_BACK",                   // New Row 1 (19%) - Top Empty Space
+            "Deltoids", "", "",                      // New Row 2 (16%)
+            "Biceps", "Pectorals", "Biceps",         // New Row 3 (8%)
+            "Forearms", "Abdominals", "Forearms",    // New Row 4 (17%)
+            "Quads", "Quads", "Quads",               // New Row 5 (17%)
+            "", "", ""                               // New Row 6 (23%) - Bottom Empty Space
         ];
         fG.forEach((m) => {
             const div = document.createElement('div');
