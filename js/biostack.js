@@ -1,6 +1,6 @@
 /**
- * BIOSTACK ELITE ENGINE v8.5
- * Grid Restoration & Intensity Logic
+ * BIOSTACK ELITE ENGINE v8.9
+ * Hard-Paint Unit Fix
  */
 
 let bpm = 0;
@@ -78,8 +78,6 @@ function calibrateExercise() {
     closeAction();
     document.getElementById('sidebar').style.display = "none";
     document.getElementById('calibration-hud').style.display = "block";
-    document.getElementById('cal-main-btn').style.display = "block";
-    document.getElementById('cal-timer-display').style.display = "none";
 }
 
 function startCalTimer() {
@@ -105,11 +103,9 @@ function lockMaxHr() {
 }
 
 function startTraining() {
-    isTrain = true; isCalibrating = false;
+    isTrain = true;
     const newEx = document.getElementById('ex-name-modal').innerText;
-    if (newEx !== activeExercise) {
-        document.getElementById('set-bar-sidebar').innerHTML = ""; 
-    }
+    if (newEx !== activeExercise) { document.getElementById('set-bar-sidebar').innerHTML = ""; }
     activeExercise = newEx;
     document.getElementById('active-ex-tag').innerText = "WORK SET: " + activeExercise;
     document.getElementById('training-hud').style.display = "block";
@@ -134,20 +130,28 @@ function startSetTimer() {
 function processSetResult() {
     const savedMax = localStorage.getItem('maxhr_' + activeExercise) || 190;
     const peakInLast20 = peakBuffer.length > 0 ? Math.max(...peakBuffer.map(p => p.bpm)) : bpm;
-    const intensityPercent = Math.round((peakInLast20 / savedMax) * 100);
+    
+    // Calculate Pixel width based on 100px sidebar
+    const intensityPercent = (peakInLast20 / savedMax);
+    const targetPx = Math.round(intensityPercent * 100);
     
     const barContainer = document.getElementById('set-bar-sidebar');
     const bar = document.createElement('div');
     bar.className = 'set-bar';
+    bar.style.width = "0px"; // Unit Unit Unit!
     
-    if (intensityPercent > 85) bar.style.background = '#ff0044';
-    else if (intensityPercent > 70) bar.style.background = '#ffaa00';
+    if (intensityPercent > 0.85) bar.style.background = '#ff0044';
+    else if (intensityPercent > 0.70) bar.style.background = '#ffaa00';
     else bar.style.background = '#00f2ff';
 
     barContainer.appendChild(bar);
-    setTimeout(() => {
-        bar.style.width = Math.min(intensityPercent, 100) + '%';
-    }, 100);
+    
+    // HARD-PAINT: Force width update in the next frame
+    window.requestAnimationFrame(() => {
+        setTimeout(() => {
+            bar.style.width = Math.max(10, Math.min(targetPx, 100)) + "px";
+        }, 50);
+    });
 
     document.getElementById('set-main-btn').style.display = "block";
     document.getElementById('set-timer-display').style.display = "none";
@@ -179,7 +183,6 @@ function drawSparkline() {
     drawCurve(ctx, points, glow, 8); drawCurve(ctx, points, color, 3);
 }
 
-// RESTORED GRID LOGIC FROM v8.2
 function generateHitMap() {
     const map = document.getElementById('touch-map');
     if (!map) return;
