@@ -1,6 +1,6 @@
 /**
- * BIOSTACK ELITE v5.2
- * Reverted Linear Graph
+ * BIOSTACK ELITE v5.3
+ * High-Intensity Graph Engine
  */
 let bpm = 0, currentMusc = "", currentView = "front", isTrain = false, hrHistory = [];
 
@@ -52,22 +52,36 @@ function drawSparkline() {
     ctx.clearRect(0, 0, rect.width, rect.height);
     if (hrHistory.length < 2) return;
 
+    const step = rect.width / (hrHistory.length - 1);
+
+    // PASS 1: The "Glow" (Blurry and thick)
     ctx.beginPath();
-    ctx.strokeStyle = '#00f2ff';
-    ctx.lineWidth = 3;
+    ctx.strokeStyle = 'rgba(0, 242, 255, 0.3)';
+    ctx.lineWidth = 6;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
-
-    const step = rect.width / (hrHistory.length - 1);
     hrHistory.forEach((val, i) => {
         const x = i * step;
-        // Map HR (60-160) to canvas height (linear)
         const y = rect.height - ((val - 60) / 100) * rect.height;
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+
+    // PASS 2: The "Core" (Sharp and bright)
+    ctx.beginPath();
+    ctx.strokeStyle = '#00f2ff';
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    hrHistory.forEach((val, i) => {
+        const x = i * step;
+        const y = rect.height - ((val - 60) / 100) * rect.height;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
     });
     ctx.stroke();
 }
+
+// ... generateHitMap, switchView, selectMuscle functions stay same as v5.2 ...
 
 function generateHitMap() {
     const map = document.getElementById('touch-map');
