@@ -8,34 +8,44 @@
     </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BioStack Elite v5.0</title>
+    <title>BioStack Elite v5.1</title>
     <style>
         :root { --glow-blue: #00f2ff; --bg-dark: #05070a; --glass: rgba(15, 20, 30, 0.95); --border: #30363d; }
         body { margin: 0; background: var(--bg-dark); color: white; font-family: -apple-system, system-ui, sans-serif; overflow: hidden; height: 100vh; }
         
         /* DASHBOARD TOP */
-        #top-dash { position: fixed; top: 0; width: 100%; height: 100px; display: flex; align-items: center; justify-content: space-between; padding: 20px; box-sizing: border-box; z-index: 1000; }
+        #top-dash { position: fixed; top: 0; width: 100%; height: 100px; display: flex; align-items: center; justify-content: space-between; padding: 20px 10px; box-sizing: border-box; z-index: 1000; }
         
+        /* FIX #3: Telemetry grouping for proper icon placement */
+        #tel-group { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+        
+        /* No changes to HR Pill style */
         #hr-pill { 
             background: var(--glass); 
-            width: 110px; height: 60px; 
+            width: 100px; height: 50px; /* Reduced slightly to save horizontal space */
             border-radius: 50px; border: 1px solid var(--border); 
             display: flex; align-items: center; justify-content: center; 
-            cursor: pointer; flex-shrink: 0;
+            cursor: pointer;
         }
-        #hr-val { font-size: 2.2rem; font-weight: 900; color: var(--glow-blue); text-align: center; }
+        #hr-val { font-size: 2.1rem; font-weight: 900; color: var(--glow-blue); text-align: center; }
         
-        /* GRAPH CONTAINER - Forced dimensions */
-        #graph-box { width: 120px; height: 40px; border-bottom: 1px solid #111; position: relative; }
+        /* HEARTBEAT ICON */
+        #hr-icon { width: 18px; height: auto; opacity: 0.6; pointer-events: none; }
+
+        /* FIX #2: Widened Graph Box (+30%) */
+        #graph-box { 
+            width: 160px; /* 120px + 30% = ~160px */
+            height: 40px; border-bottom: 1px solid #111; position: relative; 
+        }
         #sparkline-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
         
         #mid-dash { position: fixed; top: 110px; left: 20px; z-index: 900; }
-        #sidebar { position: fixed; top: 200px; left: 20px; width: 140px; z-index: 500; }
+        #sidebar { position: fixed; top: 200px; left: 20px; width: 130px; z-index: 500; }
         .list-btn { width: 100%; padding: 10px; margin-bottom: 8px; border-radius: 12px; border: 1px solid var(--border); background: var(--glass); color: white; font-size: 0.7rem; text-align: left; }
 
         #version-tag { position: fixed; bottom: 15px; left: 15px; font-size: 0.6rem; color: #333; z-index: 1000; }
 
-        /* THE STAGE - 45vw (30% total reduction) */
+        /* THE STAGE */
         #stage-area { 
             position: fixed; top: 120px; right: 0; 
             width: 45vw; height: 65vh; 
@@ -49,12 +59,7 @@
         .muscle-overlay { z-index: 12; opacity: 0; mix-blend-mode: screen; }
         .ui-overlay { z-index: 15; opacity: 1; pointer-events: none; }
 
-        #touch-map { 
-            position: absolute; top: 0; right: 0; width: 100%; height: 100%; 
-            z-index: 2000; display: grid; 
-            grid-template-columns: repeat(3, 1fr); 
-            grid-template-rows: repeat(6, 1fr); 
-        }
+        #touch-map { position: absolute; top: 0; right: 0; width: 100%; height: 100%; z-index: 2000; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(6, 1fr); }
         .hit { width: 100%; height: 100%; pointer-events: auto; }
 
         .overlay { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); width: 92%; max-width: 400px; background: var(--glass); border-radius: 35px; padding: 30px; border: 1px solid var(--border); backdrop-filter: blur(25px); display: none; text-align: center; z-index: 3000; }
@@ -62,11 +67,14 @@
 </head>
 <body>
 
-    <div id="version-tag">BIOSTACK_v5.0_STABLE</div>
+    <div id="version-tag">BIOSTACK_v5.1_TUNED</div>
 
     <div id="top-dash">
-        <div id="hr-pill" onclick="startStream()">
-            <span id="hr-val">LINK</span>
+        <div id="tel-group">
+            <div id="hr-pill" onclick="startStream()">
+                <span id="hr-val">LINK</span>
+            </div>
+            <img src="assets/heartbeat_icon.png" id="hr-icon">
         </div>
         <div id="graph-box">
             <canvas id="sparkline-canvas"></canvas>
