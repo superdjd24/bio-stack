@@ -1,33 +1,190 @@
-<script>
-async function saveAndGo() {
-    const w = document.getElementById('user-weight').value;
-    const h = document.getElementById('user-height').value;
-    const a = document.getElementById('user-age').value;
-    
-    if(!w || !h || !a) {
-        alert("Weight, Height, and Age are required.");
-        return;
-    }
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>BioStack Elite v10.10 STABLE</title>
+    <style>
+        :root { --glow-blue: #00f2ff; --bg-dark: #05070a; --glass: rgba(15, 20, 30, 0.95); --border: #30363d; }
+        body { margin: 0; background: var(--bg-dark); color: white; font-family: -apple-system, system-ui, sans-serif; overflow: hidden; height: 100vh; }
+        
+        #login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-dark); z-index: 10000; display: flex; align-items: center; justify-content: center; }
+        .login-card { background: var(--glass); padding: 40px; border-radius: 30px; border: 1px solid var(--border); text-align: center; width: 85%; max-width: 400px; }
+        input { width: 100%; padding: 15px; margin-bottom: 15px; border-radius: 12px; border: 1px solid #444; background: #000; color: #fff; box-sizing: border-box; }
+        #init-btn { width: 100%; padding: 18px; background: var(--glow-blue); border-radius: 50px; font-weight: 800; border: none; cursor: pointer; }
 
-    try {
-        // ACTUAL BLE INITIALIZATION
-        const device = await navigator.bluetooth.requestDevice({ 
-            filters: [{ services: ['heart_rate'] }] 
-        });
+        #main-dashboard { display: none; opacity: 0; transition: opacity 0.8s ease; }
         
-        // Save Biometrics
-        localStorage.setItem('bio_weight', w);
-        localStorage.setItem('bio_height', h);
-        localStorage.setItem('bio_age', a);
+        #top-dash { 
+            position: fixed; 
+            top: 0; 
+            width: 100%; 
+            height: 100px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+            padding: 20px 30px; 
+            box-sizing: border-box; 
+            z-index: 9000; 
+        }
         
-        // Flag that we are paired and ready
-        sessionStorage.setItem('biostack_paired', 'true');
+        #hr-pill { 
+            background: var(--glass); 
+            padding: 0 15px;
+            width: 135px;
+            height: 65px; 
+            border-radius: 50px; 
+            border: 1px solid var(--border); 
+            display: flex; 
+            align-items: center; 
+            justify-content: flex-start;
+            gap: 8px;
+        }
+        #hr-val { font-size: 2.4rem; font-weight: 900; color: var(--glow-blue); flex-grow: 1; text-align: center; }
+        #hr-icon { width: 24px; height: auto; margin-left: 5px; }
         
-        // Redirect to App
-        window.location.href = 'app.html';
+        #graph-box { width: 200px; height: 50px; position: relative; }
+        #sparkline-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+
+        #mid-dash { position: fixed; top: 110px; left: 20px; z-index: 900; }
+        #total-cal { color: var(--glow-blue); font-size: 1.4rem; font-weight: 700; }
+        #musc-header { font-size: 0.8rem; margin-top: 10px; color: var(--glow-blue); letter-spacing: 1px; }
+        #active-ex-tag { font-size: 0.6rem; color: #666; margin-top: 5px; text-transform: uppercase; }
+
+        #sidebar { position: fixed; top: 200px; left: 20px; width: 140px; z-index: 500; }
+        .list-btn { width: 100%; padding: 12px; margin-bottom: 8px; border-radius: 12px; border: 1px solid var(--border); background: var(--glass); color: white; font-size: 0.7rem; text-align: left; }
+
+        #stage-area { position: fixed; top: 120px; right: 0; width: 75vw; height: 65vh; display: flex; align-items: center; justify-content: flex-end; z-index: 10; }
         
-    } catch (e) {
-        alert("Bluetooth Setup Cancelled or Failed: " + e.message);
-    }
-}
-</script>
+        #set-bar-sidebar { 
+            width: 200px; 
+            height: 450px; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 12px; 
+            margin-right: 15px; 
+            padding: 10px;
+            justify-content: flex-start;
+            align-items: flex-start;
+            border-right: none; 
+        }
+
+        #active-ex-context { font-size: 0.65rem; color: var(--glow-blue); text-transform: uppercase; border-bottom: 1px solid rgba(0,242,255,0.2); width: 100%; text-align: left; padding-bottom: 8px; margin-bottom: 5px; font-weight: 700; display: none; }
+        .intensity-item { width: 100%; display: flex; align-items: center; gap: 10px; justify-content: flex-start; }
+        .intensity-label { font-size: 0.7rem; color: #fff; font-weight: 600; flex-shrink: 0; width: 45px; }
+        
+        .set-bar { 
+            height: 18px; 
+            background: var(--glow-blue); 
+            border-radius: 4px; 
+            transition: width 1s cubic-bezier(0.1, 0.7, 1.0, 0.1); 
+            width: 0px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+        .bar-inner-label { font-size: 0.65rem; color: #000; font-weight: 900; opacity: 0; transition: opacity 0.3s ease 0.8s; }
+        .set-bar.revealed .bar-inner-label { opacity: 1; }
+
+        #hud-in-flow { width: 100%; margin-top: 15px; display: none; }
+        .flow-btn { width: 100%; padding: 14px; border-radius: 12px; border: none; font-weight: 800; text-transform: uppercase; cursor: pointer; margin-bottom: 10px; }
+        #new-ex-btn { background: transparent; border: 1px solid #444; color: #888; font-size: 0.7rem; }
+
+        #image-container { position: relative; height: 100%; width: auto; display: inline-block; }
+        #base-front { height: 100%; width: auto; display: block; z-index: 5; }
+        .stack-layer { position: absolute; top: 0; right: 0; height: 100%; width: auto; pointer-events: none; transition: opacity 0.4s ease; display: none; }
+        .layer-visible { display: block; }
+        .muscle-overlay { z-index: 10; opacity: 0; mix-blend-mode: screen; }
+        .ui-overlay { z-index: 20; opacity: 1; pointer-events: none; }
+
+        #touch-map { position: absolute; top: 0; right: 10%; width: 80%; height: 100%; z-index: 100; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(6, 1fr); }
+        .hit { width: 100%; height: 100%; pointer-events: auto; }
+
+        .overlay { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); width: 92%; max-width: 400px; background: var(--glass); border-radius: 35px; padding: 30px; border: 1px solid var(--border); backdrop-filter: blur(25px); display: none; text-align: center; z-index: 9500; }
+        
+        #calibration-hud { position: fixed; top: 160px; left: 20px; display: none; z-index: 9999; }
+        .hud-btn-cal { background: #ffaa00; color: #000; padding: 15px 30px; border-radius: 50px; border: none; font-weight: 900; text-transform: uppercase; cursor: pointer; }
+        .hud-timer-cal { display:none; color:#ffaa00; font-weight:800; display:block; margin-top:10px; font-size: 0.75rem; text-transform:uppercase; letter-spacing:1px; }
+
+        #version-tag { position: fixed; bottom: 15px; left: 15px; font-size: 0.6rem; color: #333; }
+    </style>
+</head>
+<body>
+
+    <div id="version-tag">BIOSTACK_v10.10_STABLE_TEAL</div>
+
+    <div id="login-screen">
+        <div class="login-card">
+            <h2>BIOSTACK ELITE</h2>
+            <input type="number" id="user-weight" placeholder="Weight (lbs)">
+            <input type="number" id="user-age" placeholder="Age">
+            <button id="init-btn" onclick="initSystem()">Initialize & Link</button>
+        </div>
+    </div>
+
+    <div id="main-dashboard">
+        <div id="top-dash">
+            <div id="hr-pill">
+                <img src="assets/heartbeat_icon.png" id="hr-icon">
+                <span id="hr-val">--</span>
+            </div>
+            <div id="graph-box"><canvas id="sparkline-canvas"></canvas></div>
+        </div>
+
+        <div id="mid-dash">
+            <div><span id="total-cal">0</span> <span style="font-size:0.7rem; opacity:0.5;">CALORIES</span></div>
+            <div id="musc-header">TARGET: --</div>
+            <div id="active-ex-tag">NO ACTIVE EXERCISE</div>
+        </div>
+
+        <div id="sidebar"><div id="exercise-picker"></div></div>
+
+        <div id="calibration-hud">
+            <button id="cal-main-btn" class="hud-btn-cal" onclick="startCalTimer()">FINISH CALIBRATION</button>
+            <span id="cal-timer-display" class="hud-timer-cal"></span>
+        </div>
+
+        <div id="stage-area">
+            <div id="set-bar-sidebar">
+                <div id="active-ex-context"></div>
+                <div id="hud-in-flow">
+                    <button id="set-main-btn" class="flow-btn" onclick="startSetTimer()" style="background: var(--glow-blue); color:#000;">END SET</button>
+                    <span id="set-timer-display" style="display:none; font-size:0.75rem; color:#ffaa00; margin-bottom:10px; font-weight:800; text-transform:uppercase;">Analyzing vitals...</span>
+                    <button id="new-ex-btn" class="flow-btn" onclick="exitTraining()">NEW EXERCISE</button>
+                </div>
+            </div>
+            <div id="image-container">
+                <img src="assets/base_front.png" id="base-front">
+                <img src="assets/back_button.png" id="btn-to-back" class="stack-layer ui-overlay layer-visible">
+                <img src="assets/front_button.png" id="btn-to-front" class="stack-layer ui-overlay">
+                
+                <img src="assets/trapezoids.png" id="overlay-trapezoids" class="muscle-overlay stack-layer layer-visible">
+                <img src="assets/deltoids.png" id="overlay-deltoids" class="muscle-overlay stack-layer layer-visible">
+                <img src="assets/pectorals.png" id="overlay-pectorals" class="muscle-overlay stack-layer layer-visible">
+                <img src="assets/biceps.png" id="overlay-biceps" class="muscle-overlay stack-layer layer-visible">
+                <img src="assets/forearms.png" id="overlay-forearms" class="muscle-overlay stack-layer layer-visible">
+                <img src="assets/abdominals.png" id="overlay-abdominals" class="muscle-overlay stack-layer layer-visible">
+                <img src="assets/quads.png" id="overlay-quads" class="muscle-overlay stack-layer layer-visible">
+                
+                <img src="assets/base_back.png" id="base-back" class="stack-layer" style="z-index: 6;">
+                <img src="assets/lats.png" id="overlay-lats" class="muscle-overlay stack-layer">
+                <img src="assets/triceps.png" id="overlay-triceps" class="muscle-overlay stack-layer">
+                <img src="assets/glutes.png" id="overlay-glutes" class="muscle-overlay stack-layer">
+                <img src="assets/hamstrings.png" id="overlay-hamstrings" class="muscle-overlay stack-layer">
+                <img src="assets/calves.png" id="overlay-calves" class="muscle-overlay stack-layer">
+                <div id="touch-map"></div>
+            </div>
+        </div>
+
+        <div id="menu-action" class="overlay">
+            <h2 id="ex-name-modal" style="margin-bottom:25px;">EXERCISE</h2>
+            <button onclick="startTraining()" style="width:100%; padding:18px; border-radius:50px; background:var(--glow-blue); font-weight:800; border:none; cursor:pointer;">START SETS</button>
+            <button onclick="calibrateExercise()" style="width:100%; padding:18px; border-radius:50px; background:transparent; border:1px solid var(--glow-blue); color:var(--glow-blue); font-weight:800; margin-top:10px; cursor:pointer;">CALIBRATE MAX HR</button>
+            <p onclick="closeAction()" style="margin-top:15px; font-size:0.8rem; opacity:0.5; cursor:pointer;">CANCEL</p>
+        </div>
+    </div>
+
+    <script src="js/biostack.js?v=13"></script>
+</body>
+</html>
