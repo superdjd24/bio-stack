@@ -1,6 +1,6 @@
 /**
- * BIOSTACK ELITE ENGINE v8.2
- * Refined Intensity Bar Processing
+ * BIOSTACK ELITE ENGINE v8.5
+ * Grid Restoration & Intensity Logic
  */
 
 let bpm = 0;
@@ -71,7 +71,6 @@ function calculateCals(currentBpm) {
     if (calDisplay) calDisplay.innerText = Math.round(totalCalories);
 }
 
-/** CALIBRATION HUD LOGIC **/
 function calibrateExercise() {
     isCalibrating = true; isTrain = false; tempMaxHr = 0;
     activeExercise = document.getElementById('ex-name-modal').innerText;
@@ -105,22 +104,17 @@ function lockMaxHr() {
     document.getElementById('sidebar').style.display = "block";
 }
 
-/** TRAINING HUD LOGIC **/
 function startTraining() {
-    isTrain = true; isCalibrating = false; peakBuffer = []; 
+    isTrain = true; isCalibrating = false;
     const newEx = document.getElementById('ex-name-modal').innerText;
-    
-    // Only clear bars if we changed exercises
     if (newEx !== activeExercise) {
         document.getElementById('set-bar-sidebar').innerHTML = ""; 
     }
-    
     activeExercise = newEx;
     document.getElementById('active-ex-tag').innerText = "WORK SET: " + activeExercise;
     document.getElementById('training-hud').style.display = "block";
     document.getElementById('set-main-btn').style.display = "block";
     document.getElementById('set-timer-display').style.display = "none";
-    
     closeAction();
     document.getElementById('sidebar').style.display = "none";
 }
@@ -140,32 +134,23 @@ function startSetTimer() {
 function processSetResult() {
     const savedMax = localStorage.getItem('maxhr_' + activeExercise) || 190;
     const peakInLast20 = peakBuffer.length > 0 ? Math.max(...peakBuffer.map(p => p.bpm)) : bpm;
-    
-    // Intensity relative to the exercise-specific Max HR
-    const intensityPercent = (peakInLast20 / savedMax) * 100;
+    const intensityPercent = Math.round((peakInLast20 / savedMax) * 100);
     
     const barContainer = document.getElementById('set-bar-sidebar');
     const bar = document.createElement('div');
     bar.className = 'set-bar';
-    
-    // Start with 0 width for the transition effect
-    bar.style.width = "0%";
     
     if (intensityPercent > 85) bar.style.background = '#ff0044';
     else if (intensityPercent > 70) bar.style.background = '#ffaa00';
     else bar.style.background = '#00f2ff';
 
     barContainer.appendChild(bar);
-    
-    // Trigger transition
     setTimeout(() => {
         bar.style.width = Math.min(intensityPercent, 100) + '%';
     }, 100);
 
-    // Reset UI for next set
     document.getElementById('set-main-btn').style.display = "block";
     document.getElementById('set-timer-display').style.display = "none";
-    document.getElementById('set-timer-display').innerText = "PEAK CAPTURE: 20s";
 }
 
 function exitTraining() {
@@ -175,7 +160,6 @@ function exitTraining() {
     document.getElementById('active-ex-tag').innerText = "NO ACTIVE EXERCISE";
 }
 
-/** VIS & GRID **/
 function drawSparkline() {
     const canvas = document.getElementById('sparkline-canvas');
     if (!canvas) return;
@@ -195,6 +179,7 @@ function drawSparkline() {
     drawCurve(ctx, points, glow, 8); drawCurve(ctx, points, color, 3);
 }
 
+// RESTORED GRID LOGIC FROM v8.2
 function generateHitMap() {
     const map = document.getElementById('touch-map');
     if (!map) return;
