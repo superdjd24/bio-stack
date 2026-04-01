@@ -1,6 +1,6 @@
 /**
- * BIOSTACK ELITE ENGINE v10.26 STABLE
- * Front Ruler-Perfect Map Alignment + Cache Bust
+ * BIOSTACK ELITE ENGINE v10.27 STABLE
+ * HUD Spacing Fix + Cache Bust
  */
 
 let bpm = 0;
@@ -237,7 +237,6 @@ function generateHitMap() {
     map.innerHTML = "";
     
     if (currentView === "front") {
-        // Pixel-perfect mapping extracted directly from user's ruler overlay
         map.style.gridTemplateRows = '19% 10% 9% 11% 23% 28%';
         const fG = [
             "", "", "TOGGLE_BACK",                   // R1 (19%) 
