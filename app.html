@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BioStack Elite v9.6</title>
+    <title>BioStack Elite v9.7</title>
     <style>
         :root { --glow-blue: #00f2ff; --bg-dark: #05070a; --glass: rgba(15, 20, 30, 0.95); --border: #30363d; }
         body { margin: 0; background: var(--bg-dark); color: white; font-family: -apple-system, system-ui, sans-serif; overflow: hidden; height: 100vh; }
@@ -14,7 +14,20 @@
         #init-btn { width: 100%; padding: 18px; background: var(--glow-blue); border-radius: 50px; font-weight: 800; border: none; cursor: pointer; }
 
         #main-dashboard { display: none; opacity: 0; transition: opacity 0.8s ease; }
-        #top-dash { position: fixed; top: 0; width: 100%; height: 100px; display: flex; align-items: center; justify-content: space-between; padding: 20px; box-sizing: border-box; z-index: 9000; }
+        
+        /* TOP DASH FIX: Explicitly separate left pill and right graph */
+        #top-dash { 
+            position: fixed; 
+            top: 0; 
+            width: 100%; 
+            height: 100px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+            padding: 20px 30px; 
+            box-sizing: border-box; 
+            z-index: 9000; 
+        }
         
         #hr-pill { 
             background: var(--glass); 
@@ -28,10 +41,11 @@
             justify-content: flex-start;
             gap: 8px;
         }
-        #hr-val { font-size: 2.4rem; font-weight: 900; color: var(--glow-blue); transition: color 0.3s ease; flex-grow: 1; text-align: center; }
+        #hr-val { font-size: 2.4rem; font-weight: 900; color: var(--glow-blue); flex-grow: 1; text-align: center; }
         #hr-icon { width: 24px; height: auto; margin-left: 5px; }
         
-        #graph-box { width: 180px; height: 45px; position: relative; }
+        /* Sparkline positioned back to the right */
+        #graph-box { width: 200px; height: 50px; position: relative; }
         #sparkline-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
 
         #mid-dash { position: fixed; top: 110px; left: 20px; z-index: 900; }
@@ -45,7 +59,7 @@
         #stage-area { position: fixed; top: 120px; right: 0; width: 75vw; height: 65vh; display: flex; align-items: center; justify-content: flex-end; z-index: 10; }
         
         #set-bar-sidebar { 
-            width: 180px; 
+            width: 200px; 
             height: 450px; 
             display: flex; 
             flex-direction: column; 
@@ -54,12 +68,12 @@
             padding: 10px;
             justify-content: flex-start;
             align-items: flex-start;
-            border-right: none;
+            border-right: none; /* KILLED THE GHOST LINE */
         }
 
         #active-ex-context { font-size: 0.65rem; color: var(--glow-blue); text-transform: uppercase; border-bottom: 1px solid rgba(0,242,255,0.2); width: 100%; text-align: left; padding-bottom: 8px; margin-bottom: 5px; font-weight: 700; }
         .intensity-item { width: 100%; display: flex; align-items: center; gap: 10px; justify-content: flex-start; }
-        .intensity-label { font-size: 0.7rem; color: #fff; font-weight: 600; flex-shrink: 0; width: 40px; }
+        .intensity-label { font-size: 0.7rem; color: #fff; font-weight: 600; flex-shrink: 0; width: 45px; }
         
         .set-bar { 
             height: 18px; 
@@ -100,7 +114,7 @@
 </head>
 <body>
 
-    <div id="version-tag">BIOSTACK_v9.6_SESSION_RESET</div>
+    <div id="version-tag">BIOSTACK_v9.7_UI_FIXED</div>
 
     <div id="login-screen">
         <div class="login-card">
@@ -113,13 +127,11 @@
 
     <div id="main-dashboard">
         <div id="top-dash">
-            <div id="tel-group">
-                <div id="hr-pill">
-                    <img src="assets/heartbeat_icon.png" id="hr-icon">
-                    <span id="hr-val">--</span>
-                </div>
-                <div id="graph-box"><canvas id="sparkline-canvas"></canvas></div>
+            <div id="hr-pill">
+                <img src="assets/heartbeat_icon.png" id="hr-icon">
+                <span id="hr-val">--</span>
             </div>
+            <div id="graph-box"><canvas id="sparkline-canvas"></canvas></div>
         </div>
 
         <div id="mid-dash">
