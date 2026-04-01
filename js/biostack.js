@@ -1,14 +1,15 @@
 /**
- * BIOSTACK ELITE ENGINE v7.1
- * RE-CALIBRATED MASTER BUILD
- * Includes: SPA Flow, Bluetooth Fix, and v6.6 Grid Mapping
+ * BIOSTACK ELITE ENGINE v7.5
+ * Exercise-Specific Calibration Engine
  */
 
-// Global Variables
 let bpm = 0;
-let currentMusc = "";
 let currentView = "front";
 let isTrain = false;
+let isCalibrating = false;
+let activeExercise = null;
+let tempMaxHr = 0;
+
 let hrHistory = [];
 let totalCalories = 0;
 let lastTimestamp = null;
@@ -28,32 +29,21 @@ const DB = {
     'Calves': ['Calf Raises']
 };
 
-/**
- * INITIALIZATION & BLUETOOTH
- */
 async function initSystem() {
     const w = document.getElementById('user-weight').value;
     const h = document.getElementById('user-height').value;
     const a = document.getElementById('user-age').value;
-
-    if (!w || !h || !a) {
-        alert("Precision tracking requires Weight, Height, and Age.");
-        return;
-    }
+    if (!w || !h || !a) return alert("All fields required.");
 
     try {
-        const device = await navigator.bluetooth.requestDevice({ 
-            filters: [{ services: ['heart_rate'] }] 
-        });
+        const device = await navigator.bluetooth.requestDevice({ filters: [{ services: ['heart_rate'] }] });
         const server = await device.gatt.connect();
         const service = await server.getPrimaryService('heart_rate');
         const char = await service.getCharacteristic('heart_rate_measurement');
-        
         await char.startNotifications();
         
         localStorage.setItem('bio_weight', w);
         localStorage.setItem('bio_age', a);
-        localStorage.setItem('bio_height', h);
         
         document.getElementById('login-screen').style.display = 'none';
         const dash = document.getElementById('main-dashboard');
@@ -63,24 +53,22 @@ async function initSystem() {
         generateHitMap();
 
         char.addEventListener('characteristicvaluechanged', (e) => {
-            const val = e.target.value.getUint8(1);
-            bpm = val;
-            const hrDisplay = document.getElementById('hr-val');
-            if (hrDisplay) hrDisplay.innerText = bpm;
+            bpm = e.target.value.getUint8(1);
+            document.getElementById('hr-val').innerText = bpm;
+            
+            // If calibrating, track the highest value seen
+            if (isCalibrating && bpm > tempMaxHr) {
+                tempMaxHr = bpm;
+            }
+
             calculateCals(bpm);
             hrHistory.push(bpm);
             if (hrHistory.length > 55) hrHistory.shift();
             drawSparkline();
         });
-
-    } catch (e) {
-        alert("Handshake Failed: " + e.message);
-    }
+    } catch (e) { alert("Link Failed: " + e.message); }
 }
 
-/**
- * CALORIE ENGINE
- */
 function calculateCals(currentBpm) {
     const weight = localStorage.getItem('bio_weight') || 180;
     const age = localStorage.getItem('bio_age') || 30;
@@ -96,36 +84,79 @@ function calculateCals(currentBpm) {
     if (calDisplay) calDisplay.innerText = Math.round(totalCalories);
 }
 
+function calibrateExercise() {
+    isCalibrating = true;
+    isTrain = true;
+    tempMaxHr = 0;
+    activeExercise = document.getElementById('ex-name-modal').innerText;
+    document.getElementById('active-ex-tag').innerText = "CALIBRATING: " + activeExercise;
+    closeAction();
+    document.getElementById('sidebar').style.display = "none";
+    
+    // Add a finish button or time-out? Let's use a "Done" click on the pill
+    document.getElementById('hr-pill').onclick = stopCalibration;
+    alert("Calibration Mode: Perform your heaviest set of " + activeExercise + ". Tapping the Heart Rate Pill when finished will save your peak.");
+}
+
+function stopCalibration() {
+    if (!isCalibrating) return;
+    isCalibrating = false;
+    isTrain = false;
+    localStorage.setItem('maxhr_' + activeExercise, tempMaxHr);
+    document.getElementById('active-ex-tag').innerText = "CALIBRATED: " + activeExercise + " (" + tempMaxHr + " BPM)";
+    document.getElementById('sidebar').style.display = "block";
+    document.getElementById('hr-pill').onclick = null; // Remove the listener
+}
+
+function startTraining() {
+    isTrain = true;
+    activeExercise = document.getElementById('ex-name-modal').innerText;
+    const savedMax = localStorage.getItem('maxhr_' + activeExercise);
+    document.getElementById('active-ex-tag').innerText = "ACTIVE: " + activeExercise + (savedMax ? " (Max: " + savedMax + ")" : "");
+    closeAction();
+    document.getElementById('sidebar').style.display = "none";
+}
+
 /**
- * GRID MAPPING - RESTORED v6.6 CALIBRATION
+ * GRAPH ENGINE - Using specific Max HR
  */
+function drawSparkline() {
+    const canvas = document.getElementById('sparkline-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr; canvas.height = rect.height * dpr;
+    ctx.scale(dpr, dpr);
+    ctx.clearRect(0, 0, rect.width, rect.height);
+    if (hrHistory.length < 3) return;
+
+    // Pull specific max HR or fallback to generic
+    const specificMax = activeExercise ? localStorage.getItem('maxhr_' + activeExercise) : null;
+    const baselineMax = specificMax ? parseInt(specificMax) : 190;
+
+    let color = '#00f2ff'; let glow = 'rgba(0, 242, 255, 0.4)';
+    if (bpm > (baselineMax * 0.85)) { color = '#ff0044'; glow = 'rgba(255, 0, 68, 0.4)'; }
+    else if (bpm > (baselineMax * 0.70)) { color = '#ffaa00'; glow = 'rgba(255, 170, 0, 0.4)'; }
+
+    const step = rect.width / (hrHistory.length - 1);
+    const points = hrHistory.map((val, i) => ({ 
+        x: i * step, 
+        y: rect.height - ((val - 60) / (baselineMax - 60)) * rect.height 
+    }));
+
+    drawCurve(ctx, points, glow, 8);
+    drawCurve(ctx, points, color, 3);
+}
+
+// ... Grid Logic v6.6 ...
 function generateHitMap() {
     const map = document.getElementById('touch-map');
     if (!map) return;
     map.innerHTML = "";
-    
-    // Front Grid: Calibrated for v6.6 Upward Shift
-    const fG = [
-        "Trapezoids", "Trapezoids", "TOGGLE_BACK",   // Row 1
-        "Deltoids", "Pectorals", "Deltoids",       // Row 2
-        "Biceps", "Abdominals", "Biceps",          // Row 3
-        "Biceps", "Abdominals", "Biceps",          // Row 4
-        "Forearms", "Quads", "Forearms",           // Row 5
-        "", "Quads", ""                            // Row 6
-    ];
-
-    // Back Grid: Calibrated for Hamstring precision
-    const bG = [
-        "TOGGLE_FRONT", "Trapezoids", "Trapezoids", // Row 1
-        "Triceps", "Lats", "Triceps",              // Row 2
-        "Triceps", "Lats", "Triceps",              // Row 3
-        "Glutes", "Glutes", "Glutes",              // Row 4
-        "Hamstrings", "Hamstrings", "Hamstrings",  // Row 5 (Wide Hamstrings)
-        "Hamstrings", "Calves", "Hamstrings"       // Row 6 (Wide Hamstrings)
-    ];
-
+    const fG = ["Trapezoids", "Trapezoids", "TOGGLE_BACK", "Deltoids", "Pectorals", "Deltoids", "Biceps", "Abdominals", "Biceps", "Biceps", "Abdominals", "Biceps", "Forearms", "Quads", "Forearms", "", "Quads", ""];
+    const bG = ["TOGGLE_FRONT", "Trapezoids", "Trapezoids", "Triceps", "Lats", "Triceps", "Triceps", "Lats", "Triceps", "Glutes", "Glutes", "Glutes", "Hamstrings", "Hamstrings", "Hamstrings", "Hamstrings", "Calves", "Hamstrings"];
     const active = (currentView === "front") ? fG : bG;
-
     active.forEach((m) => {
         const div = document.createElement('div');
         div.className = "hit";
@@ -158,7 +189,7 @@ function switchView(view) {
 }
 
 function selectMuscle(m) {
-    if (isTrain) return;
+    if (isTrain && !isCalibrating) return;
     document.querySelectorAll('.muscle-overlay').forEach(img => img.style.opacity = 0);
     const overlay = document.getElementById(`overlay-${m.toLowerCase()}`);
     if (overlay) overlay.style.opacity = 0.5;
@@ -177,28 +208,6 @@ function selectMuscle(m) {
     });
 }
 
-/**
- * GRAPH ENGINE
- */
-function drawSparkline() {
-    const canvas = document.getElementById('sparkline-canvas');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    const dpr = window.devicePixelRatio || 1;
-    const rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width * dpr; canvas.height = rect.height * dpr;
-    ctx.scale(dpr, dpr);
-    ctx.clearRect(0, 0, rect.width, rect.height);
-    if (hrHistory.length < 3) return;
-    let color = '#00f2ff'; let glow = 'rgba(0, 242, 255, 0.4)';
-    if (bpm > 140) { color = '#ff0044'; glow = 'rgba(255, 0, 68, 0.4)'; }
-    else if (bpm > 110) { color = '#ffaa00'; glow = 'rgba(255, 170, 0, 0.4)'; }
-    const step = rect.width / (hrHistory.length - 1);
-    const points = hrHistory.map((val, i) => ({ x: i * step, y: rect.height - ((val - 60) / 100) * rect.height }));
-    drawCurve(ctx, points, glow, 8);
-    drawCurve(ctx, points, color, 3);
-}
-
 function drawCurve(ctx, p, style, width) {
     ctx.beginPath(); ctx.strokeStyle = style; ctx.lineWidth = width; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
     ctx.moveTo(p[0].x, p[0].y);
@@ -212,7 +221,3 @@ function drawCurve(ctx, p, style, width) {
 }
 
 function closeAction() { document.getElementById('menu-action').style.display = 'none'; }
-function startTraining() { 
-    isTrain = true; closeAction(); 
-    document.getElementById('sidebar').style.display = "none"; 
-}
