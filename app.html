@@ -3,18 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BioStack Elite v8.9</title>
+    <title>BioStack Elite v9.1</title>
     <style>
         :root { --glow-blue: #00f2ff; --bg-dark: #05070a; --glass: rgba(15, 20, 30, 0.95); --border: #30363d; }
         body { margin: 0; background: var(--bg-dark); color: white; font-family: -apple-system, system-ui, sans-serif; overflow: hidden; height: 100vh; }
         
-        /* LOGIN */
         #login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-dark); z-index: 10000; display: flex; align-items: center; justify-content: center; }
         .login-card { background: var(--glass); padding: 40px; border-radius: 30px; border: 1px solid var(--border); text-align: center; width: 85%; max-width: 400px; }
         input { width: 100%; padding: 15px; margin-bottom: 15px; border-radius: 12px; border: 1px solid #444; background: #000; color: #fff; box-sizing: border-box; }
         #init-btn { width: 100%; padding: 18px; background: var(--glow-blue); border-radius: 50px; font-weight: 800; border: none; cursor: pointer; }
 
-        /* DASHBOARD */
         #main-dashboard { display: none; opacity: 0; transition: opacity 0.8s ease; }
         #top-dash { position: fixed; top: 0; width: 100%; height: 100px; display: flex; align-items: center; justify-content: space-between; padding: 20px; box-sizing: border-box; z-index: 9000; }
         #hr-pill { background: var(--glass); width: 110px; height: 60px; border-radius: 50px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; }
@@ -30,34 +28,42 @@
         #sidebar { position: fixed; top: 200px; left: 20px; width: 140px; z-index: 500; }
         .list-btn { width: 100%; padding: 12px; margin-bottom: 8px; border-radius: 12px; border: 1px solid var(--border); background: var(--glass); color: white; font-size: 0.7rem; text-align: left; }
 
-        /* THE STAGE AREA - WIDENED FOR BARS */
         #stage-area { position: fixed; top: 120px; right: 0; width: 65vw; height: 65vh; display: flex; align-items: center; justify-content: flex-end; z-index: 10; }
         
-        /* SIDEBAR CONTAINER - FORCED VISIBILITY */
+        /* UPDATED SIDEBAR - INTENSITY LIST */
         #set-bar-sidebar { 
-            width: 120px; 
-            height: 300px; 
+            width: 150px; 
+            height: 320px; 
             display: flex; 
-            flex-direction: column-reverse; 
+            flex-direction: column; /* Changed from column-reverse so Target HR stays at top */
             gap: 12px; 
-            margin-right: 10px; 
+            margin-right: 15px; 
             padding: 10px;
-            border-right: 2px solid rgba(0, 242, 255, 0.2); /* Debugging visual anchor */
+            border-right: 1px solid rgba(0, 242, 255, 0.2);
             justify-content: flex-start;
             align-items: flex-end;
-            background: rgba(255,255,255,0.02); /* Slight tint to see it */
+            overflow: visible;
         }
+
+        /* NEW Target HR Display Item */
+        #active-ex-context { font-size: 0.7rem; color: var(--glow-blue); text-transform: uppercase; border-bottom: 1px solid rgba(0,242,255,0.2); width: 100%; text-align: right; padding-bottom: 8px; display: none;}
+        
+        /* The dynamic Intensity Item structure */
+        .intensity-item { width: 100%; display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+        .intensity-label { font-size: 0.65rem; color: #ccc; text-transform: uppercase; flex-shrink: 0; }
         
         .set-bar { 
-            height: 12px; 
+            height: 14px; 
             background: var(--glow-blue); 
-            border-radius: 6px; 
-            transition: width 1s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
-            width: 0px; /* Unit switched to PX for hard-paint */
-            min-width: 0px;
-            display: block;
-            box-shadow: 0 0 10px rgba(0, 242, 255, 0.4);
+            border-radius: 4px; 
+            transition: width 1s ease-out; 
+            width: 0px; 
+            z-index: 1000;
+            box-shadow: 0 0 10px rgba(0, 242, 255, 0.5);
+            display: flex; align-items: center; justify-content: center; /* For the internal label */
         }
+        .bar-inner-label { font-size: 0.6rem; color: #000; font-weight: 800; opacity: 0; transition: opacity 0.5s ease; transition-delay: 0.8s;}
+        .set-bar.revealed .bar-inner-label { opacity: 1; }
 
         #image-container { position: relative; height: 100%; width: auto; display: inline-block; }
         #base-front { height: 100%; width: auto; display: block; z-index: 5; }
@@ -81,7 +87,7 @@
 </head>
 <body>
 
-    <div id="version-tag">BIOSTACK_v8.9_HARD_PAINT</div>
+    <div id="version-tag">BIOSTACK_v9.1_EXPECTATIONS</div>
 
     <div id="login-screen">
         <div class="login-card">
@@ -122,7 +128,9 @@
         </div>
 
         <div id="stage-area">
-            <div id="set-bar-sidebar"></div>
+            <div id="set-bar-sidebar">
+                <div id="active-ex-context"></div>
+            </div>
             <div id="image-container">
                 <img src="assets/base_front.png" id="base-front">
                 <img src="assets/back_button.png" id="btn-to-back" class="stack-layer ui-overlay layer-visible">
@@ -142,6 +150,7 @@
                 <img src="assets/glutes.png" id="overlay-glutes" class="muscle-overlay stack-layer">
                 <img src="assets/hamstrings.png" id="overlay-hamstrings" class="muscle-overlay stack-layer">
                 <img src="assets/calves.png" id="overlay-calves" class="muscle-overlay stack-layer">
+
                 <div id="touch-map"></div>
             </div>
         </div>
