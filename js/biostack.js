@@ -1,6 +1,6 @@
 /**
- * BIOSTACK ELITE ENGINE v7.9
- * Dedicated Calibration HUD Logic
+ * BIOSTACK ELITE ENGINE v8.0
+ * 20s Post-Set Peak Calibration Logic
  */
 
 let bpm = 0;
@@ -80,29 +80,45 @@ function calculateCals(currentBpm) {
 }
 
 /**
- * CALIBRATION FLOW
+ * CALIBRATION FLOW v8.0
  */
 function calibrateExercise() {
-    isCalibrating = true; 
-    isTrain = false;
+    isCalibrating = true;
     tempMaxHr = 0;
     activeExercise = document.getElementById('ex-name-modal').innerText;
     document.getElementById('active-ex-tag').innerText = "CALIBRATING: " + activeExercise;
     
-    // UI Updates
     closeAction();
     document.getElementById('sidebar').style.display = "none";
     document.getElementById('calibration-hud').style.display = "block";
+    document.getElementById('cal-main-btn').style.display = "block";
+    document.getElementById('cal-timer-display').style.display = "none";
 }
 
-function stopCalibration() {
+function startCalTimer() {
+    document.getElementById('cal-main-btn').style.display = "none";
+    const timerText = document.getElementById('cal-timer-display');
+    timerText.style.display = "block";
+    
+    let timeLeft = 20;
+    const countdown = setInterval(() => {
+        timeLeft--;
+        timerText.innerText = "LOOK-BACK ACTIVE: " + timeLeft + "s";
+        if (timeLeft <= 0) {
+            clearInterval(countdown);
+            lockMaxHr();
+        }
+    }, 1000);
+}
+
+function lockMaxHr() {
     isCalibrating = false;
+    // Final check of the rolling buffer for the highest peak seen in the last 20s
     const bufferMax = peakBuffer.length > 0 ? Math.max(...peakBuffer.map(p => p.bpm)) : 0;
     const trueMax = Math.max(tempMaxHr, bufferMax);
     
     localStorage.setItem('maxhr_' + activeExercise, trueMax);
     
-    // UI Updates
     document.getElementById('active-ex-tag').innerText = "CALIBRATED: " + trueMax + " BPM";
     document.getElementById('calibration-hud').style.display = "none";
     document.getElementById('sidebar').style.display = "block";
@@ -117,8 +133,6 @@ function startTraining() {
     peakBuffer = []; 
     activeExercise = document.getElementById('ex-name-modal').innerText;
     document.getElementById('active-ex-tag').innerText = "WORK SET: " + activeExercise;
-    
-    // UI Updates
     document.getElementById('training-hud').style.display = "block";
     document.getElementById('set-bar-sidebar').innerHTML = ""; 
     closeAction();
@@ -128,15 +142,14 @@ function startTraining() {
 function endSet() {
     const savedMax = localStorage.getItem('maxhr_' + activeExercise) || 190;
     const peakInLast20 = peakBuffer.length > 0 ? Math.max(...peakBuffer.map(p => p.bpm)) : bpm;
-    
     const intensityPercent = (peakInLast20 / savedMax) * 100;
+    
     const bar = document.createElement('div');
     bar.className = 'set-bar';
     bar.style.width = Math.min(intensityPercent, 100) + '%';
     
     if (intensityPercent > 85) bar.style.background = '#ff0044';
     else if (intensityPercent > 70) bar.style.background = '#ffaa00';
-
     document.getElementById('set-bar-sidebar').appendChild(bar);
 }
 
@@ -148,7 +161,7 @@ function exitTraining() {
 }
 
 /**
- * VISUALIZATION & GRID
+ * VIS & GRID (STABLE)
  */
 function drawSparkline() {
     const canvas = document.getElementById('sparkline-canvas');
