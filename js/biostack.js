@@ -1,6 +1,6 @@
 /**
- * BIOSTACK ELITE ENGINE v6.2
- * Tricep Target Recovery
+ * BIOSTACK ELITE ENGINE v6.3
+ * Exclusive Back-View Triceps
  */
 let bpm = 0;
 let currentMusc = "";
@@ -46,28 +46,24 @@ function generateHitMap() {
     const map = document.getElementById('touch-map');
     map.innerHTML = "";
     
-    /** * FRONT GRID v6.2
-     * Expanding Tricep zones on outer edges of Row 3
-     */
+    // Front Grid: Triceps removed to clear space for Delts/Arms
     const fG = [
-        "Trapezoids", "Trapezoids", "TOGGLE_BACK",   // Row 1
-        "Deltoids", "Pectorals", "Deltoids",       // Row 2
-        "Triceps", "Abdominals", "Triceps",        // Row 3: Recovered Triceps
-        "Biceps", "Quads", "Biceps",               // Row 4
-        "Forearms", "Quads", "Forearms",           // Row 5 
-        "", "", ""                                 // Row 6
+        "Trapezoids", "Trapezoids", "TOGGLE_BACK",
+        "Deltoids", "Pectorals", "Deltoids",
+        "Biceps", "Abdominals", "Biceps",
+        "Forearms", "Quads", "Forearms",
+        "", "Quads", "",
+        "", "", ""
     ];
 
-    /** * BACK GRID v6.2
-     * Ensuring Triceps take priority on outer columns
-     */
+    // Back Grid: Triceps now anchor the outer upper arms
     const bG = [
-        "TOGGLE_FRONT", "Trapezoids", "Trapezoids", // Row 1
-        "Triceps", "Lats", "Triceps",              // Row 2: Recovered Triceps
-        "Deltoids", "Lats", "Deltoids",            // Row 3
-        "Glutes", "Glutes", "Glutes",              // Row 4
-        "Hamstrings", "Calves", "Hamstrings",      // Row 5
-        "", "", ""                                 // Row 6
+        "TOGGLE_FRONT", "Trapezoids", "Trapezoids",
+        "Triceps", "Lats", "Triceps",
+        "Triceps", "Lats", "Triceps",
+        "Glutes", "Glutes", "Glutes",
+        "Hamstrings", "Calves", "Hamstrings",
+        "", "", ""
     ];
 
     const active = (currentView === "front") ? fG : bG;
@@ -86,15 +82,16 @@ function switchView(view) {
     currentView = view;
     document.querySelectorAll('.muscle-overlay').forEach(img => img.style.opacity = 0);
     document.querySelectorAll('.stack-layer').forEach(l => l.classList.remove('layer-visible'));
+    
     if (view === 'front') {
         document.getElementById('btn-to-back').classList.add('layer-visible');
-        ['trapezoids','deltoids','pectorals','biceps','triceps','forearms','abdominals','quads'].forEach(m => {
+        ['trapezoids','deltoids','pectorals','biceps','forearms','abdominals','quads'].forEach(m => {
             document.getElementById(`overlay-${m}`).classList.add('layer-visible');
         });
     } else {
         document.getElementById('base-back').classList.add('layer-visible');
         document.getElementById('btn-to-front').classList.add('layer-visible');
-        ['lats','glutes','hamstrings','calves'].forEach(m => {
+        ['lats','triceps','glutes','hamstrings','calves'].forEach(m => {
             document.getElementById(`overlay-${m}`).classList.add('layer-visible');
         });
     }
@@ -121,14 +118,14 @@ function selectMuscle(m) {
     });
 }
 
+// Graph Engine (v5.5 Logic)
 function drawSparkline() {
     const canvas = document.getElementById('sparkline-canvas');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     const dpr = window.devicePixelRatio || 1;
     const rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width * dpr;
-    canvas.height = rect.height * dpr;
+    canvas.width = rect.width * dpr; canvas.height = rect.height * dpr;
     ctx.scale(dpr, dpr);
     ctx.clearRect(0, 0, rect.width, rect.height);
     if (hrHistory.length < 3) return;
