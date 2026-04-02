@@ -499,4 +499,67 @@ function animateParticles() {
     if (!ctxP) return;
 
     // Dynamically resize canvas to parent every frame to prevent 0x0 rendering bugs
-    const parent = canvasP.parentElement
+    const parent = canvasP.parentElement;
+    if (canvasP.width !== parent.clientWidth || canvasP.height !== parent.clientHeight) {
+        canvasP.width = parent.clientWidth;
+        canvasP.height = parent.clientHeight;
+    }
+    
+    if (canvasP.width === 0) return; 
+
+    ctxP.clearRect(0, 0, canvasP.width, canvasP.height);
+
+    const age = parseInt(localStorage.getItem('bio_age')) || 30;
+    const maxHr = 220 - age;
+    
+    let intensity = 0;
+    // TWEAK 1: Only calculate intensity and spawn particles if BPM >= 107
+    if (bpm >= 107) {
+        // Map intensity from 0 to 1 based on the range between 107 and maxHr
+        intensity = Math.max(0, Math.min(1, (bpm - 107) / (maxHr - 107)));
+        
+        let spawnRate = 1 + Math.floor(intensity * 4); 
+        for (let i = 0; i < spawnRate; i++) {
+            if (Math.random() > 0.4) { 
+                particles.push({
+                    // TWEAK 3: Shifted starting position to 65% width (further left)
+                    x: canvasP.width * 0.65 + (Math.random() * 20 - 10), 
+                    y: canvasP.height * 0.3 + Math.random() * (canvasP.height * 0.45), 
+                    // TWEAK 2: Slower overall speed (reduced multipliers)
+                    vx: -(0.5 + intensity * 1.5) - Math.random(), 
+                    vy: (Math.random() - 0.5) * 1.0 - (intensity * 0.3), 
+                    life: 150 + Math.random() * 100,
+                    maxLife: 250,
+                    size: 1.0 + Math.random() * 1.5, 
+                    color: getEliteColor(bpm)
+                });
+            }
+        }
+    }
+
+    ctxP.globalCompositeOperation = 'screen';
+
+    for (let i = particles.length - 1; i >= 0; i--) {
+        let p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life--;
+
+        if (p.life <= 0 || p.x < 0) {
+            particles.splice(i, 1);
+            continue;
+        }
+
+        // TWEAK 5: Added opacity limit so they max out at 0.5 (semi-transparent)
+        ctxP.globalAlpha = Math.max(0, p.life / p.maxLife) * 0.5;
+        ctxP.fillStyle = p.color;
+        ctxP.beginPath();
+        ctxP.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctxP.fill();
+    }
+    
+    ctxP.globalAlpha = 1.0;
+    ctxP.globalCompositeOperation = 'source-over';
+}
+
+initCardioParticles();
