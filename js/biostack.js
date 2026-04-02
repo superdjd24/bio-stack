@@ -1,6 +1,6 @@
 /**
- * BIOSTACK ELITE ENGINE v10.31 STABLE
- * Black Text Color, No Stroke for REST button + Cache Bust
+ * BIOSTACK ELITE ENGINE v10.32 STABLE
+ * Modal Order Swap & Calibration Workflow Streamlining + Cache Bust
  */
 
 let bpm = 0;
@@ -99,7 +99,13 @@ function calibrateExercise() {
     closeAction();
     document.getElementById('sidebar').style.display = "none";
     document.getElementById('calibration-hud').style.display = "block";
-    document.getElementById('cal-main-btn').style.display = "block";
+    
+    // Reset the calibration button text and action in case it was previously changed to 'START SETS'
+    const calBtn = document.getElementById('cal-main-btn');
+    calBtn.innerText = "FINISH CALIBRATION";
+    calBtn.onclick = startCalTimer;
+    calBtn.style.display = "block";
+    
     document.getElementById('cal-timer-display').style.display = "none";
 }
 
@@ -122,7 +128,16 @@ function lockMaxHr() {
     if (trueMax < 60) { alert("Calibration failed: Vitals too low."); exitCalHud(); return; }
     localStorage.setItem('maxhr_' + activeExercise, trueMax);
     document.getElementById('active-ex-tag').innerText = "CALIBRATED: " + trueMax + " BPM";
-    exitCalHud();
+    
+    // FIX: Provide direct pipeline to start sets from the calibration hud
+    document.getElementById('cal-timer-display').style.display = "none";
+    const calBtn = document.getElementById('cal-main-btn');
+    calBtn.innerText = "START SETS";
+    calBtn.onclick = () => {
+        exitCalHud();
+        startTraining(); 
+    };
+    calBtn.style.display = "block";
 }
 
 function exitCalHud() {
@@ -131,6 +146,8 @@ function exitCalHud() {
 }
 
 function startTraining() {
+    // Note: If entering directly from calibration, activeExercise is already accurate. 
+    // The modal text continues to be accurate because it's just hidden.
     const newEx = document.getElementById('ex-name-modal').innerText;
     if (!localStorage.getItem('maxhr_' + newEx)) { alert(`${newEx} requires calibration.`); calibrateExercise(); return; }
     isTrain = true; isCalibrating = false;
@@ -156,7 +173,7 @@ function resetSetHUD() {
     btn.innerText = "END SET";
     btn.style.background = 'var(--glow-blue)';
     btn.style.color = '#000';
-    btn.style.webkitTextStroke = '0px'; // Remove stroke
+    btn.style.webkitTextStroke = '0px'; 
     btn.onclick = startSetTimer;
     document.getElementById('set-timer-display').style.display = "none";
     peakBuffer = []; 
@@ -237,7 +254,7 @@ function updateRestUI() {
         btn.innerText = "START NEXT SET";
         btn.style.background = 'var(--glow-blue)';
         btn.style.color = '#000';
-        btn.style.webkitTextStroke = '0px'; // Remove stroke when ready
+        btn.style.webkitTextStroke = '0px'; 
         return;
     }
 
@@ -254,7 +271,6 @@ function updateRestUI() {
     
     btn.innerText = "REST";
     btn.classList.add('blinking-rest');
-    // FIX: Set color explicitly to solid black, remove stroke
     btn.style.color = '#000'; 
     btn.style.webkitTextStroke = '0px'; 
     btn.style.background = `linear-gradient(90deg, ${fillColor} ${pct}%, #222 ${pct}%)`;
@@ -299,7 +315,6 @@ function generateHitMap() {
     map.innerHTML = "";
     
     if (currentView === "front") {
-        // Pixel-perfect mapping extracted directly from user's ruler overlay
         map.style.gridTemplateRows = '19% 10% 9% 11% 23% 28%';
         const fG = [
             "", "", "TOGGLE_BACK",                   // R1 (19%) 
