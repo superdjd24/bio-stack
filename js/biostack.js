@@ -1,6 +1,6 @@
 /**
- * BIOSTACK ELITE ENGINE v10.48 STABLE
- * Biological Auto-Cutoff State Machine + Settings Tab
+ * BIOSTACK ELITE ENGINE v10.50 STABLE
+ * Cardio Zones: UI uses Raw BPM, Engine maps to % MaxHR
  */
 
 let bpm = 0; 
@@ -11,9 +11,17 @@ let setCounter = 0;
 
 // BIO-LOGIC VARIABLES
 let readyTriggerBpm = parseInt(localStorage.getItem('bio_ready_trigger')) || 100;
-let liftState = 'IDLE'; // States: IDLE, READY, LIFTING, RESTING
+let liftState = 'IDLE'; 
 let currentSetMax = 0;
 const DROP_THRESHOLD = 6;
+
+// DYNAMIC CARDIO ZONE VARIABLES (% of Max HR stored natively)
+let z1MinPct = parseFloat(localStorage.getItem('bio_z1_min')) || 0.60;
+let z1MaxPct = parseFloat(localStorage.getItem('bio_z1_max')) || 0.70;
+let z2MinPct = parseFloat(localStorage.getItem('bio_z2_min')) || 0.70;
+let z2MaxPct = parseFloat(localStorage.getItem('bio_z2_max')) || 0.80;
+let z3MinPct = parseFloat(localStorage.getItem('bio_z3_min')) || 0.80;
+let z3MaxPct = parseFloat(localStorage.getItem('bio_z3_max')) || 0.90;
 
 let hrHistory = [];
 let totalCalories = 0;
@@ -31,9 +39,9 @@ const DB = {
 function getEliteColor(val) {
     const age = parseInt(localStorage.getItem('bio_age')) || 30;
     const maxHr = 220 - age;
-    if (val >= maxHr * 0.80) return '#ff3333'; 
-    if (val >= maxHr * 0.70) return '#ffcc00'; 
-    if (val >= maxHr * 0.60) return '#33cc33'; 
+    if (val >= maxHr * z3MinPct) return '#ff3333'; 
+    if (val >= maxHr * z2MinPct) return '#ffcc00'; 
+    if (val >= maxHr * z1MinPct) return '#33cc33'; 
     return '#00f2ff'; 
 }
 
@@ -41,6 +49,29 @@ function updateTriggerSetting(val) {
     readyTriggerBpm = parseInt(val);
     document.getElementById('trigger-val-display').innerText = readyTriggerBpm + ' BPM';
     localStorage.setItem('bio_ready_trigger', readyTriggerBpm);
+}
+
+// UPDATED: Convert raw user BPM input into percentages for scalable storage
+function saveZoneSettings() {
+    const age = parseInt(localStorage.getItem('bio_age')) || 30;
+    const maxHr = 220 - age;
+
+    z1MinPct = parseFloat(document.getElementById('set-z1-min').value) / maxHr;
+    z1MaxPct = parseFloat(document.getElementById('set-z1-max').value) / maxHr;
+    z2MinPct = parseFloat(document.getElementById('set-z2-min').value) / maxHr;
+    z2MaxPct = parseFloat(document.getElementById('set-z2-max').value) / maxHr;
+    z3MinPct = parseFloat(document.getElementById('set-z3-min').value) / maxHr;
+    z3MaxPct = parseFloat(document.getElementById('set-z3-max').value) / maxHr;
+
+    localStorage.setItem('bio_z1_min', z1MinPct);
+    localStorage.setItem('bio_z1_max', z1MaxPct);
+    localStorage.setItem('bio_z2_min', z2MinPct);
+    localStorage.setItem('bio_z2_max', z2MaxPct);
+    localStorage.setItem('bio_z3_min', z3MinPct);
+    localStorage.setItem('bio_z3_max', z3MaxPct);
+
+    initCardioZones(); // Instantly refresh labels and pills
+    alert("Cardio Zone targets securely mapped and saved.");
 }
 
 async function initSystem() {
@@ -82,8 +113,7 @@ async function initSystem() {
             
             drawSparkline();
             updateCardioUI(bpm); 
-            
-            processBioState(); // Fire the State Machine
+            processBioState(); 
         });
     } catch (e) { alert("Link Failed: " + e.message); }
 }
@@ -112,7 +142,6 @@ function calculateCals(currentBpm) {
     if(cardioFat) cardioFat.innerText = (totalCalories / 3500).toFixed(3);
 }
 
-// --- NEW BIOLOGICAL STATE MACHINE ---
 function startTraining() {
     activeExercise = document.getElementById('ex-name-modal').innerText;
     closeAction();
@@ -130,7 +159,7 @@ function startTraining() {
     document.getElementById('sidebar').style.display = "none";
     
     liftState = 'READY';
-    processBioState(); // Force a UI update immediately
+    processBioState(); 
 }
 
 function processBioState() {
@@ -145,7 +174,7 @@ function processBioState() {
             btn.classList.add('blinking-rest');
             btn.style.background = '#ff0044';
             btn.style.color = '#fff';
-            btn.onclick = null; // Lock the button
+            btn.onclick = null; 
             helper.innerText = "WAIT UNTIL MUSCLES ARE PRIMED";
             helper.style.display = 'block';
         } else {
@@ -166,11 +195,10 @@ function processBioState() {
         btn.classList.remove('blinking-rest');
         btn.style.background = '#333';
         btn.style.color = '#fff';
-        btn.onclick = null; // Prevent accidental tapping
+        btn.onclick = null; 
         
         if (bpm > currentSetMax) currentSetMax = bpm;
         
-        // Auto-Cutoff Logic
         if (bpm <= currentSetMax - DROP_THRESHOLD && currentSetMax > readyTriggerBpm) {
             liftState = 'RESTING';
             processBioState();
@@ -185,9 +213,8 @@ function processBioState() {
         helper.innerText = "WAIT UNTIL MUSCLES ARE PRIMED";
         helper.style.display = 'block';
 
-        if (bpm > currentSetMax) currentSetMax = bpm; // Catch delayed peaks
+        if (bpm > currentSetMax) currentSetMax = bpm; 
         
-        // Auto-Finalize Logic
         if (bpm <= readyTriggerBpm) {
             finalizeSet();
         }
@@ -197,7 +224,6 @@ function processBioState() {
 function finalizeSet() {
     setCounter++;
     
-    // Scale visuals loosely based on a 200 BPM ceiling for UI drawing purposes
     const barPx = Math.min(100, (currentSetMax / 190) * 100) + "%"; 
 
     const container = document.getElementById('set-bar-sidebar');
@@ -213,7 +239,7 @@ function finalizeSet() {
 
     const inner = document.createElement('span');
     inner.className = 'bar-inner-label';
-    inner.innerText = `${currentSetMax} BPM`; // Raw data
+    inner.innerText = `${currentSetMax} BPM`; 
     bar.appendChild(inner);
     item.appendChild(label);
     item.appendChild(bar);
@@ -250,21 +276,36 @@ function exitTraining() {
 function initCardioZones() {
     const age = parseInt(localStorage.getItem('bio_age')) || 30; 
     const maxHr = 220 - age;
-    const z1Min = Math.round(maxHr * 0.60); const z1Max = Math.round(maxHr * 0.70);
-    const z2Min = Math.round(maxHr * 0.70); const z2Max = Math.round(maxHr * 0.80);
-    const z3Min = Math.round(maxHr * 0.80); const z3Max = Math.round(maxHr * 0.90);
+    
+    // Calculate raw BPM based on the dynamic percentage variables
+    const z1Min = Math.round(maxHr * z1MinPct); const z1Max = Math.round(maxHr * z1MaxPct);
+    const z2Min = Math.round(maxHr * z2MinPct); const z2Max = Math.round(maxHr * z2MaxPct);
+    const z3Min = Math.round(maxHr * z3MinPct); const z3Max = Math.round(maxHr * z3MaxPct);
+    
     document.getElementById('pill-z1').innerText = `${z1Min} - ${z1Max} BPM`;
     document.getElementById('pill-z2').innerText = `${z2Min} - ${z2Max} BPM`;
     document.getElementById('pill-z3').innerText = `${z3Min} - ${z3Max} BPM`;
+
+    // UPDATED: Populate Settings UI Inputs with actual calculated BPM integers
+    const z1MinInput = document.getElementById('set-z1-min');
+    if (z1MinInput) {
+        z1MinInput.value = z1Min;
+        document.getElementById('set-z1-max').value = z1Max;
+        document.getElementById('set-z2-min').value = z2Min;
+        document.getElementById('set-z2-max').value = z2Max;
+        document.getElementById('set-z3-min').value = z3Min;
+        document.getElementById('set-z3-max').value = z3Max;
+    }
 }
 
 function updateCardioUI(currentBpm) {
     const age = parseInt(localStorage.getItem('bio_age')) || 30;
     const maxHr = 220 - age;
     document.querySelectorAll('.zone-card').forEach(c => c.classList.remove('active-zone'));
-    if (currentBpm >= maxHr * 0.80 && currentBpm <= maxHr * 0.90) document.getElementById('zone-3').classList.add('active-zone');
-    else if (currentBpm >= maxHr * 0.70 && currentBpm < maxHr * 0.80) document.getElementById('zone-2').classList.add('active-zone');
-    else if (currentBpm >= maxHr * 0.60 && currentBpm < maxHr * 0.70) document.getElementById('zone-1').classList.add('active-zone');
+    
+    if (currentBpm >= maxHr * z3MinPct && currentBpm <= maxHr * z3MaxPct) document.getElementById('zone-3').classList.add('active-zone');
+    else if (currentBpm >= maxHr * z2MinPct && currentBpm < maxHr * z2MaxPct) document.getElementById('zone-2').classList.add('active-zone');
+    else if (currentBpm >= maxHr * z1MinPct && currentBpm < maxHr * z1MaxPct) document.getElementById('zone-1').classList.add('active-zone');
 }
 
 function drawSparkline() {
@@ -400,8 +441,10 @@ function animateParticles() {
     const maxHr = 220 - age;
     
     let intensity = 0;
-    if (bpm >= 107) {
-        intensity = Math.max(0, Math.min(1, (bpm - 107) / (maxHr - 107)));
+    const z1BpmThreshold = maxHr * z1MinPct; 
+    
+    if (bpm >= z1BpmThreshold) {
+        intensity = Math.max(0, Math.min(1, (bpm - z1BpmThreshold) / (maxHr - z1BpmThreshold)));
         let spawnRate = 1 + Math.floor(intensity * 4); 
         for (let i = 0; i < spawnRate; i++) {
             if (Math.random() > 0.4) { 
