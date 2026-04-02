@@ -133,4 +133,161 @@
         .nav-btn { background: transparent; border: none; color: #555; font-size: 0.65rem; font-weight: 800; text-transform: uppercase; display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; width: 25%; transition: color 0.3s ease; }
         .nav-btn.active-nav { color: var(--glow-blue); }
         .nav-icon { width: 24px; height: 24px; background: #555; border-radius: 6px; transition: background 0.3s ease; }
-        .nav-btn.active-
+        .nav-btn.active-nav .nav-icon { background: var(--glow-blue); }
+
+        #version-tag { position: fixed; bottom: 100px; left: 15px; font-size: 0.6rem; color: #333; z-index: 8000; }
+        .placeholder-text { padding-top: 150px; text-align: center; color: var(--glow-blue); font-weight: 800; text-transform: uppercase; letter-spacing: 2px; }
+    </style>
+</head>
+<body>
+
+    <div id="version-tag">BIOSTACK_v10.39_STABLE</div>
+
+    <div id="login-screen">
+        <div class="login-card">
+            <h2>BIOSTACK ELITE</h2>
+            <input type="number" id="user-weight" placeholder="Weight (lbs)">
+            <input type="number" id="user-age" placeholder="Age">
+            <button id="init-btn" onclick="initSystem()">Initialize & Link</button>
+        </div>
+    </div>
+
+    <div id="main-dashboard">
+        
+        <div id="top-dash">
+            <div id="hr-pill"><img src="assets/heartbeat_icon.png" id="hr-icon"><span id="hr-val">--</span></div>
+            <div id="graph-box"><canvas id="sparkline-canvas"></canvas></div>
+        </div>
+
+        <div id="view-weights" class="app-view">
+            <div id="mid-dash">
+                <div><span id="total-cal">0</span> <span style="font-size:0.7rem; opacity:0.5;">CALORIES</span></div>
+                <div id="musc-header">TARGET: --</div>
+                <div id="active-ex-tag">NO ACTIVE EXERCISE</div>
+            </div>
+
+            <div id="sidebar"><div id="exercise-picker"></div></div>
+
+            <div id="calibration-hud"><span id="cal-timer-display" class="hud-timer-cal"></span></div>
+
+            <div id="stage-area">
+                <div id="set-bar-sidebar">
+                    <div id="active-ex-context"></div>
+                    <div id="hud-in-flow">
+                        <div id="in-progress-badge" style="display: none;"><span class="recording-dot"></span> SET IN PROGRESS</div>
+                        <button id="set-main-btn" class="flow-btn" onclick="startSetTimer()" style="background: var(--glow-blue); color:#000;">END SET</button>
+                        <span id="set-timer-display" style="display:none; font-size:0.75rem; color:#ffaa00; margin-bottom:10px; font-weight:800; text-transform:uppercase;">Analyzing vitals...</span>
+                        <button id="new-ex-btn" class="flow-btn" onclick="exitTraining()">NEW EXERCISE</button>
+                    </div>
+                </div>
+                <div id="image-container">
+                    <img src="assets/base_front.png" id="base-front">
+                    <img src="assets/back_button.png" id="btn-to-back" class="stack-layer ui-overlay layer-visible">
+                    <img src="assets/front_button.png" id="btn-to-front" class="stack-layer ui-overlay">
+                    
+                    <img src="assets/trapezoids.png" id="overlay-trapezoids" class="muscle-overlay stack-layer layer-visible">
+                    <img src="assets/deltoids.png" id="overlay-deltoids" class="muscle-overlay stack-layer layer-visible">
+                    <img src="assets/pectorals.png" id="overlay-pectorals" class="muscle-overlay stack-layer layer-visible">
+                    <img src="assets/biceps.png" id="overlay-biceps" class="muscle-overlay stack-layer layer-visible">
+                    <img src="assets/forearms.png" id="overlay-forearms" class="muscle-overlay stack-layer layer-visible">
+                    <img src="assets/abdominals.png" id="overlay-abdominals" class="muscle-overlay stack-layer layer-visible">
+                    <img src="assets/quads.png" id="overlay-quads" class="muscle-overlay stack-layer layer-visible">
+                    
+                    <img src="assets/base_back.png" id="base-back" class="stack-layer" style="z-index: 6;">
+                    <img src="assets/lats.png" id="overlay-lats" class="muscle-overlay stack-layer">
+                    <img src="assets/triceps.png" id="overlay-triceps" class="muscle-overlay stack-layer">
+                    <img src="assets/glutes.png" id="overlay-glutes" class="muscle-overlay stack-layer">
+                    <img src="assets/hamstrings.png" id="overlay-hamstrings" class="muscle-overlay stack-layer">
+                    <img src="assets/calves.png" id="overlay-calves" class="muscle-overlay stack-layer">
+                    <div id="touch-map"></div>
+                </div>
+            </div>
+
+            <div id="menu-action" class="overlay">
+                <h2 id="ex-name-modal" style="margin-bottom:25px;">EXERCISE</h2>
+                <button onclick="startTraining()" style="width:100%; padding:18px; border-radius:50px; background:var(--glow-blue); color:#000; font-weight:800; border:none; cursor:pointer;">START SETS</button>
+                <p onclick="closeAction()" style="margin-top:15px; font-size:0.8rem; opacity:0.5; cursor:pointer;">CANCEL</p>
+            </div>
+        </div>
+
+        <div id="view-cardio" class="app-view view-active">
+            <div id="cardio-layout">
+                
+                <div id="cardio-stats-row">
+                    <div>
+                        <div id="cardio-stat-cals" class="stat-value">0</div>
+                        <div class="stat-label">total cal burned</div>
+                    </div>
+                    <div>
+                        <div id="cardio-stat-fat" class="stat-value">0.000</div>
+                        <div class="stat-label">total lbs fat loss</div>
+                    </div>
+                </div>
+
+                <div id="cardio-content">
+                    <div id="cardio-panel">
+                        <div class="zone-card" id="zone-3">
+                            <div class="zone-header">
+                                <div class="zone-dot"></div>
+                                <div class="zone-title">ENDURANCE</div>
+                            </div>
+                            <div class="zone-pill" id="pill-z3">-- BPM</div>
+                        </div>
+
+                        <div class="zone-card" id="zone-2">
+                            <div class="zone-header">
+                                <div class="zone-dot"></div>
+                                <div class="zone-title">WEIGHT LOSS</div>
+                            </div>
+                            <div class="zone-pill" id="pill-z2">-- BPM</div>
+                        </div>
+
+                        <div class="zone-card" id="zone-1">
+                            <div class="zone-header">
+                                <div class="zone-dot"></div>
+                                <div class="zone-title">BURN FAT KEEP MUSCLE</div>
+                            </div>
+                            <div class="zone-pill" id="pill-z1">-- BPM</div>
+                        </div>
+                    </div>
+
+                    <div id="cardio-visuals">
+                        <img src="assets/base_cardio.png" style="max-height: 100%; max-width: 100%; z-index: 5; object-fit: contain;">
+                        <img src="assets/heartbeat_monitor_animated.gif" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; z-index: 10; mix-blend-mode: screen; opacity: 0.85;">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-food" class="app-view">
+            <h2 class="placeholder-text">NUTRITION MODULE<br><span style="font-size: 0.8rem; color: #666;">Awaiting architecture instructions</span></h2>
+        </div>
+
+        <div id="view-dashboard" class="app-view">
+            <h2 class="placeholder-text">SYSTEM DASHBOARD<br><span style="font-size: 0.8rem; color: #666;">Awaiting architecture instructions</span></h2>
+        </div>
+
+        <nav id="bottom-nav">
+            <button class="nav-btn" onclick="switchAppTab('weights', this)">
+                <div class="nav-icon"></div>
+                <span>Lift</span>
+            </button>
+            <button class="nav-btn active-nav" onclick="switchAppTab('cardio', this)">
+                <div class="nav-icon"></div>
+                <span>Cardio</span>
+            </button>
+            <button class="nav-btn" onclick="switchAppTab('food', this)">
+                <div class="nav-icon"></div>
+                <span>Food</span>
+            </button>
+            <button class="nav-btn" onclick="switchAppTab('dashboard', this)">
+                <div class="nav-icon"></div>
+                <span>Dash</span>
+            </button>
+        </nav>
+
+    </div>
+
+    <script src="js/biostack.js?v=42"></script>
+</body>
+</html>
