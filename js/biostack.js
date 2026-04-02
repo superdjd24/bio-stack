@@ -1,6 +1,6 @@
 /**
- * BIOSTACK ELITE ENGINE v10.37 STABLE
- * Cardio UI Grey-Out Focus Pattern & Formatting + Cache Bust
+ * BIOSTACK ELITE ENGINE v10.38 STABLE
+ * Cardio Redesign & Fat Loss Math Integration + Cache Bust
  */
 
 let bpm = 0;
@@ -109,8 +109,12 @@ function calculateCals(currentBpm) {
     const calVal = Math.round(totalCalories);
     document.getElementById('total-cal').innerText = calVal;
     
-    const cardioCal = document.getElementById('cardio-total-cal-display');
+    // FIX: Push data to the new mockup layout targets
+    const cardioCal = document.getElementById('cardio-stat-cals');
+    const cardioFat = document.getElementById('cardio-stat-fat');
+    
     if(cardioCal) cardioCal.innerText = calVal;
+    if(cardioFat) cardioFat.innerText = (totalCalories / 3500).toFixed(3);
 }
 
 function initCardioZones() {
@@ -133,7 +137,6 @@ function updateCardioUI(currentBpm) {
     const age = parseInt(localStorage.getItem('bio_age')) || 30;
     const maxHr = 220 - age;
 
-    // Remove active class from all (resets them to the greyed-out state)
     document.querySelectorAll('.zone-card').forEach(c => c.classList.remove('active-zone'));
 
     if (currentBpm >= maxHr * 0.80 && currentBpm <= maxHr * 0.90) {
