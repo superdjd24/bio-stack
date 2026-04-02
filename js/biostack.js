@@ -1,6 +1,6 @@
 /**
- * BIOSTACK ELITE ENGINE v10.39 STABLE
- * Added Shell Integration + Cache Bust
+ * BIOSTACK ELITE ENGINE v10.40 STABLE
+ * Single-line text wrap fixes & GIF removal + Cache Bust
  */
 
 let bpm = 0;
