@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BioStack Elite v10.36 STABLE</title>
+    <title>BioStack Elite v10.37 STABLE</title>
     <style>
         :root { --glow-blue: #00f2ff; --bg-dark: #05070a; --glass: rgba(15, 20, 30, 0.95); --border: #30363d; }
         body { margin: 0; background: var(--bg-dark); color: white; font-family: -apple-system, system-ui, sans-serif; overflow: hidden; height: 100vh; }
@@ -72,16 +72,33 @@
         #calibration-hud { position: fixed; top: 200px; left: 20px; display: none; z-index: 9999; }
         .hud-timer-cal { display:none; color:#ffaa00; font-weight:800; display:block; margin-top:10px; font-size: 0.75rem; text-transform:uppercase; letter-spacing:1px; }
 
-        /* NEW: CARDIO MODULE STYLES */
+        /* CARDIO MODULE STYLES */
         #cardio-layout { display: flex; height: 100%; width: 100%; box-sizing: border-box; padding: 110px 20px 100px 20px; }
         #cardio-panel { width: 45%; display: flex; flex-direction: column; gap: 15px; justify-content: center; padding-left: 10px;}
         #cardio-visuals { width: 55%; position: relative; display: flex; justify-content: center; align-items: center; }
         
-        .zone-card { background: rgba(25, 30, 40, 0.6); padding: 16px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; transition: all 0.3s ease; border: 1px solid transparent; }
-        .zone-card.active-zone { background: rgba(40, 50, 60, 0.95); box-shadow: 0 0 15px rgba(255, 255, 255, 0.05); transform: scale(1.03); }
-        .zone-info { display: flex; flex-direction: column; gap: 4px; }
+        /* FIX: Zone Cards now default to a greyed-out, inactive state and stack title/pill */
+        .zone-card { 
+            background: rgba(25, 30, 40, 0.6); 
+            padding: 16px; 
+            border-radius: 8px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: flex-start; 
+            gap: 12px; 
+            transition: all 0.3s ease; 
+            border: 1px solid transparent; 
+            opacity: 0.35; 
+            filter: grayscale(100%); 
+        }
+        .zone-card.active-zone { 
+            background: rgba(40, 50, 60, 0.95); 
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.05); 
+            transform: scale(1.03); 
+            opacity: 1; 
+            filter: grayscale(0%); 
+        }
         .zone-title { font-weight: 800; font-size: 0.95rem; letter-spacing: 0.5px; text-transform: uppercase; color: #fff;}
-        .zone-sub { font-size: 0.75rem; color: #aaa; display: flex; align-items: center; gap: 6px; }
         .zone-pill { border: 1px solid; border-radius: 50px; padding: 6px 14px; font-size: 0.8rem; font-weight: 700; background: rgba(0,0,0,0.5); }
         
         #cardio-cals-box { margin-bottom: 10px; }
@@ -100,7 +117,7 @@
 </head>
 <body>
 
-    <div id="version-tag">BIOSTACK_v10.36_STABLE</div>
+    <div id="version-tag">BIOSTACK_v10.37_STABLE</div>
 
     <div id="login-screen">
         <div class="login-card">
@@ -118,7 +135,7 @@
             <div id="graph-box"><canvas id="sparkline-canvas"></canvas></div>
         </div>
 
-        <div id="view-weights" class="app-view view-active">
+        <div id="view-weights" class="app-view">
             <div id="mid-dash">
                 <div><span id="total-cal">0</span> <span style="font-size:0.7rem; opacity:0.5;">CALORIES</span></div>
                 <div id="musc-header">TARGET: --</div>
@@ -169,7 +186,7 @@
             </div>
         </div>
 
-        <div id="view-cardio" class="app-view">
+        <div id="view-cardio" class="app-view view-active">
             <div id="cardio-layout">
                 <div id="cardio-panel">
                     <div id="cardio-cals-box">
@@ -178,30 +195,19 @@
                     </div>
 
                     <div class="zone-card" id="zone-3" style="border-top: 4px solid #ffaaaa;">
-                        <div class="zone-info">
-                            <div class="zone-title">BUILDING ENDURANCE</div>
-                            <div class="zone-sub">⚡ Vigorous (80-90%)</div>
-                        </div>
+                        <div class="zone-title">BUILDING ENDURANCE</div>
                         <div class="zone-pill" id="pill-z3" style="border-color: #ffaaaa; color: #ffaaaa;">-- BPM</div>
                     </div>
 
                     <div class="zone-card" id="zone-2" style="border-top: 4px solid #ffdd88;">
-                        <div class="zone-info">
-                            <div class="zone-title">TOTAL WEIGHT LOSS</div>
-                            <div class="zone-sub">⏱ Aerobic (70-80%)</div>
-                        </div>
+                        <div class="zone-title">TOTAL WEIGHT LOSS</div>
                         <div class="zone-pill" id="pill-z2" style="border-color: #ffdd88; color: #ffdd88;">-- BPM</div>
                     </div>
 
                     <div class="zone-card" id="zone-1" style="border-top: 4px solid #88ffbb;">
-                        <div class="zone-info">
-                            <div class="zone-title">FAT BURN & MUSCLE</div>
-                            <div class="zone-sub">💪 Moderate (60-70%)</div>
-                        </div>
+                        <div class="zone-title">FAT BURN & MUSCLE</div>
                         <div class="zone-pill" id="pill-z1" style="border-color: #88ffbb; color: #88ffbb;">-- BPM</div>
                     </div>
-                    
-                    <div style="font-size: 0.65rem; color: #555; margin-top: 10px;">Based on Fox Formula (220 - age). Consult a doctor before intense training.</div>
                 </div>
 
                 <div id="cardio-visuals">
@@ -220,11 +226,11 @@
         </div>
 
         <nav id="bottom-nav">
-            <button class="nav-btn active-nav" onclick="switchAppTab('weights', this)">
+            <button class="nav-btn" onclick="switchAppTab('weights', this)">
                 <div class="nav-icon"></div>
                 <span>Lift</span>
             </button>
-            <button class="nav-btn" onclick="switchAppTab('cardio', this)">
+            <button class="nav-btn active-nav" onclick="switchAppTab('cardio', this)">
                 <div class="nav-icon"></div>
                 <span>Cardio</span>
             </button>
@@ -240,6 +246,6 @@
 
     </div>
 
-    <script src="js/biostack.js?v=39"></script>
+    <script src="js/biostack.js?v=40"></script>
 </body>
 </html>
