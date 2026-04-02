@@ -3,19 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BioStack Elite v10.50 STABLE</title>
+    <title>BioStack Elite v10.51 STABLE</title>
     <style>
         :root { --glow-blue: #00f2ff; --bg-dark: #05070a; --glass: rgba(15, 20, 30, 0.95); --border: #30363d; }
         body { margin: 0; background: var(--bg-dark); color: white; font-family: -apple-system, system-ui, sans-serif; overflow: hidden; height: 100vh; }
         
-        #login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-dark); z-index: 10000; display: flex; align-items: center; justify-content: center; }
+        /* UPDATED: Flex-direction column to stack logo and card */
+        #login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-dark); z-index: 10000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .login-card { background: var(--glass); padding: 40px; border-radius: 30px; border: 1px solid var(--border); text-align: center; width: 85%; max-width: 400px; }
         input { width: 100%; padding: 15px; margin-bottom: 15px; border-radius: 12px; border: 1px solid #444; background: #000; color: #fff; box-sizing: border-box; }
         #init-btn { width: 100%; padding: 18px; background: var(--glow-blue); border-radius: 50px; font-weight: 800; border: none; cursor: pointer; }
 
         #main-dashboard { display: none; opacity: 0; transition: opacity 0.8s ease; }
         
-        /* GLOBAL TOP DASHBOARD */
         #top-dash { position: fixed; top: 0; width: 100%; height: 100px; display: flex; align-items: center; justify-content: space-between; padding: 20px 30px; box-sizing: border-box; z-index: 9000; }
         #hr-pill { background: var(--glass); padding: 0 15px; width: 135px; height: 65px; border-radius: 50px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: flex-start; gap: 8px; }
         #hr-val { font-size: 2.4rem; font-weight: 900; color: var(--glow-blue); flex-grow: 1; text-align: center; }
@@ -23,11 +23,9 @@
         #graph-box { width: 200px; height: 50px; position: relative; }
         #sparkline-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
 
-        /* VIEW MANAGEMENT */
         .app-view { display: none; width: 100%; height: 100%; position: relative; }
         .view-active { display: block; }
 
-        /* WEIGHTS VIEW STYLES */
         #mid-dash { position: fixed; top: 110px; left: 20px; z-index: 900; }
         #total-cal { color: var(--glow-blue); font-size: 1.4rem; font-weight: 700; }
         #musc-header { font-size: 0.8rem; margin-top: 10px; color: var(--glow-blue); letter-spacing: 1px; }
@@ -66,9 +64,7 @@
 
         .overlay { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); width: 92%; max-width: 400px; background: var(--glass); border-radius: 35px; padding: 30px; border: 1px solid var(--border); backdrop-filter: blur(25px); display: none; text-align: center; z-index: 9500; }
 
-        /* CARDIO MODULE STYLES */
         #cardio-layout { display: flex; flex-direction: column; height: 100%; width: 100%; box-sizing: border-box; padding: 110px 20px 100px 20px; position: relative; }
-        
         #cardio-stats-row { display: flex; justify-content: space-around; width: 100%; margin-bottom: 25px; text-align: center; }
         .stat-value { font-size: 2.5rem; font-weight: 900; color: #fff; line-height: 1; }
         .stat-label { font-size: 0.8rem; color: var(--glow-blue); text-transform: uppercase; font-weight: 700; margin-top: 5px; }
@@ -90,7 +86,6 @@
         .zone-title { font-weight: 800; font-size: 0.95rem; letter-spacing: 0.5px; text-transform: uppercase; color: #fff; margin: 0; line-height: 1; white-space: nowrap; }
         .zone-pill { border: 1px solid var(--zone-color); border-radius: 50px; padding: 5px 14px; font-size: 0.85rem; font-weight: 700; color: #fff; margin-left: 24px; white-space: nowrap; }
 
-        /* SETTINGS TAB */
         #settings-scroll-area { height: 100%; overflow-y: auto; padding: 110px 30px 120px 30px; box-sizing: border-box; }
         .settings-card { background:var(--glass); padding:25px; border-radius:20px; border:1px solid var(--border); margin-bottom: 20px; }
         .settings-row { display:flex; justify-content:space-between; margin-bottom:15px; align-items: center; }
@@ -104,7 +99,6 @@
         .zone-setting-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
         .zone-setting-label { font-size: 0.8rem; font-weight: 800; letter-spacing: 0.5px; }
 
-        /* BOTTOM NAVIGATION */
         #bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; height: 85px; background: var(--glass); border-top: 1px solid var(--border); display: flex; justify-content: space-around; align-items: center; z-index: 9900; backdrop-filter: blur(25px); padding-bottom: max(env(safe-area-inset-bottom), 10px); box-sizing: border-box; }
         .nav-btn { background: transparent; border: none; color: #555; font-size: 0.65rem; font-weight: 800; text-transform: uppercase; display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; width: 25%; transition: color 0.3s ease; }
         .nav-btn.active-nav { color: var(--glow-blue); }
@@ -117,11 +111,11 @@
 </head>
 <body>
 
-    <div id="version-tag">BIOSTACK_v10.50_STABLE</div>
+    <div id="version-tag">BIOSTACK_v10.51_STABLE</div>
 
     <div id="login-screen">
+        <img src="assets/biostack_logo_final.png" style="width: 140px; margin-bottom: 30px; filter: drop-shadow(0 0 15px rgba(0,242,255,0.3));">
         <div class="login-card">
-            <h2>BIOSTACK ELITE</h2>
             <input type="number" id="user-weight" placeholder="Weight (lbs)">
             <input type="number" id="user-age" placeholder="Age">
             <button id="init-btn" onclick="initSystem()">Initialize & Link</button>
@@ -141,9 +135,7 @@
                 <div id="musc-header">TARGET: --</div>
                 <div id="active-ex-tag">NO ACTIVE EXERCISE</div>
             </div>
-
             <div id="sidebar"><div id="exercise-picker"></div></div>
-
             <div id="stage-area">
                 <div id="set-bar-sidebar">
                     <div id="active-ex-context"></div>
@@ -157,7 +149,6 @@
                     <img src="assets/base_front.png" id="base-front">
                     <img src="assets/back_button.png" id="btn-to-back" class="stack-layer ui-overlay layer-visible">
                     <img src="assets/front_button.png" id="btn-to-front" class="stack-layer ui-overlay">
-                    
                     <img src="assets/trapezoids.png" id="overlay-trapezoids" class="muscle-overlay stack-layer layer-visible">
                     <img src="assets/deltoids.png" id="overlay-deltoids" class="muscle-overlay stack-layer layer-visible">
                     <img src="assets/pectorals.png" id="overlay-pectorals" class="muscle-overlay stack-layer layer-visible">
@@ -165,7 +156,6 @@
                     <img src="assets/forearms.png" id="overlay-forearms" class="muscle-overlay stack-layer layer-visible">
                     <img src="assets/abdominals.png" id="overlay-abdominals" class="muscle-overlay stack-layer layer-visible">
                     <img src="assets/quads.png" id="overlay-quads" class="muscle-overlay stack-layer layer-visible">
-                    
                     <img src="assets/base_back.png" id="base-back" class="stack-layer" style="z-index: 6;">
                     <img src="assets/lats.png" id="overlay-lats" class="muscle-overlay stack-layer">
                     <img src="assets/triceps.png" id="overlay-triceps" class="muscle-overlay stack-layer">
@@ -210,7 +200,6 @@
         <div id="view-settings" class="app-view">
             <div id="settings-scroll-area">
                 <h2 style="color:var(--glow-blue); font-weight:900; margin-top:0; margin-bottom: 25px;">SYSTEM SETTINGS</h2>
-                
                 <div class="settings-card">
                     <div class="settings-row">
                         <span class="settings-label">SET READY TRIGGER</span>
@@ -225,48 +214,22 @@
                         <span class="settings-label">CARDIO ZONES (Target BPM)</span>
                     </div>
                     <p class="settings-desc">Fine-tune the physiological thresholds that trigger your visual cardio states. We'll securely sync these as percentages of your Max HR to scale dynamically as you age.</p>
-                    
-                    <div class="zone-setting-row">
-                        <span class="zone-setting-label" style="color: #33cc33;">LEAN & MEAN</span>
-                        <div><input type="number" class="zone-input" id="set-z1-min"> - <input type="number" class="zone-input" id="set-z1-max"></div>
-                    </div>
-                    
-                    <div class="zone-setting-row">
-                        <span class="zone-setting-label" style="color: #ffcc00;">WEIGHT LOSS</span>
-                        <div><input type="number" class="zone-input" id="set-z2-min"> - <input type="number" class="zone-input" id="set-z2-max"></div>
-                    </div>
-                    
-                    <div class="zone-setting-row">
-                        <span class="zone-setting-label" style="color: #ff3333;">ENDURANCE</span>
-                        <div><input type="number" class="zone-input" id="set-z3-min"> - <input type="number" class="zone-input" id="set-z3-max"></div>
-                    </div>
-                    
+                    <div class="zone-setting-row"><span class="zone-setting-label" style="color: #33cc33;">LEAN & MEAN</span><div><input type="number" class="zone-input" id="set-z1-min"> - <input type="number" class="zone-input" id="set-z1-max"></div></div>
+                    <div class="zone-setting-row"><span class="zone-setting-label" style="color: #ffcc00;">WEIGHT LOSS</span><div><input type="number" class="zone-input" id="set-z2-min"> - <input type="number" class="zone-input" id="set-z2-max"></div></div>
+                    <div class="zone-setting-row"><span class="zone-setting-label" style="color: #ff3333;">ENDURANCE</span><div><input type="number" class="zone-input" id="set-z3-min"> - <input type="number" class="zone-input" id="set-z3-max"></div></div>
                     <button class="flow-btn" style="background:#222; color:#fff; border: 1px solid #444; margin-top:15px; margin-bottom:0;" onclick="saveZoneSettings()">SAVE ZONES</button>
                 </div>
             </div>
         </div>
 
         <nav id="bottom-nav">
-            <button class="nav-btn" onclick="switchAppTab('weights', this)">
-                <div class="nav-icon"></div>
-                <span>Lift</span>
-            </button>
-            <button class="nav-btn active-nav" onclick="switchAppTab('cardio', this)">
-                <div class="nav-icon"></div>
-                <span>Cardio</span>
-            </button>
-            <button class="nav-btn" onclick="switchAppTab('food', this)">
-                <div class="nav-icon"></div>
-                <span>Food</span>
-            </button>
-            <button class="nav-btn" onclick="switchAppTab('settings', this)">
-                <div class="nav-icon"></div>
-                <span>Settings</span>
-            </button>
+            <button class="nav-btn" onclick="switchAppTab('weights', this)"><div class="nav-icon"></div><span>Lift</span></button>
+            <button class="nav-btn active-nav" onclick="switchAppTab('cardio', this)"><div class="nav-icon"></div><span>Cardio</span></button>
+            <button class="nav-btn" onclick="switchAppTab('food', this)"><div class="nav-icon"></div><span>Food</span></button>
+            <button class="nav-btn" onclick="switchAppTab('settings', this)"><div class="nav-icon"></div><span>Settings</span></button>
         </nav>
 
     </div>
-
-    <script src="js/biostack.js?v=52"></script>
+    <script src="js/biostack.js?v=53"></script>
 </body>
 </html>
