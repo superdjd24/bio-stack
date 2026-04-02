@@ -1,6 +1,6 @@
 /**
- * BIOSTACK ELITE ENGINE v10.36 STABLE
- * Cardio Module with Live Dynamic Zones + Cache Bust
+ * BIOSTACK ELITE ENGINE v10.37 STABLE
+ * Cardio UI Grey-Out Focus Pattern & Formatting + Cache Bust
  */
 
 let bpm = 0;
@@ -82,7 +82,7 @@ async function initSystem() {
             if (hrHistory.length > 55) hrHistory.shift();
             
             drawSparkline();
-            updateCardioUI(bpm); // Update the active Cardio zone tracker
+            updateCardioUI(bpm); 
             
             if (isResting) {
                 updateRestUI();
@@ -106,18 +106,14 @@ function calculateCals(currentBpm) {
     const sliceCals = ((calPerMinute / 60) * (durationHours * 60)) * 10;
     totalCalories += sliceCals;
     
-    // Update calories globally across tabs
     const calVal = Math.round(totalCalories);
     document.getElementById('total-cal').innerText = calVal;
     
-    // Safety check just in case cardio view isn't fully loaded yet
     const cardioCal = document.getElementById('cardio-total-cal-display');
     if(cardioCal) cardioCal.innerText = calVal;
 }
 
-// NEW: DYNAMIC CARDIO ZONE INITIALIZATION
 function initCardioZones() {
-    // Dynamic math utilizing user's profile age
     const age = parseInt(localStorage.getItem('bio_age')) || 30; 
     const maxHr = 220 - age;
 
@@ -133,15 +129,13 @@ function initCardioZones() {
     document.getElementById('pill-z3').innerText = `${z3Min} - ${z3Max} BPM`;
 }
 
-// NEW: LIVE ZONE TRACKER
 function updateCardioUI(currentBpm) {
     const age = parseInt(localStorage.getItem('bio_age')) || 30;
     const maxHr = 220 - age;
 
-    // Reset all zone highlights
+    // Remove active class from all (resets them to the greyed-out state)
     document.querySelectorAll('.zone-card').forEach(c => c.classList.remove('active-zone'));
 
-    // Highlight active zone based on current BPM threshold
     if (currentBpm >= maxHr * 0.80 && currentBpm <= maxHr * 0.90) {
         document.getElementById('zone-3').classList.add('active-zone');
     } else if (currentBpm >= maxHr * 0.70 && currentBpm < maxHr * 0.80) {
@@ -467,8 +461,6 @@ function switchAppTab(tabId, btnElement) {
     });
     btnElement.classList.add('active-nav');
     
-    // Only fetch/calculate the exact ranges when opening the cardio tab 
-    // to ensure they use the most current localstorage age.
     if (tabId === 'cardio') {
         initCardioZones();
     }
