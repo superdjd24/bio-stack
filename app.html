@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BioStack Elite v10.34 STABLE</title>
+    <title>BioStack Elite v10.35 STABLE</title>
     <style>
         :root { --glow-blue: #00f2ff; --bg-dark: #05070a; --glass: rgba(15, 20, 30, 0.95); --border: #30363d; }
         body { margin: 0; background: var(--bg-dark); color: white; font-family: -apple-system, system-ui, sans-serif; overflow: hidden; height: 100vh; }
@@ -15,37 +15,19 @@
 
         #main-dashboard { display: none; opacity: 0; transition: opacity 0.8s ease; }
         
-        #top-dash { 
-            position: fixed; 
-            top: 0; 
-            width: 100%; 
-            height: 100px; 
-            display: flex; 
-            align-items: center; 
-            justify-content: space-between; 
-            padding: 20px 30px; 
-            box-sizing: border-box; 
-            z-index: 9000; 
-        }
-        
-        #hr-pill { 
-            background: var(--glass); 
-            padding: 0 15px;
-            width: 135px;
-            height: 65px; 
-            border-radius: 50px; 
-            border: 1px solid var(--border); 
-            display: flex; 
-            align-items: center; 
-            justify-content: flex-start;
-            gap: 8px;
-        }
+        /* GLOBAL TOP DASHBOARD */
+        #top-dash { position: fixed; top: 0; width: 100%; height: 100px; display: flex; align-items: center; justify-content: space-between; padding: 20px 30px; box-sizing: border-box; z-index: 9000; }
+        #hr-pill { background: var(--glass); padding: 0 15px; width: 135px; height: 65px; border-radius: 50px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: flex-start; gap: 8px; }
         #hr-val { font-size: 2.4rem; font-weight: 900; color: var(--glow-blue); flex-grow: 1; text-align: center; }
         #hr-icon { width: 24px; height: auto; margin-left: 5px; }
-        
         #graph-box { width: 200px; height: 50px; position: relative; }
         #sparkline-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
 
+        /* VIEW MANAGEMENT */
+        .app-view { display: none; width: 100%; height: 100%; }
+        .view-active { display: block; }
+
+        /* WEIGHTS VIEW STYLES */
         #mid-dash { position: fixed; top: 110px; left: 20px; z-index: 900; }
         #total-cal { color: var(--glow-blue); font-size: 1.4rem; font-weight: 700; }
         #musc-header { font-size: 0.8rem; margin-top: 10px; color: var(--glow-blue); letter-spacing: 1px; }
@@ -56,34 +38,11 @@
 
         #stage-area { position: fixed; top: 120px; right: 0; width: 75vw; height: 65vh; display: flex; align-items: center; justify-content: flex-end; z-index: 10; }
         
-        #set-bar-sidebar { 
-            width: 200px; 
-            height: 450px; 
-            display: flex; 
-            flex-direction: column; 
-            gap: 12px; 
-            margin-right: 15px; 
-            padding: 10px;
-            justify-content: flex-start;
-            align-items: flex-start;
-            border-right: none; 
-        }
-
+        #set-bar-sidebar { width: 200px; height: 450px; display: flex; flex-direction: column; gap: 12px; margin-right: 15px; padding: 10px; justify-content: flex-start; align-items: flex-start; border-right: none; }
         #active-ex-context { font-size: 0.65rem; color: var(--glow-blue); text-transform: uppercase; border-bottom: 1px solid rgba(0,242,255,0.2); width: 100%; text-align: left; padding-bottom: 8px; margin-bottom: 5px; font-weight: 700; display: none; }
         .intensity-item { width: 100%; display: flex; align-items: center; gap: 10px; justify-content: flex-start; }
         .intensity-label { font-size: 0.7rem; color: #fff; font-weight: 600; flex-shrink: 0; width: 45px; }
-        
-        .set-bar { 
-            height: 18px; 
-            background: var(--glow-blue); 
-            border-radius: 4px; 
-            transition: width 1s cubic-bezier(0.1, 0.7, 1.0, 0.1); 
-            width: 0px; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-        }
+        .set-bar { height: 18px; background: var(--glow-blue); border-radius: 4px; transition: width 1s cubic-bezier(0.1, 0.7, 1.0, 0.1); width: 0px; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); }
         .bar-inner-label { font-size: 0.65rem; color: #000; font-weight: 900; opacity: 0; transition: opacity 0.3s ease 0.8s; }
         .set-bar.revealed .bar-inner-label { opacity: 1; }
 
@@ -91,41 +50,12 @@
         .flow-btn { width: 100%; padding: 14px; border-radius: 12px; border: none; font-weight: 800; text-transform: uppercase; cursor: pointer; margin-bottom: 10px; transition: color 0.3s ease; }
         #new-ex-btn { background: transparent; border: 1px solid #444; color: #888; font-size: 0.7rem; }
 
-        @keyframes restBlink {
-            0% { opacity: 1; }
-            50% { opacity: 0.3; }
-            100% { opacity: 1; }
-        }
-        .blinking-rest {
-            animation: restBlink 2s infinite ease-in-out;
-        }
+        @keyframes restBlink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+        .blinking-rest { animation: restBlink 2s infinite ease-in-out; }
 
-        /* NEW: In-progress indicator animations */
-        @keyframes pulseRed {
-            0% { opacity: 1; }
-            50% { opacity: 0.4; }
-            100% { opacity: 1; }
-        }
-        #in-progress-badge {
-            color: #ff0044;
-            font-size: 0.75rem;
-            font-weight: 800;
-            text-transform: uppercase;
-            margin-bottom: 10px;
-            animation: pulseRed 1.5s infinite;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-        }
-        .recording-dot {
-            width: 8px;
-            height: 8px;
-            background-color: #ff0044;
-            border-radius: 50%;
-            display: inline-block;
-            box-shadow: 0 0 5px #ff0044;
-        }
+        @keyframes pulseRed { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+        #in-progress-badge { color: #ff0044; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; margin-bottom: 10px; animation: pulseRed 1.5s infinite; display: flex; align-items: center; justify-content: center; gap: 6px; }
+        .recording-dot { width: 8px; height: 8px; background-color: #ff0044; border-radius: 50%; display: inline-block; box-shadow: 0 0 5px #ff0044; }
 
         #image-container { position: relative; height: 100%; width: auto; display: inline-block; }
         #base-front { height: 100%; width: auto; display: block; z-index: 5; }
@@ -137,17 +67,26 @@
         #touch-map { position: absolute; top: 0; right: 10%; width: 80%; height: 100%; z-index: 100; display: grid; grid-template-columns: repeat(3, 1fr); }
         .hit { width: 100%; height: 100%; pointer-events: auto; }
 
-        .overlay { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); width: 92%; max-width: 400px; background: var(--glass); border-radius: 35px; padding: 30px; border: 1px solid var(--border); backdrop-filter: blur(25px); display: none; text-align: center; z-index: 9500; }
+        .overlay { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); width: 92%; max-width: 400px; background: var(--glass); border-radius: 35px; padding: 30px; border: 1px solid var(--border); backdrop-filter: blur(25px); display: none; text-align: center; z-index: 9500; }
         
         #calibration-hud { position: fixed; top: 200px; left: 20px; display: none; z-index: 9999; }
         .hud-timer-cal { display:none; color:#ffaa00; font-weight:800; display:block; margin-top:10px; font-size: 0.75rem; text-transform:uppercase; letter-spacing:1px; }
 
-        #version-tag { position: fixed; bottom: 15px; left: 15px; font-size: 0.6rem; color: #333; }
+        /* NEW: BOTTOM NAVIGATION */
+        #bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; height: 85px; background: var(--glass); border-top: 1px solid var(--border); display: flex; justify-content: space-around; align-items: center; z-index: 9900; backdrop-filter: blur(25px); padding-bottom: max(env(safe-area-inset-bottom), 10px); box-sizing: border-box; }
+        .nav-btn { background: transparent; border: none; color: #555; font-size: 0.65rem; font-weight: 800; text-transform: uppercase; display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; width: 25%; transition: color 0.3s ease; }
+        .nav-btn.active-nav { color: var(--glow-blue); }
+        .nav-icon { width: 24px; height: 24px; background: #555; border-radius: 6px; transition: background 0.3s ease; }
+        .nav-btn.active-nav .nav-icon { background: var(--glow-blue); }
+
+        #version-tag { position: fixed; bottom: 100px; left: 15px; font-size: 0.6rem; color: #333; z-index: 8000; }
+        
+        .placeholder-text { padding-top: 150px; text-align: center; color: var(--glow-blue); font-weight: 800; text-transform: uppercase; letter-spacing: 2px; }
     </style>
 </head>
 <body>
 
-    <div id="version-tag">BIOSTACK_v10.34_STABLE_TEAL</div>
+    <div id="version-tag">BIOSTACK_v10.35_STABLE</div>
 
     <div id="login-screen">
         <div class="login-card">
@@ -159,69 +98,96 @@
     </div>
 
     <div id="main-dashboard">
+        
         <div id="top-dash">
-            <div id="hr-pill">
-                <img src="assets/heartbeat_icon.png" id="hr-icon">
-                <span id="hr-val">--</span>
-            </div>
+            <div id="hr-pill"><img src="assets/heartbeat_icon.png" id="hr-icon"><span id="hr-val">--</span></div>
             <div id="graph-box"><canvas id="sparkline-canvas"></canvas></div>
         </div>
 
-        <div id="mid-dash">
-            <div><span id="total-cal">0</span> <span style="font-size:0.7rem; opacity:0.5;">CALORIES</span></div>
-            <div id="musc-header">TARGET: --</div>
-            <div id="active-ex-tag">NO ACTIVE EXERCISE</div>
-        </div>
+        <div id="view-weights" class="app-view view-active">
+            <div id="mid-dash">
+                <div><span id="total-cal">0</span> <span style="font-size:0.7rem; opacity:0.5;">CALORIES</span></div>
+                <div id="musc-header">TARGET: --</div>
+                <div id="active-ex-tag">NO ACTIVE EXERCISE</div>
+            </div>
 
-        <div id="sidebar"><div id="exercise-picker"></div></div>
+            <div id="sidebar"><div id="exercise-picker"></div></div>
 
-        <div id="calibration-hud">
-            <span id="cal-timer-display" class="hud-timer-cal"></span>
-        </div>
+            <div id="calibration-hud"><span id="cal-timer-display" class="hud-timer-cal"></span></div>
 
-        <div id="stage-area">
-            <div id="set-bar-sidebar">
-                <div id="active-ex-context"></div>
-                <div id="hud-in-flow">
-                    <div id="in-progress-badge" style="display: none;">
-                        <span class="recording-dot"></span> SET IN PROGRESS
+            <div id="stage-area">
+                <div id="set-bar-sidebar">
+                    <div id="active-ex-context"></div>
+                    <div id="hud-in-flow">
+                        <div id="in-progress-badge" style="display: none;"><span class="recording-dot"></span> SET IN PROGRESS</div>
+                        <button id="set-main-btn" class="flow-btn" onclick="startSetTimer()" style="background: var(--glow-blue); color:#000;">END SET</button>
+                        <span id="set-timer-display" style="display:none; font-size:0.75rem; color:#ffaa00; margin-bottom:10px; font-weight:800; text-transform:uppercase;">Analyzing vitals...</span>
+                        <button id="new-ex-btn" class="flow-btn" onclick="exitTraining()">NEW EXERCISE</button>
                     </div>
+                </div>
+                <div id="image-container">
+                    <img src="assets/base_front.png" id="base-front">
+                    <img src="assets/back_button.png" id="btn-to-back" class="stack-layer ui-overlay layer-visible">
+                    <img src="assets/front_button.png" id="btn-to-front" class="stack-layer ui-overlay">
                     
-                    <button id="set-main-btn" class="flow-btn" onclick="startSetTimer()" style="background: var(--glow-blue); color:#000;">END SET</button>
-                    <span id="set-timer-display" style="display:none; font-size:0.75rem; color:#ffaa00; margin-bottom:10px; font-weight:800; text-transform:uppercase;">Analyzing vitals...</span>
-                    <button id="new-ex-btn" class="flow-btn" onclick="exitTraining()">NEW EXERCISE</button>
+                    <img src="assets/trapezoids.png" id="overlay-trapezoids" class="muscle-overlay stack-layer layer-visible">
+                    <img src="assets/deltoids.png" id="overlay-deltoids" class="muscle-overlay stack-layer layer-visible">
+                    <img src="assets/pectorals.png" id="overlay-pectorals" class="muscle-overlay stack-layer layer-visible">
+                    <img src="assets/biceps.png" id="overlay-biceps" class="muscle-overlay stack-layer layer-visible">
+                    <img src="assets/forearms.png" id="overlay-forearms" class="muscle-overlay stack-layer layer-visible">
+                    <img src="assets/abdominals.png" id="overlay-abdominals" class="muscle-overlay stack-layer layer-visible">
+                    <img src="assets/quads.png" id="overlay-quads" class="muscle-overlay stack-layer layer-visible">
+                    
+                    <img src="assets/base_back.png" id="base-back" class="stack-layer" style="z-index: 6;">
+                    <img src="assets/lats.png" id="overlay-lats" class="muscle-overlay stack-layer">
+                    <img src="assets/triceps.png" id="overlay-triceps" class="muscle-overlay stack-layer">
+                    <img src="assets/glutes.png" id="overlay-glutes" class="muscle-overlay stack-layer">
+                    <img src="assets/hamstrings.png" id="overlay-hamstrings" class="muscle-overlay stack-layer">
+                    <img src="assets/calves.png" id="overlay-calves" class="muscle-overlay stack-layer">
+                    <div id="touch-map"></div>
                 </div>
             </div>
-            <div id="image-container">
-                <img src="assets/base_front.png" id="base-front">
-                <img src="assets/back_button.png" id="btn-to-back" class="stack-layer ui-overlay layer-visible">
-                <img src="assets/front_button.png" id="btn-to-front" class="stack-layer ui-overlay">
-                
-                <img src="assets/trapezoids.png" id="overlay-trapezoids" class="muscle-overlay stack-layer layer-visible">
-                <img src="assets/deltoids.png" id="overlay-deltoids" class="muscle-overlay stack-layer layer-visible">
-                <img src="assets/pectorals.png" id="overlay-pectorals" class="muscle-overlay stack-layer layer-visible">
-                <img src="assets/biceps.png" id="overlay-biceps" class="muscle-overlay stack-layer layer-visible">
-                <img src="assets/forearms.png" id="overlay-forearms" class="muscle-overlay stack-layer layer-visible">
-                <img src="assets/abdominals.png" id="overlay-abdominals" class="muscle-overlay stack-layer layer-visible">
-                <img src="assets/quads.png" id="overlay-quads" class="muscle-overlay stack-layer layer-visible">
-                
-                <img src="assets/base_back.png" id="base-back" class="stack-layer" style="z-index: 6;">
-                <img src="assets/lats.png" id="overlay-lats" class="muscle-overlay stack-layer">
-                <img src="assets/triceps.png" id="overlay-triceps" class="muscle-overlay stack-layer">
-                <img src="assets/glutes.png" id="overlay-glutes" class="muscle-overlay stack-layer">
-                <img src="assets/hamstrings.png" id="overlay-hamstrings" class="muscle-overlay stack-layer">
-                <img src="assets/calves.png" id="overlay-calves" class="muscle-overlay stack-layer">
-                <div id="touch-map"></div>
+
+            <div id="menu-action" class="overlay">
+                <h2 id="ex-name-modal" style="margin-bottom:25px;">EXERCISE</h2>
+                <button onclick="startTraining()" style="width:100%; padding:18px; border-radius:50px; background:var(--glow-blue); color:#000; font-weight:800; border:none; cursor:pointer;">START SETS</button>
+                <p onclick="closeAction()" style="margin-top:15px; font-size:0.8rem; opacity:0.5; cursor:pointer;">CANCEL</p>
             </div>
         </div>
 
-        <div id="menu-action" class="overlay">
-            <h2 id="ex-name-modal" style="margin-bottom:25px;">EXERCISE</h2>
-            <button onclick="startTraining()" style="width:100%; padding:18px; border-radius:50px; background:var(--glow-blue); color:#000; font-weight:800; border:none; cursor:pointer;">START SETS</button>
-            <p onclick="closeAction()" style="margin-top:15px; font-size:0.8rem; opacity:0.5; cursor:pointer;">CANCEL</p>
+        <div id="view-cardio" class="app-view">
+            <h2 class="placeholder-text">CARDIO MODULE<br><span style="font-size: 0.8rem; color: #666;">Awaiting architecture instructions</span></h2>
         </div>
+
+        <div id="view-food" class="app-view">
+            <h2 class="placeholder-text">NUTRITION MODULE<br><span style="font-size: 0.8rem; color: #666;">Awaiting architecture instructions</span></h2>
+        </div>
+
+        <div id="view-dashboard" class="app-view">
+            <h2 class="placeholder-text">SYSTEM DASHBOARD<br><span style="font-size: 0.8rem; color: #666;">Awaiting architecture instructions</span></h2>
+        </div>
+
+        <nav id="bottom-nav">
+            <button class="nav-btn active-nav" onclick="switchAppTab('weights', this)">
+                <div class="nav-icon"></div>
+                <span>Lift</span>
+            </button>
+            <button class="nav-btn" onclick="switchAppTab('cardio', this)">
+                <div class="nav-icon"></div>
+                <span>Cardio</span>
+            </button>
+            <button class="nav-btn" onclick="switchAppTab('food', this)">
+                <div class="nav-icon"></div>
+                <span>Food</span>
+            </button>
+            <button class="nav-btn" onclick="switchAppTab('dashboard', this)">
+                <div class="nav-icon"></div>
+                <span>Dash</span>
+            </button>
+        </nav>
+
     </div>
 
-    <script src="js/biostack.js?v=37"></script>
+    <script src="js/biostack.js?v=38"></script>
 </body>
 </html>
