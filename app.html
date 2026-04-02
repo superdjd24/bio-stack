@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BioStack Elite v10.33 STABLE</title>
+    <title>BioStack Elite v10.34 STABLE</title>
     <style>
         :root { --glow-blue: #00f2ff; --bg-dark: #05070a; --glass: rgba(15, 20, 30, 0.95); --border: #30363d; }
         body { margin: 0; background: var(--bg-dark); color: white; font-family: -apple-system, system-ui, sans-serif; overflow: hidden; height: 100vh; }
@@ -100,6 +100,33 @@
             animation: restBlink 2s infinite ease-in-out;
         }
 
+        /* NEW: In-progress indicator animations */
+        @keyframes pulseRed {
+            0% { opacity: 1; }
+            50% { opacity: 0.4; }
+            100% { opacity: 1; }
+        }
+        #in-progress-badge {
+            color: #ff0044;
+            font-size: 0.75rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+            animation: pulseRed 1.5s infinite;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .recording-dot {
+            width: 8px;
+            height: 8px;
+            background-color: #ff0044;
+            border-radius: 50%;
+            display: inline-block;
+            box-shadow: 0 0 5px #ff0044;
+        }
+
         #image-container { position: relative; height: 100%; width: auto; display: inline-block; }
         #base-front { height: 100%; width: auto; display: block; z-index: 5; }
         .stack-layer { position: absolute; top: 0; right: 0; height: 100%; width: auto; pointer-events: none; transition: opacity 0.4s ease; display: none; }
@@ -120,7 +147,7 @@
 </head>
 <body>
 
-    <div id="version-tag">BIOSTACK_v10.33_STABLE_TEAL</div>
+    <div id="version-tag">BIOSTACK_v10.34_STABLE_TEAL</div>
 
     <div id="login-screen">
         <div class="login-card">
@@ -156,6 +183,10 @@
             <div id="set-bar-sidebar">
                 <div id="active-ex-context"></div>
                 <div id="hud-in-flow">
+                    <div id="in-progress-badge" style="display: none;">
+                        <span class="recording-dot"></span> SET IN PROGRESS
+                    </div>
+                    
                     <button id="set-main-btn" class="flow-btn" onclick="startSetTimer()" style="background: var(--glow-blue); color:#000;">END SET</button>
                     <span id="set-timer-display" style="display:none; font-size:0.75rem; color:#ffaa00; margin-bottom:10px; font-weight:800; text-transform:uppercase;">Analyzing vitals...</span>
                     <button id="new-ex-btn" class="flow-btn" onclick="exitTraining()">NEW EXERCISE</button>
@@ -191,6 +222,6 @@
         </div>
     </div>
 
-    <script src="js/biostack.js?v=36"></script>
+    <script src="js/biostack.js?v=37"></script>
 </body>
 </html>
