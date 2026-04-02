@@ -1,11 +1,9 @@
 /**
- * BIOSTACK ELITE ENGINE v10.45 STABLE
- * Particle Engine Tweaks: Slower, Translucent, Z-Index, and >107 BPM Threshold
+ * BIOSTACK ELITE ENGINE v10.46 STABLE
+ * Text Label Update to "LEAN & MEAN" + Cache Bust
  */
 
-// Temporarily set to 110 so you can see the initial particle effect on page load.
-// Set back to 0 when you are ready to test with actual Bluetooth heart strap.
-let bpm = 110; 
+let bpm = 0; // Ready for production Bluetooth connection
 let currentView = "front";
 let isTrain = false;
 let isCalibrating = false;
@@ -513,7 +511,6 @@ function animateParticles() {
     const maxHr = 220 - age;
     
     let intensity = 0;
-    // TWEAK 1: Only calculate intensity and spawn particles if BPM >= 107
     if (bpm >= 107) {
         // Map intensity from 0 to 1 based on the range between 107 and maxHr
         intensity = Math.max(0, Math.min(1, (bpm - 107) / (maxHr - 107)));
@@ -522,10 +519,8 @@ function animateParticles() {
         for (let i = 0; i < spawnRate; i++) {
             if (Math.random() > 0.4) { 
                 particles.push({
-                    // TWEAK 3: Shifted starting position to 65% width (further left)
                     x: canvasP.width * 0.65 + (Math.random() * 20 - 10), 
                     y: canvasP.height * 0.3 + Math.random() * (canvasP.height * 0.45), 
-                    // TWEAK 2: Slower overall speed (reduced multipliers)
                     vx: -(0.5 + intensity * 1.5) - Math.random(), 
                     vy: (Math.random() - 0.5) * 1.0 - (intensity * 0.3), 
                     life: 150 + Math.random() * 100,
@@ -550,7 +545,6 @@ function animateParticles() {
             continue;
         }
 
-        // TWEAK 5: Added opacity limit so they max out at 0.5 (semi-transparent)
         ctxP.globalAlpha = Math.max(0, p.life / p.maxLife) * 0.5;
         ctxP.fillStyle = p.color;
         ctxP.beginPath();
