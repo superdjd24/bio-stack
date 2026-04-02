@@ -1,9 +1,11 @@
 /**
- * BIOSTACK ELITE ENGINE v10.44 STABLE
- * Particle Engine 0x0 Rendering Bug Fix + Cache Bust
+ * BIOSTACK ELITE ENGINE v10.45 STABLE
+ * Particle Engine Tweaks: Slower, Translucent, Z-Index, and >107 BPM Threshold
  */
 
-let bpm = 0; // FIX: Reverted to 0 for production Bluetooth connection
+// Temporarily set to 110 so you can see the initial particle effect on page load.
+// Set back to 0 when you are ready to test with actual Bluetooth heart strap.
+let bpm = 110; 
 let currentView = "front";
 let isTrain = false;
 let isCalibrating = false;
@@ -496,66 +498,5 @@ function animateParticles() {
     if (!document.getElementById('view-cardio').classList.contains('view-active')) return;
     if (!ctxP) return;
 
-    // FIX: Dynamically resize canvas to parent every frame to prevent 0x0 rendering bugs
-    const parent = canvasP.parentElement;
-    if (canvasP.width !== parent.clientWidth || canvasP.height !== parent.clientHeight) {
-        canvasP.width = parent.clientWidth;
-        canvasP.height = parent.clientHeight;
-    }
-    
-    if (canvasP.width === 0) return; // Prevent drawing if still fully hidden by browser
-
-    ctxP.clearRect(0, 0, canvasP.width, canvasP.height);
-
-    const age = parseInt(localStorage.getItem('bio_age')) || 30;
-    const maxHr = 220 - age;
-    
-    // Calculate intensity (0.0 to 1.0)
-    let intensity = 0;
-    if (bpm > 40) {
-        intensity = Math.max(0, Math.min(1, (bpm - 60) / (maxHr - 60)));
-    }
-
-    if (bpm > 0) {
-        let spawnRate = 1 + Math.floor(intensity * 6); 
-        for (let i = 0; i < spawnRate; i++) {
-            if (Math.random() > 0.3) { 
-                particles.push({
-                    x: canvasP.width * 0.75 + (Math.random() * 20 - 10), 
-                    y: canvasP.height * 0.3 + Math.random() * (canvasP.height * 0.45), 
-                    vx: -(1 + intensity * 5) - Math.random() * 2, 
-                    vy: (Math.random() - 0.5) * 1.5 - (intensity * 0.5), 
-                    life: 100 + Math.random() * 100,
-                    maxLife: 200,
-                    size: 1.0 + Math.random() * 2.0, 
-                    color: getEliteColor(bpm)
-                });
-            }
-        }
-    }
-
-    ctxP.globalCompositeOperation = 'screen';
-
-    for (let i = particles.length - 1; i >= 0; i--) {
-        let p = particles[i];
-        p.x += p.vx;
-        p.y += p.vy;
-        p.life--;
-
-        if (p.life <= 0 || p.x < 0) {
-            particles.splice(i, 1);
-            continue;
-        }
-
-        ctxP.globalAlpha = Math.max(0, p.life / p.maxLife) * 0.8;
-        ctxP.fillStyle = p.color;
-        ctxP.beginPath();
-        ctxP.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctxP.fill();
-    }
-    
-    ctxP.globalAlpha = 1.0;
-    ctxP.globalCompositeOperation = 'source-over';
-}
-
-initCardioParticles();
+    // Dynamically resize canvas to parent every frame to prevent 0x0 rendering bugs
+    const parent = canvasP.parentElement
