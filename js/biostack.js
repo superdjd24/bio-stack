@@ -1,9 +1,9 @@
 /**
- * BIOSTACK ELITE ENGINE v10.42 STABLE
- * Integrated HTML5 Canvas Particle Engine for Live Cardio + Cache Bust
+ * BIOSTACK ELITE ENGINE v10.44 STABLE
+ * Particle Engine 0x0 Rendering Bug Fix + Cache Bust
  */
 
-let bpm = 0;
+let bpm = 0; // FIX: Reverted to 0 for production Bluetooth connection
 let currentView = "front";
 let isTrain = false;
 let isCalibrating = false;
@@ -477,35 +477,33 @@ function switchAppTab(tabId, btnElement) {
     
     if (tabId === 'cardio') {
         initCardioZones();
-        resizeCardioCanvas(); // Ensure canvas is sized correctly when revealed
     }
 }
 
-// --- NEW PARTICLE PHYSICS ENGINE ---
+// --- PARTICLE PHYSICS ENGINE ---
 const canvasP = document.getElementById('cardio-particles');
 let ctxP = canvasP ? canvasP.getContext('2d') : null;
 let particles = [];
 
 function initCardioParticles() {
     if (!canvasP) return;
-    window.addEventListener('resize', resizeCardioCanvas);
-    resizeCardioCanvas();
     requestAnimationFrame(animateParticles);
-}
-
-function resizeCardioCanvas() {
-    if (!canvasP) return;
-    const rect = canvasP.parentElement.getBoundingClientRect();
-    canvasP.width = rect.width;
-    canvasP.height = rect.height;
 }
 
 function animateParticles() {
     requestAnimationFrame(animateParticles);
     
-    // Performance optimization: only draw if the cardio view is active
     if (!document.getElementById('view-cardio').classList.contains('view-active')) return;
     if (!ctxP) return;
+
+    // FIX: Dynamically resize canvas to parent every frame to prevent 0x0 rendering bugs
+    const parent = canvasP.parentElement;
+    if (canvasP.width !== parent.clientWidth || canvasP.height !== parent.clientHeight) {
+        canvasP.width = parent.clientWidth;
+        canvasP.height = parent.clientHeight;
+    }
+    
+    if (canvasP.width === 0) return; // Prevent drawing if still fully hidden by browser
 
     ctxP.clearRect(0, 0, canvasP.width, canvasP.height);
 
@@ -518,24 +516,18 @@ function animateParticles() {
         intensity = Math.max(0, Math.min(1, (bpm - 60) / (maxHr - 60)));
     }
 
-    // Spawn fine particles based on intensity
     if (bpm > 0) {
         let spawnRate = 1 + Math.floor(intensity * 6); 
         for (let i = 0; i < spawnRate; i++) {
             if (Math.random() > 0.3) { 
                 particles.push({
-                    // Spawns near the back of the runner figure
                     x: canvasP.width * 0.75 + (Math.random() * 20 - 10), 
-                    // Concentrated around the torso area
                     y: canvasP.height * 0.3 + Math.random() * (canvasP.height * 0.45), 
-                    // Velocity leftward, mapped to intensity
                     vx: -(1 + intensity * 5) - Math.random() * 2, 
-                    // Slight upward drift
                     vy: (Math.random() - 0.5) * 1.5 - (intensity * 0.5), 
                     life: 100 + Math.random() * 100,
                     maxLife: 200,
-                    // Fine, sparkling dust size
-                    size: 0.5 + Math.random() * 1.5, 
+                    size: 1.0 + Math.random() * 2.0, 
                     color: getEliteColor(bpm)
                 });
             }
@@ -544,21 +536,18 @@ function animateParticles() {
 
     ctxP.globalCompositeOperation = 'screen';
 
-    // Update physics and draw
     for (let i = particles.length - 1; i >= 0; i--) {
         let p = particles[i];
         p.x += p.vx;
         p.y += p.vy;
         p.life--;
 
-        // Remove if off-screen or dead
         if (p.life <= 0 || p.x < 0) {
             particles.splice(i, 1);
             continue;
         }
 
-        // Fade out based on remaining life
-        ctxP.globalAlpha = Math.max(0, p.life / p.maxLife);
+        ctxP.globalAlpha = Math.max(0, p.life / p.maxLife) * 0.8;
         ctxP.fillStyle = p.color;
         ctxP.beginPath();
         ctxP.arc(p.x, p.y, p.size, 0, Math.PI * 2);
@@ -569,5 +558,4 @@ function animateParticles() {
     ctxP.globalCompositeOperation = 'source-over';
 }
 
-// Bootstrap the physics engine
 initCardioParticles();
