@@ -1,6 +1,6 @@
 /**
- * BIOSTACK ELITE ENGINE v10.34 STABLE
- * Set-In-Progress Visual Indicator + Cache Bust
+ * BIOSTACK ELITE ENGINE v10.35 STABLE
+ * Multi-View SPA Architecture + Cache Bust
  */
 
 let bpm = 0;
@@ -70,7 +70,6 @@ async function initSystem() {
             if (hrHistory.length > 55) hrHistory.shift();
             drawSparkline();
             
-            // Trigger REST UI updates if actively resting
             if (isResting) {
                 updateRestUI();
             }
@@ -97,7 +96,6 @@ function startTraining() {
     activeExercise = newEx;
     closeAction();
     
-    // Smart Routing: If no Max HR exists, jump automatically into the 20s calibration phase
     if (!localStorage.getItem('maxhr_' + newEx)) { 
         isCalibrating = true; 
         isTrain = false; 
@@ -109,7 +107,6 @@ function startTraining() {
         return; 
     }
     
-    // Normal Flow: Already Calibrated
     isTrain = true; 
     isCalibrating = false;
     document.getElementById('active-ex-tag').innerText = "WORK SET: " + activeExercise;
@@ -153,7 +150,6 @@ function lockMaxHr() {
     localStorage.setItem('maxhr_' + activeExercise, trueMax);
     document.getElementById('calibration-hud').style.display = "none";
     
-    // Seamlessly transition into training mode and log the calibration as Set 1
     isTrain = true;
     document.getElementById('active-ex-tag').innerText = "WORK SET: " + activeExercise;
     const contextBox = document.getElementById('active-ex-context');
@@ -164,7 +160,6 @@ function lockMaxHr() {
     document.getElementById('hud-in-flow').style.display = "block";
     resetSetHUD();
     
-    // Automatically process Set 1 and enter REST phase
     processSetResult(); 
 }
 
@@ -181,7 +176,6 @@ function resetSetHUD() {
     btn.style.display = "block";
     document.getElementById('set-timer-display').style.display = "none";
     
-    // Show in-progress indicator
     document.getElementById('in-progress-badge').style.display = 'flex';
     
     peakBuffer = []; 
@@ -189,7 +183,7 @@ function resetSetHUD() {
 
 function startSetTimer() {
     document.getElementById('set-main-btn').style.display = "none";
-    document.getElementById('in-progress-badge').style.display = "none"; // Hide indicator during analysis
+    document.getElementById('in-progress-badge').style.display = "none"; 
     
     const timerText = document.getElementById('set-timer-display');
     timerText.style.display = "block";
@@ -235,16 +229,14 @@ function processSetResult() {
         }, 50);
     });
 
-    // Initiate the dynamic REST sequence
     isResting = true;
     isLatchedReady = false;
     peakHrAtSetEnd = peakInLast20;
     
-    // Safety fallback in case peak was somehow lower than target
     if (peakHrAtSetEnd <= REST_TARGET_BPM) peakHrAtSetEnd = REST_TARGET_BPM + 20; 
 
     const btn = document.getElementById('set-main-btn');
-    btn.onclick = resetSetHUD; // Allow starting early if they tap it
+    btn.onclick = resetSetHUD; 
     btn.style.display = "block";
     document.getElementById('set-timer-display').style.display = "none";
     
@@ -254,10 +246,9 @@ function processSetResult() {
 function updateRestUI() {
     const btn = document.getElementById('set-main-btn');
     
-    if (isLatchedReady) return; // Locked in ready state
+    if (isLatchedReady) return; 
 
     if (bpm <= REST_TARGET_BPM) {
-        // Latch the ready state
         isLatchedReady = true;
         isResting = false;
         btn.classList.remove('blinking-rest');
@@ -268,16 +259,14 @@ function updateRestUI() {
         return;
     }
 
-    // Calculate progression towards 105
     let range = peakHrAtSetEnd - REST_TARGET_BPM;
     let currentDrop = peakHrAtSetEnd - bpm;
     let pct = Math.max(0, Math.min(100, (currentDrop / Math.max(1, range)) * 100));
 
-    // Dynamic Color Gradient mapping
-    let fillColor = '#ff0044'; // Red
-    if (pct > 25) fillColor = '#ffaa00'; // Orange
-    if (pct > 50) fillColor = '#ffff00'; // Yellow
-    if (pct > 75) fillColor = '#00ff88'; // Green
+    let fillColor = '#ff0044'; 
+    if (pct > 25) fillColor = '#ffaa00'; 
+    if (pct > 50) fillColor = '#ffff00'; 
+    if (pct > 75) fillColor = '#00ff88'; 
     
     btn.innerText = "REST";
     btn.classList.add('blinking-rest');
@@ -405,3 +394,20 @@ function selectMuscle(m) {
 }
 
 function closeAction() { document.getElementById('menu-action').style.display = 'none'; }
+
+// NEW: MULTI-VIEW SPA CONTROLLER
+function switchAppTab(tabId, btnElement) {
+    // Hide all application views
+    document.querySelectorAll('.app-view').forEach(view => {
+        view.classList.remove('view-active');
+    });
+    
+    // Show target view
+    document.getElementById('view-' + tabId).classList.add('view-active');
+    
+    // Update navigation styles
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.classList.remove('active-nav');
+    });
+    btnElement.classList.add('active-nav');
+}
