@@ -1,6 +1,6 @@
 /**
- * BIOSTACK ELITE ENGINE v10.40 STABLE
- * Single-line text wrap fixes & GIF removal + Cache Bust
+ * BIOSTACK ELITE ENGINE v10.41 STABLE
+ * Dynamic Multi-Colored Segmented Sparkline + Cache Bust
  */
 
 let bpm = 0;
@@ -31,12 +31,16 @@ const DB = {
     'Hamstrings': ['Deadlifts'], 'Calves': ['Calf Raises']
 };
 
+// FIX: Radically updated to calculate zones dynamically based on user age
 function getEliteColor(val) {
-    if (val < 80) return '#00f2ff';
-    if (val < 100) return '#00ff88';
-    if (val < 115) return '#ffff00';
-    if (val < 130) return '#ffaa00';
-    return '#ff0044';
+    const age = parseInt(localStorage.getItem('bio_age')) || 30;
+    const maxHr = 220 - age;
+    
+    if (val >= maxHr * 0.80) return '#ff3333'; // Endurance / Z3 (Red)
+    if (val >= maxHr * 0.70) return '#ffcc00'; // Weight Loss / Z2 (Yellow)
+    if (val >= maxHr * 0.60) return '#33cc33'; // Fat Burn / Z1 (Green)
+    
+    return '#00f2ff'; // Default / Resting (Cyan)
 }
 
 async function initSystem() {
@@ -356,13 +360,26 @@ function drawSparkline() {
     const rect = canvas.getBoundingClientRect();
     canvas.width = rect.width * dpr; canvas.height = rect.height * dpr;
     ctx.scale(dpr, dpr); ctx.clearRect(0, 0, rect.width, rect.height);
-    if (hrHistory.length < 3) return;
-    ctx.strokeStyle = getEliteColor(bpm); ctx.lineWidth = 3;
+    
+    if (hrHistory.length < 2) return;
+    
+    // FIX: Radically updated drawing logic to render a segmented, multi-colored path
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    
     const step = rect.width / (hrHistory.length - 1);
     const points = hrHistory.map((val, i) => ({ x: i * step, y: rect.height - ((val - 60) / 100) * rect.height }));
-    ctx.beginPath(); ctx.moveTo(points[0].x, points[0].y);
-    for (let i = 1; i < points.length; i++) { ctx.lineTo(points[i].x, points[i].y); }
-    ctx.stroke();
+    
+    for (let i = 1; i < points.length; i++) {
+        ctx.beginPath();
+        ctx.moveTo(points[i-1].x, points[i-1].y);
+        ctx.lineTo(points[i].x, points[i].y);
+        
+        // Dynamically color each individual line segment based on the exact zone threshold
+        ctx.strokeStyle = getEliteColor(hrHistory[i]);
+        ctx.stroke();
+    }
 }
 
 function generateHitMap() {
