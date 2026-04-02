@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BioStack Elite v10.32 STABLE</title>
+    <title>BioStack Elite v10.33 STABLE</title>
     <style>
         :root { --glow-blue: #00f2ff; --bg-dark: #05070a; --glass: rgba(15, 20, 30, 0.95); --border: #30363d; }
         body { margin: 0; background: var(--bg-dark); color: white; font-family: -apple-system, system-ui, sans-serif; overflow: hidden; height: 100vh; }
@@ -113,7 +113,6 @@
         .overlay { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); width: 92%; max-width: 400px; background: var(--glass); border-radius: 35px; padding: 30px; border: 1px solid var(--border); backdrop-filter: blur(25px); display: none; text-align: center; z-index: 9500; }
         
         #calibration-hud { position: fixed; top: 200px; left: 20px; display: none; z-index: 9999; }
-        .hud-btn-cal { background: #ffaa00; color: #000; padding: 15px 30px; border-radius: 50px; border: none; font-weight: 900; text-transform: uppercase; cursor: pointer; }
         .hud-timer-cal { display:none; color:#ffaa00; font-weight:800; display:block; margin-top:10px; font-size: 0.75rem; text-transform:uppercase; letter-spacing:1px; }
 
         #version-tag { position: fixed; bottom: 15px; left: 15px; font-size: 0.6rem; color: #333; }
@@ -121,7 +120,7 @@
 </head>
 <body>
 
-    <div id="version-tag">BIOSTACK_v10.32_STABLE_TEAL</div>
+    <div id="version-tag">BIOSTACK_v10.33_STABLE_TEAL</div>
 
     <div id="login-screen">
         <div class="login-card">
@@ -150,7 +149,6 @@
         <div id="sidebar"><div id="exercise-picker"></div></div>
 
         <div id="calibration-hud">
-            <button id="cal-main-btn" class="hud-btn-cal" onclick="startCalTimer()">FINISH CALIBRATION</button>
             <span id="cal-timer-display" class="hud-timer-cal"></span>
         </div>
 
@@ -188,12 +186,11 @@
 
         <div id="menu-action" class="overlay">
             <h2 id="ex-name-modal" style="margin-bottom:25px;">EXERCISE</h2>
-            <button onclick="calibrateExercise()" style="width:100%; padding:18px; border-radius:50px; background:var(--glow-blue); color:#000; font-weight:800; border:none; cursor:pointer;">CALIBRATE MAX HR BEFORE 1ST SET</button>
-            <button onclick="startTraining()" style="width:100%; padding:18px; border-radius:50px; background:transparent; border:1px solid var(--glow-blue); color:var(--glow-blue); font-weight:800; margin-top:10px; cursor:pointer;">START SETS</button>
+            <button onclick="startTraining()" style="width:100%; padding:18px; border-radius:50px; background:var(--glow-blue); color:#000; font-weight:800; border:none; cursor:pointer;">START SETS</button>
             <p onclick="closeAction()" style="margin-top:15px; font-size:0.8rem; opacity:0.5; cursor:pointer;">CANCEL</p>
         </div>
     </div>
 
-    <script src="js/biostack.js?v=35"></script>
+    <script src="js/biostack.js?v=36"></script>
 </body>
 </html>
