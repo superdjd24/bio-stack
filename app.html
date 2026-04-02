@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BioStack Elite v10.40 STABLE</title>
+    <title>BioStack Elite v10.41 STABLE</title>
     <style>
         :root { --glow-blue: #00f2ff; --bg-dark: #05070a; --glass: rgba(15, 20, 30, 0.95); --border: #30363d; }
         body { margin: 0; background: var(--bg-dark); color: white; font-family: -apple-system, system-ui, sans-serif; overflow: hidden; height: 100vh; }
@@ -67,7 +67,7 @@
         #touch-map { position: absolute; top: 0; right: 10%; width: 80%; height: 100%; z-index: 100; display: grid; grid-template-columns: repeat(3, 1fr); }
         .hit { width: 100%; height: 100%; pointer-events: auto; }
 
-        .overlay { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); width: 92%; max-width: 400px; background: var(--glass); border-radius: 35px; padding: 30px; border: 1px solid var(--border); backdrop-filter: blur(25px); display: none; text-align: center; z-index: 9500; }
+        .overlay { fixed; bottom: 100px; left: 50%; transform: translateX(-50%); width: 92%; max-width: 400px; background: var(--glass); border-radius: 35px; padding: 30px; border: 1px solid var(--border); backdrop-filter: blur(25px); display: none; text-align: center; z-index: 9500; }
         
         #calibration-hud { position: fixed; top: 200px; left: 20px; display: none; z-index: 9999; }
         .hud-timer-cal { display:none; color:#ffaa00; font-weight:800; display:block; margin-top:10px; font-size: 0.75rem; text-transform:uppercase; letter-spacing:1px; }
@@ -83,7 +83,6 @@
         #cardio-panel { width: 50%; z-index: 2; display: flex; flex-direction: column; justify-content: center; gap: 20px; padding-left: 10px;}
         #cardio-visuals { position: absolute; right: -10%; top: -5%; width: 65%; height: 110%; display: flex; justify-content: flex-end; align-items: center; z-index: 5; pointer-events: none; }
         
-        /* FIX: Adjusted padding for tighter fit */
         .zone-card { 
             background-color: transparent; 
             padding: 20px 15px; 
@@ -116,7 +115,6 @@
         .zone-header { display: flex; align-items: center; gap: 10px; width: 100%; }
         .zone-dot { width: 14px; height: 14px; background: var(--zone-color); border-radius: 50%; box-shadow: 0 0 8px var(--zone-color); flex-shrink: 0; }
         
-        /* FIX: Forced title to stay on a single line and slightly reduced font size */
         .zone-title { 
             font-weight: 800; 
             font-size: 0.95rem; 
@@ -152,7 +150,7 @@
 </head>
 <body>
 
-    <div id="version-tag">BIOSTACK_v10.40_STABLE</div>
+    <div id="version-tag">BIOSTACK_v10.41_STABLE</div>
 
     <div id="login-screen">
         <div class="login-card">
@@ -298,6 +296,6 @@
 
     </div>
 
-    <script src="js/biostack.js?v=43"></script>
+    <script src="js/biostack.js?v=44"></script>
 </body>
 </html>
