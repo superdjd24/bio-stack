@@ -1,6 +1,6 @@
 /**
- * BIOSTACK ELITE ENGINE v10.30 STABLE
- * Black Text Color for REST state (Contrast Fix) + Cache Bust
+ * BIOSTACK ELITE ENGINE v10.31 STABLE
+ * Black Text Color, No Stroke for REST button + Cache Bust
  */
 
 let bpm = 0;
@@ -254,8 +254,9 @@ function updateRestUI() {
     
     btn.innerText = "REST";
     btn.classList.add('blinking-rest');
-    btn.style.color = '#000'; // FIX: Make text black for contrast (updated from #fff)
-    btn.style.webkitTextStroke = '1px black'; // Apply 1px black stroke
+    // FIX: Set color explicitly to solid black, remove stroke
+    btn.style.color = '#000'; 
+    btn.style.webkitTextStroke = '0px'; 
     btn.style.background = `linear-gradient(90deg, ${fillColor} ${pct}%, #222 ${pct}%)`;
 }
 
