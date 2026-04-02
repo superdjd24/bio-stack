@@ -1,6 +1,6 @@
 /**
- * BIOSTACK ELITE ENGINE v10.41 STABLE
- * Dynamic Multi-Colored Segmented Sparkline + Cache Bust
+ * BIOSTACK ELITE ENGINE v10.42 STABLE
+ * Integrated HTML5 Canvas Particle Engine for Live Cardio + Cache Bust
  */
 
 let bpm = 0;
@@ -31,7 +31,6 @@ const DB = {
     'Hamstrings': ['Deadlifts'], 'Calves': ['Calf Raises']
 };
 
-// FIX: Radically updated to calculate zones dynamically based on user age
 function getEliteColor(val) {
     const age = parseInt(localStorage.getItem('bio_age')) || 30;
     const maxHr = 220 - age;
@@ -58,7 +57,6 @@ async function initSystem() {
         localStorage.setItem('bio_weight', w);
         localStorage.setItem('bio_age', a);
         
-        // Initialize dynamic cardio math based on user age
         initCardioZones();
 
         document.getElementById('login-screen').style.display = 'none';
@@ -363,7 +361,6 @@ function drawSparkline() {
     
     if (hrHistory.length < 2) return;
     
-    // FIX: Radically updated drawing logic to render a segmented, multi-colored path
     ctx.lineWidth = 3;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
@@ -375,8 +372,6 @@ function drawSparkline() {
         ctx.beginPath();
         ctx.moveTo(points[i-1].x, points[i-1].y);
         ctx.lineTo(points[i].x, points[i].y);
-        
-        // Dynamically color each individual line segment based on the exact zone threshold
         ctx.strokeStyle = getEliteColor(hrHistory[i]);
         ctx.stroke();
     }
@@ -482,5 +477,97 @@ function switchAppTab(tabId, btnElement) {
     
     if (tabId === 'cardio') {
         initCardioZones();
+        resizeCardioCanvas(); // Ensure canvas is sized correctly when revealed
     }
 }
+
+// --- NEW PARTICLE PHYSICS ENGINE ---
+const canvasP = document.getElementById('cardio-particles');
+let ctxP = canvasP ? canvasP.getContext('2d') : null;
+let particles = [];
+
+function initCardioParticles() {
+    if (!canvasP) return;
+    window.addEventListener('resize', resizeCardioCanvas);
+    resizeCardioCanvas();
+    requestAnimationFrame(animateParticles);
+}
+
+function resizeCardioCanvas() {
+    if (!canvasP) return;
+    const rect = canvasP.parentElement.getBoundingClientRect();
+    canvasP.width = rect.width;
+    canvasP.height = rect.height;
+}
+
+function animateParticles() {
+    requestAnimationFrame(animateParticles);
+    
+    // Performance optimization: only draw if the cardio view is active
+    if (!document.getElementById('view-cardio').classList.contains('view-active')) return;
+    if (!ctxP) return;
+
+    ctxP.clearRect(0, 0, canvasP.width, canvasP.height);
+
+    const age = parseInt(localStorage.getItem('bio_age')) || 30;
+    const maxHr = 220 - age;
+    
+    // Calculate intensity (0.0 to 1.0)
+    let intensity = 0;
+    if (bpm > 40) {
+        intensity = Math.max(0, Math.min(1, (bpm - 60) / (maxHr - 60)));
+    }
+
+    // Spawn fine particles based on intensity
+    if (bpm > 0) {
+        let spawnRate = 1 + Math.floor(intensity * 6); 
+        for (let i = 0; i < spawnRate; i++) {
+            if (Math.random() > 0.3) { 
+                particles.push({
+                    // Spawns near the back of the runner figure
+                    x: canvasP.width * 0.75 + (Math.random() * 20 - 10), 
+                    // Concentrated around the torso area
+                    y: canvasP.height * 0.3 + Math.random() * (canvasP.height * 0.45), 
+                    // Velocity leftward, mapped to intensity
+                    vx: -(1 + intensity * 5) - Math.random() * 2, 
+                    // Slight upward drift
+                    vy: (Math.random() - 0.5) * 1.5 - (intensity * 0.5), 
+                    life: 100 + Math.random() * 100,
+                    maxLife: 200,
+                    // Fine, sparkling dust size
+                    size: 0.5 + Math.random() * 1.5, 
+                    color: getEliteColor(bpm)
+                });
+            }
+        }
+    }
+
+    ctxP.globalCompositeOperation = 'screen';
+
+    // Update physics and draw
+    for (let i = particles.length - 1; i >= 0; i--) {
+        let p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life--;
+
+        // Remove if off-screen or dead
+        if (p.life <= 0 || p.x < 0) {
+            particles.splice(i, 1);
+            continue;
+        }
+
+        // Fade out based on remaining life
+        ctxP.globalAlpha = Math.max(0, p.life / p.maxLife);
+        ctxP.fillStyle = p.color;
+        ctxP.beginPath();
+        ctxP.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctxP.fill();
+    }
+    
+    ctxP.globalAlpha = 1.0;
+    ctxP.globalCompositeOperation = 'source-over';
+}
+
+// Bootstrap the physics engine
+initCardioParticles();
