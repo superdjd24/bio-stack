@@ -1,26 +1,23 @@
 /**
- * BIOSTACK ELITE ENGINE v10.46 STABLE
- * Text Label Update to "LEAN & MEAN" + Cache Bust
+ * BIOSTACK ELITE ENGINE v10.48 STABLE
+ * Biological Auto-Cutoff State Machine + Settings Tab
  */
 
-let bpm = 0; // Ready for production Bluetooth connection
+let bpm = 0; 
 let currentView = "front";
 let isTrain = false;
-let isCalibrating = false;
 let activeExercise = null;
-let tempMaxHr = 0;
-let peakBuffer = [];
 let setCounter = 0;
+
+// BIO-LOGIC VARIABLES
+let readyTriggerBpm = parseInt(localStorage.getItem('bio_ready_trigger')) || 100;
+let liftState = 'IDLE'; // States: IDLE, READY, LIFTING, RESTING
+let currentSetMax = 0;
+const DROP_THRESHOLD = 6;
 
 let hrHistory = [];
 let totalCalories = 0;
 let lastTimestamp = null;
-
-// REST TRACKING VARIABLES
-let isResting = false;
-let isLatchedReady = false;
-let peakHrAtSetEnd = 0;
-const REST_TARGET_BPM = 105;
 
 const DB = {
     'Trapezoids': ['Dumbbell Shrugs', 'Barbell Shrugs'], 'Deltoids': ['Lateral Raises', 'Military Press'],
@@ -34,12 +31,16 @@ const DB = {
 function getEliteColor(val) {
     const age = parseInt(localStorage.getItem('bio_age')) || 30;
     const maxHr = 220 - age;
-    
-    if (val >= maxHr * 0.80) return '#ff3333'; // Endurance / Z3 (Red)
-    if (val >= maxHr * 0.70) return '#ffcc00'; // Weight Loss / Z2 (Yellow)
-    if (val >= maxHr * 0.60) return '#33cc33'; // Fat Burn / Z1 (Green)
-    
-    return '#00f2ff'; // Default / Resting (Cyan)
+    if (val >= maxHr * 0.80) return '#ff3333'; 
+    if (val >= maxHr * 0.70) return '#ffcc00'; 
+    if (val >= maxHr * 0.60) return '#33cc33'; 
+    return '#00f2ff'; 
+}
+
+function updateTriggerSetting(val) {
+    readyTriggerBpm = parseInt(val);
+    document.getElementById('trigger-val-display').innerText = readyTriggerBpm + ' BPM';
+    localStorage.setItem('bio_ready_trigger', readyTriggerBpm);
 }
 
 async function initSystem() {
@@ -53,10 +54,12 @@ async function initSystem() {
         const char = await service.getCharacteristic('heart_rate_measurement');
         await char.startNotifications();
         
-        // Save Context
         localStorage.setItem('bio_weight', w);
         localStorage.setItem('bio_age', a);
         
+        document.getElementById('trigger-slider').value = readyTriggerBpm;
+        document.getElementById('trigger-val-display').innerText = readyTriggerBpm + ' BPM';
+
         initCardioZones();
 
         document.getElementById('login-screen').style.display = 'none';
@@ -72,12 +75,6 @@ async function initSystem() {
             hrEl.innerText = bpm;
             hrEl.style.color = getEliteColor(bpm);
             
-            const now = Date.now();
-            if (isCalibrating && bpm > tempMaxHr) tempMaxHr = bpm;
-            
-            peakBuffer.push({ bpm: bpm, time: now });
-            peakBuffer = peakBuffer.filter(p => now - p.time < 20000);
-            
             calculateCals(bpm);
             
             hrHistory.push(bpm);
@@ -86,9 +83,7 @@ async function initSystem() {
             drawSparkline();
             updateCardioUI(bpm); 
             
-            if (isResting) {
-                updateRestUI();
-            }
+            processBioState(); // Fire the State Machine
         });
     } catch (e) { alert("Link Failed: " + e.message); }
 }
@@ -113,153 +108,97 @@ function calculateCals(currentBpm) {
     
     const cardioCal = document.getElementById('cardio-stat-cals');
     const cardioFat = document.getElementById('cardio-stat-fat');
-    
     if(cardioCal) cardioCal.innerText = calVal;
     if(cardioFat) cardioFat.innerText = (totalCalories / 3500).toFixed(3);
 }
 
-function initCardioZones() {
-    const age = parseInt(localStorage.getItem('bio_age')) || 30; 
-    const maxHr = 220 - age;
-
-    const z1Min = Math.round(maxHr * 0.60);
-    const z1Max = Math.round(maxHr * 0.70);
-    const z2Min = Math.round(maxHr * 0.70);
-    const z2Max = Math.round(maxHr * 0.80);
-    const z3Min = Math.round(maxHr * 0.80);
-    const z3Max = Math.round(maxHr * 0.90);
-
-    document.getElementById('pill-z1').innerText = `${z1Min} - ${z1Max} BPM`;
-    document.getElementById('pill-z2').innerText = `${z2Min} - ${z2Max} BPM`;
-    document.getElementById('pill-z3').innerText = `${z3Min} - ${z3Max} BPM`;
-}
-
-function updateCardioUI(currentBpm) {
-    const age = parseInt(localStorage.getItem('bio_age')) || 30;
-    const maxHr = 220 - age;
-
-    document.querySelectorAll('.zone-card').forEach(c => c.classList.remove('active-zone'));
-
-    if (currentBpm >= maxHr * 0.80 && currentBpm <= maxHr * 0.90) {
-        document.getElementById('zone-3').classList.add('active-zone');
-    } else if (currentBpm >= maxHr * 0.70 && currentBpm < maxHr * 0.80) {
-        document.getElementById('zone-2').classList.add('active-zone');
-    } else if (currentBpm >= maxHr * 0.60 && currentBpm < maxHr * 0.70) {
-        document.getElementById('zone-1').classList.add('active-zone');
-    }
-}
-
+// --- NEW BIOLOGICAL STATE MACHINE ---
 function startTraining() {
-    const newEx = document.getElementById('ex-name-modal').innerText;
-    activeExercise = newEx;
+    activeExercise = document.getElementById('ex-name-modal').innerText;
     closeAction();
     
-    if (!localStorage.getItem('maxhr_' + newEx)) { 
-        isCalibrating = true; 
-        isTrain = false; 
-        tempMaxHr = 0;
-        document.getElementById('active-ex-tag').innerText = "CALIBRATING: " + activeExercise;
-        document.getElementById('sidebar').style.display = "none";
-        document.getElementById('calibration-hud').style.display = "block";
-        startCalTimer();
-        return; 
-    }
-    
     isTrain = true; 
-    isCalibrating = false;
-    document.getElementById('active-ex-tag').innerText = "WORK SET: " + activeExercise;
-    const savedMax = localStorage.getItem('maxhr_' + activeExercise);
+    document.getElementById('active-ex-tag').innerText = activeExercise;
     const contextBox = document.getElementById('active-ex-context');
-    contextBox.innerText = `Target HR for ${activeExercise}: ${savedMax}`;
+    contextBox.innerText = `Recovery Trigger: ${readyTriggerBpm} BPM`;
     contextBox.style.display = 'block';
+    
     setCounter = 0;
     clearIntensityBars();
+    
     document.getElementById('hud-in-flow').style.display = "block";
-    resetSetHUD();
     document.getElementById('sidebar').style.display = "none";
+    
+    liftState = 'READY';
+    processBioState(); // Force a UI update immediately
 }
 
-function startCalTimer() {
-    const timerText = document.getElementById('cal-timer-display');
-    timerText.style.display = "block";
-    let timeLeft = 20;
-    const countdown = setInterval(() => {
-        timeLeft--;
-        timerText.innerText = `Analyzing vitals... ${timeLeft}s`;
-        if (timeLeft <= 0) { 
-            clearInterval(countdown); 
-            lockMaxHr(); 
-        }
-    }, 1000);
-}
+function processBioState() {
+    if (!isTrain) return;
 
-function lockMaxHr() {
-    isCalibrating = false;
-    const bufferMax = peakBuffer.length > 0 ? Math.max(...peakBuffer.map(p => p.bpm)) : 0;
-    const trueMax = Math.max(tempMaxHr, bufferMax, bpm);
-    
-    if (trueMax < 60) { 
-        alert("Calibration failed: Vitals too low."); 
-        document.getElementById('calibration-hud').style.display = "none";
-        document.getElementById('sidebar').style.display = "block";
-        return; 
-    }
-    
-    localStorage.setItem('maxhr_' + activeExercise, trueMax);
-    document.getElementById('calibration-hud').style.display = "none";
-    
-    isTrain = true;
-    document.getElementById('active-ex-tag').innerText = "WORK SET: " + activeExercise;
-    const contextBox = document.getElementById('active-ex-context');
-    contextBox.innerText = `Target HR for ${activeExercise}: ${trueMax}`;
-    contextBox.style.display = 'block';
-    setCounter = 0;
-    clearIntensityBars();
-    document.getElementById('hud-in-flow').style.display = "block";
-    resetSetHUD();
-    
-    processSetResult(); 
-}
-
-function resetSetHUD() {
-    isResting = false;
-    isLatchedReady = false;
     const btn = document.getElementById('set-main-btn');
-    btn.classList.remove('blinking-rest');
-    btn.innerText = "END SET";
-    btn.style.background = 'var(--glow-blue)';
-    btn.style.color = '#000';
-    btn.style.webkitTextStroke = '0px'; 
-    btn.onclick = startSetTimer;
-    btn.style.display = "block";
-    document.getElementById('set-timer-display').style.display = "none";
-    
-    document.getElementById('in-progress-badge').style.display = 'flex';
-    
-    peakBuffer = []; 
+    const helper = document.getElementById('rest-helper-text');
+
+    if (liftState === 'READY') {
+        if (bpm > readyTriggerBpm) {
+            btn.innerText = "COOL DOWN";
+            btn.classList.add('blinking-rest');
+            btn.style.background = '#ff0044';
+            btn.style.color = '#fff';
+            btn.onclick = null; // Lock the button
+            helper.innerText = "WAIT UNTIL MUSCLES ARE PRIMED";
+            helper.style.display = 'block';
+        } else {
+            btn.innerText = "START SET";
+            btn.classList.remove('blinking-rest');
+            btn.style.background = 'var(--glow-blue)';
+            btn.style.color = '#000';
+            btn.onclick = () => { 
+                liftState = 'LIFTING'; 
+                currentSetMax = bpm; 
+                processBioState(); 
+            };
+            helper.style.display = 'none';
+        }
+    } 
+    else if (liftState === 'LIFTING') {
+        btn.innerText = "SET IN PROGRESS...";
+        btn.classList.remove('blinking-rest');
+        btn.style.background = '#333';
+        btn.style.color = '#fff';
+        btn.onclick = null; // Prevent accidental tapping
+        
+        if (bpm > currentSetMax) currentSetMax = bpm;
+        
+        // Auto-Cutoff Logic
+        if (bpm <= currentSetMax - DROP_THRESHOLD && currentSetMax > readyTriggerBpm) {
+            liftState = 'RESTING';
+            processBioState();
+        }
+    }
+    else if (liftState === 'RESTING') {
+        btn.innerText = "REST";
+        btn.classList.add('blinking-rest');
+        btn.style.background = '#ff0044';
+        btn.style.color = '#fff';
+        btn.onclick = null;
+        helper.innerText = "WAIT UNTIL MUSCLES ARE PRIMED";
+        helper.style.display = 'block';
+
+        if (bpm > currentSetMax) currentSetMax = bpm; // Catch delayed peaks
+        
+        // Auto-Finalize Logic
+        if (bpm <= readyTriggerBpm) {
+            finalizeSet();
+        }
+    }
 }
 
-function startSetTimer() {
-    document.getElementById('set-main-btn').style.display = "none";
-    document.getElementById('in-progress-badge').style.display = "none"; 
-    
-    const timerText = document.getElementById('set-timer-display');
-    timerText.style.display = "block";
-    let timeLeft = 20;
-    const countdown = setInterval(() => {
-        timeLeft--;
-        timerText.innerText = `Analyzing vitals... ${timeLeft}s`;
-        if (timeLeft <= 0) { clearInterval(countdown); processSetResult(); }
-    }, 1000);
-}
-
-function processSetResult() {
-    const savedMax = localStorage.getItem('maxhr_' + activeExercise) || 190;
-    const peakInLast20 = peakBuffer.length > 0 ? Math.max(...peakBuffer.map(p => p.bpm)) : bpm;
+function finalizeSet() {
     setCounter++;
-    const ratio = peakInLast20 / savedMax;
-    const percent = Math.round(ratio * 100);
-    const barPx = Math.round(ratio * 115); 
+    
+    // Scale visuals loosely based on a 200 BPM ceiling for UI drawing purposes
+    const barPx = Math.min(100, (currentSetMax / 190) * 100) + "%"; 
 
     const container = document.getElementById('set-bar-sidebar');
     const hud = document.getElementById('hud-in-flow');
@@ -267,14 +206,14 @@ function processSetResult() {
     item.className = 'intensity-item';
     const label = document.createElement('span');
     label.className = 'intensity-label';
-    label.innerText = `Set${setCounter}`;
+    label.innerText = `Set ${setCounter}`;
 
     const bar = document.createElement('div');
     bar.className = 'set-bar';
 
     const inner = document.createElement('span');
     inner.className = 'bar-inner-label';
-    inner.innerText = `${percent}%`;
+    inner.innerText = `${currentSetMax} BPM`; // Raw data
     bar.appendChild(inner);
     item.appendChild(label);
     item.appendChild(bar);
@@ -282,55 +221,14 @@ function processSetResult() {
 
     requestAnimationFrame(() => {
         setTimeout(() => {
-            bar.style.width = Math.max(35, barPx) + "px";
+            bar.style.width = barPx;
             bar.classList.add('revealed');
         }, 50);
     });
 
-    isResting = true;
-    isLatchedReady = false;
-    peakHrAtSetEnd = peakInLast20;
-    
-    if (peakHrAtSetEnd <= REST_TARGET_BPM) peakHrAtSetEnd = REST_TARGET_BPM + 20; 
-
-    const btn = document.getElementById('set-main-btn');
-    btn.onclick = resetSetHUD; 
-    btn.style.display = "block";
-    document.getElementById('set-timer-display').style.display = "none";
-    
-    updateRestUI();
-}
-
-function updateRestUI() {
-    const btn = document.getElementById('set-main-btn');
-    
-    if (isLatchedReady) return; 
-
-    if (bpm <= REST_TARGET_BPM) {
-        isLatchedReady = true;
-        isResting = false;
-        btn.classList.remove('blinking-rest');
-        btn.innerText = "START NEXT SET";
-        btn.style.background = 'var(--glow-blue)';
-        btn.style.color = '#000';
-        btn.style.webkitTextStroke = '0px'; 
-        return;
-    }
-
-    let range = peakHrAtSetEnd - REST_TARGET_BPM;
-    let currentDrop = peakHrAtSetEnd - bpm;
-    let pct = Math.max(0, Math.min(100, (currentDrop / Math.max(1, range)) * 100));
-
-    let fillColor = '#ff0044'; 
-    if (pct > 25) fillColor = '#ffaa00'; 
-    if (pct > 50) fillColor = '#ffff00'; 
-    if (pct > 75) fillColor = '#00ff88'; 
-    
-    btn.innerText = "REST";
-    btn.classList.add('blinking-rest');
-    btn.style.color = '#000'; 
-    btn.style.webkitTextStroke = '0px'; 
-    btn.style.background = `linear-gradient(90deg, ${fillColor} ${pct}%, #222 ${pct}%)`;
+    currentSetMax = 0;
+    liftState = 'READY';
+    processBioState();
 }
 
 function clearIntensityBars() {
@@ -340,14 +238,33 @@ function clearIntensityBars() {
 
 function exitTraining() {
     isTrain = false;
-    isResting = false;
-    isLatchedReady = false;
+    liftState = 'IDLE';
     document.getElementById('hud-in-flow').style.display = "none";
-    document.getElementById('in-progress-badge').style.display = "none";
     document.getElementById('active-ex-context').style.display = 'none';
     clearIntensityBars();
     document.getElementById('sidebar').style.display = "block";
     document.getElementById('active-ex-tag').innerText = "NO ACTIVE EXERCISE";
+}
+
+// --- STANDARD VISUAL & TAB LOGIC ---
+function initCardioZones() {
+    const age = parseInt(localStorage.getItem('bio_age')) || 30; 
+    const maxHr = 220 - age;
+    const z1Min = Math.round(maxHr * 0.60); const z1Max = Math.round(maxHr * 0.70);
+    const z2Min = Math.round(maxHr * 0.70); const z2Max = Math.round(maxHr * 0.80);
+    const z3Min = Math.round(maxHr * 0.80); const z3Max = Math.round(maxHr * 0.90);
+    document.getElementById('pill-z1').innerText = `${z1Min} - ${z1Max} BPM`;
+    document.getElementById('pill-z2').innerText = `${z2Min} - ${z2Max} BPM`;
+    document.getElementById('pill-z3').innerText = `${z3Min} - ${z3Max} BPM`;
+}
+
+function updateCardioUI(currentBpm) {
+    const age = parseInt(localStorage.getItem('bio_age')) || 30;
+    const maxHr = 220 - age;
+    document.querySelectorAll('.zone-card').forEach(c => c.classList.remove('active-zone'));
+    if (currentBpm >= maxHr * 0.80 && currentBpm <= maxHr * 0.90) document.getElementById('zone-3').classList.add('active-zone');
+    else if (currentBpm >= maxHr * 0.70 && currentBpm < maxHr * 0.80) document.getElementById('zone-2').classList.add('active-zone');
+    else if (currentBpm >= maxHr * 0.60 && currentBpm < maxHr * 0.70) document.getElementById('zone-1').classList.add('active-zone');
 }
 
 function drawSparkline() {
@@ -360,10 +277,7 @@ function drawSparkline() {
     ctx.scale(dpr, dpr); ctx.clearRect(0, 0, rect.width, rect.height);
     
     if (hrHistory.length < 2) return;
-    
-    ctx.lineWidth = 3;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
+    ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
     
     const step = rect.width / (hrHistory.length - 1);
     const points = hrHistory.map((val, i) => ({ x: i * step, y: rect.height - ((val - 60) / 100) * rect.height }));
@@ -384,14 +298,7 @@ function generateHitMap() {
     
     if (currentView === "front") {
         map.style.gridTemplateRows = '19% 10% 9% 11% 23% 28%';
-        const fG = [
-            "", "", "TOGGLE_BACK",                   // R1 (19%) 
-            "Deltoids", "Pectorals", "Deltoids",     // R2 (10%) 
-            "Biceps", "Abdominals", "Biceps",        // R3 (9%) 
-            "Forearms", "Abdominals", "Forearms",    // R4 (11%) 
-            "", "Quads", "",                         // R5 (23%) 
-            "", "", ""                               // R6 (28%) 
-        ];
+        const fG = ["", "", "TOGGLE_BACK", "Deltoids", "Pectorals", "Deltoids", "Biceps", "Abdominals", "Biceps", "Forearms", "Abdominals", "Forearms", "", "Quads", "", "", "", ""];
         fG.forEach((m) => {
             const div = document.createElement('div');
             div.className = "hit";
@@ -401,15 +308,7 @@ function generateHitMap() {
         });
     } else {
         map.style.gridTemplateRows = '12% 10% 22% 8% 4% 20% 24%';
-        const bG = [
-            "TOGGLE_FRONT", "", "",                   
-            "Trapezoids", "Trapezoids", "Trapezoids", 
-            "Triceps", "Lats", "Triceps",             
-            "", "", "",                               
-            "Glutes", "Glutes", "Glutes",             
-            "Hamstrings", "Hamstrings", "Hamstrings", 
-            "Calves", "Calves", "Calves"              
-        ];
+        const bG = ["TOGGLE_FRONT", "", "", "Trapezoids", "Trapezoids", "Trapezoids", "Triceps", "Lats", "Triceps", "", "", "", "Glutes", "Glutes", "Glutes", "Hamstrings", "Hamstrings", "Hamstrings", "Calves", "Calves", "Calves"];
         bG.forEach((m) => {
             const div = document.createElement('div');
             div.className = "hit";
@@ -442,7 +341,7 @@ function switchView(view) {
 }
 
 function selectMuscle(m) {
-    if ((isTrain || isCalibrating)) return;
+    if (isTrain) return;
     document.querySelectorAll('.muscle-overlay').forEach(img => img.style.opacity = 0);
     const overlay = document.getElementById(`overlay-${m.toLowerCase()}`);
     if (overlay) overlay.style.opacity = 0.5;
@@ -464,20 +363,11 @@ function selectMuscle(m) {
 function closeAction() { document.getElementById('menu-action').style.display = 'none'; }
 
 function switchAppTab(tabId, btnElement) {
-    document.querySelectorAll('.app-view').forEach(view => {
-        view.classList.remove('view-active');
-    });
-    
+    document.querySelectorAll('.app-view').forEach(view => view.classList.remove('view-active'));
     document.getElementById('view-' + tabId).classList.add('view-active');
-    
-    document.querySelectorAll('.nav-btn').forEach(btn => {
-        btn.classList.remove('active-nav');
-    });
+    document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active-nav'));
     btnElement.classList.add('active-nav');
-    
-    if (tabId === 'cardio') {
-        initCardioZones();
-    }
+    if (tabId === 'cardio') initCardioZones();
 }
 
 // --- PARTICLE PHYSICS ENGINE ---
@@ -496,7 +386,6 @@ function animateParticles() {
     if (!document.getElementById('view-cardio').classList.contains('view-active')) return;
     if (!ctxP) return;
 
-    // Dynamically resize canvas to parent every frame to prevent 0x0 rendering bugs
     const parent = canvasP.parentElement;
     if (canvasP.width !== parent.clientWidth || canvasP.height !== parent.clientHeight) {
         canvasP.width = parent.clientWidth;
@@ -512,9 +401,7 @@ function animateParticles() {
     
     let intensity = 0;
     if (bpm >= 107) {
-        // Map intensity from 0 to 1 based on the range between 107 and maxHr
         intensity = Math.max(0, Math.min(1, (bpm - 107) / (maxHr - 107)));
-        
         let spawnRate = 1 + Math.floor(intensity * 4); 
         for (let i = 0; i < spawnRate; i++) {
             if (Math.random() > 0.4) { 
@@ -536,20 +423,11 @@ function animateParticles() {
 
     for (let i = particles.length - 1; i >= 0; i--) {
         let p = particles[i];
-        p.x += p.vx;
-        p.y += p.vy;
-        p.life--;
-
-        if (p.life <= 0 || p.x < 0) {
-            particles.splice(i, 1);
-            continue;
-        }
-
+        p.x += p.vx; p.y += p.vy; p.life--;
+        if (p.life <= 0 || p.x < 0) { particles.splice(i, 1); continue; }
         ctxP.globalAlpha = Math.max(0, p.life / p.maxLife) * 0.5;
         ctxP.fillStyle = p.color;
-        ctxP.beginPath();
-        ctxP.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctxP.fill();
+        ctxP.beginPath(); ctxP.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctxP.fill();
     }
     
     ctxP.globalAlpha = 1.0;
