@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BioStack Elite v10.46 STABLE</title>
+    <title>BioStack Elite v10.48 STABLE</title>
     <style>
         :root { --glow-blue: #00f2ff; --bg-dark: #05070a; --glass: rgba(15, 20, 30, 0.95); --border: #30363d; }
         body { margin: 0; background: var(--bg-dark); color: white; font-family: -apple-system, system-ui, sans-serif; overflow: hidden; height: 100vh; }
@@ -47,15 +47,12 @@
         .set-bar.revealed .bar-inner-label { opacity: 1; }
 
         #hud-in-flow { width: 100%; margin-top: 15px; display: none; }
-        .flow-btn { width: 100%; padding: 14px; border-radius: 12px; border: none; font-weight: 800; text-transform: uppercase; cursor: pointer; margin-bottom: 10px; transition: color 0.3s ease; }
+        #rest-helper-text { display:none; font-size:0.65rem; color:#ffaa00; font-weight:800; text-transform:uppercase; margin-bottom: 8px; text-align: center; }
+        .flow-btn { width: 100%; padding: 14px; border-radius: 12px; border: none; font-weight: 800; text-transform: uppercase; cursor: pointer; margin-bottom: 10px; transition: all 0.3s ease; }
         #new-ex-btn { background: transparent; border: 1px solid #444; color: #888; font-size: 0.7rem; }
 
-        @keyframes restBlink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
-        .blinking-rest { animation: restBlink 2s infinite ease-in-out; }
-
-        @keyframes pulseRed { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
-        #in-progress-badge { color: #ff0044; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; margin-bottom: 10px; animation: pulseRed 1.5s infinite; display: flex; align-items: center; justify-content: center; gap: 6px; }
-        .recording-dot { width: 8px; height: 8px; background-color: #ff0044; border-radius: 50%; display: inline-block; box-shadow: 0 0 5px #ff0044; }
+        @keyframes restBlink { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        .blinking-rest { animation: restBlink 1.5s infinite ease-in-out; }
 
         #image-container { position: relative; height: 100%; width: auto; display: inline-block; }
         #base-front { height: 100%; width: auto; display: block; z-index: 5; }
@@ -68,9 +65,6 @@
         .hit { width: 100%; height: 100%; pointer-events: auto; }
 
         .overlay { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); width: 92%; max-width: 400px; background: var(--glass); border-radius: 35px; padding: 30px; border: 1px solid var(--border); backdrop-filter: blur(25px); display: none; text-align: center; z-index: 9500; }
-        
-        #calibration-hud { position: fixed; top: 200px; left: 20px; display: none; z-index: 9999; }
-        .hud-timer-cal { display:none; color:#ffaa00; font-weight:800; display:block; margin-top:10px; font-size: 0.75rem; text-transform:uppercase; letter-spacing:1px; }
 
         /* CARDIO MODULE STYLES */
         #cardio-layout { display: flex; flex-direction: column; height: 100%; width: 100%; box-sizing: border-box; padding: 110px 20px 100px 20px; position: relative; }
@@ -101,41 +95,26 @@
             overflow: hidden; 
         }
         
-        .zone-card.active-zone { 
-            opacity: 1; 
-            filter: grayscale(0%); 
-            transform: scale(1.05); 
-            z-index: 10;
-        }
-
+        .zone-card.active-zone { opacity: 1; filter: grayscale(0%); transform: scale(1.05); z-index: 10; }
         #zone-3 { --zone-color: #ff3333; background-image: url('assets/endurance_shell.png'); }
+        #zone-3:not(.active-zone) { opacity: 0.22; } 
         #zone-2 { --zone-color: #ffcc00; background-image: url('assets/weight_loss_shell.png'); }
         #zone-1 { --zone-color: #33cc33; background-image: url('assets/fat_loss_shell.png'); }
 
         .zone-header { display: flex; align-items: center; gap: 10px; width: 100%; }
         .zone-dot { width: 14px; height: 14px; background: var(--zone-color); border-radius: 50%; box-shadow: 0 0 8px var(--zone-color); flex-shrink: 0; }
         
-        .zone-title { 
-            font-weight: 800; 
-            font-size: 0.95rem; 
-            letter-spacing: 0.5px; 
-            text-transform: uppercase; 
-            color: #fff; 
-            margin: 0; 
-            line-height: 1;
-            white-space: nowrap;
-        }
-        
-        .zone-pill { 
-            border: 1px solid var(--zone-color); 
-            border-radius: 50px; 
-            padding: 5px 14px; 
-            font-size: 0.85rem; 
-            font-weight: 700; 
-            color: #fff; 
-            margin-left: 24px; 
-            white-space: nowrap; 
-        }
+        .zone-title { font-weight: 800; font-size: 0.95rem; letter-spacing: 0.5px; text-transform: uppercase; color: #fff; margin: 0; line-height: 1; white-space: nowrap; }
+        .zone-pill { border: 1px solid var(--zone-color); border-radius: 50px; padding: 5px 14px; font-size: 0.85rem; font-weight: 700; color: #fff; margin-left: 24px; white-space: nowrap; }
+
+        /* SETTINGS TAB */
+        .settings-card { background:var(--glass); padding:25px; border-radius:20px; border:1px solid var(--border); margin-bottom: 20px; }
+        .settings-row { display:flex; justify-content:space-between; margin-bottom:15px; align-items: center; }
+        .settings-label { font-weight:700; font-size:0.9rem; }
+        .settings-val { color:var(--glow-blue); font-weight:800; font-size: 1.1rem; }
+        .settings-desc { font-size:0.75rem; color:#888; margin-bottom:20px; line-height:1.4; }
+        input[type="range"] { -webkit-appearance: none; background: #222; height: 8px; border-radius: 4px; outline: none; padding: 0; border: none; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 24px; height: 24px; border-radius: 50%; background: var(--glow-blue); cursor: pointer; box-shadow: 0 0 10px rgba(0, 242, 255, 0.5); }
 
         /* BOTTOM NAVIGATION */
         #bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; height: 85px; background: var(--glass); border-top: 1px solid var(--border); display: flex; justify-content: space-around; align-items: center; z-index: 9900; backdrop-filter: blur(25px); padding-bottom: max(env(safe-area-inset-bottom), 10px); box-sizing: border-box; }
@@ -150,7 +129,7 @@
 </head>
 <body>
 
-    <div id="version-tag">BIOSTACK_v10.46_STABLE</div>
+    <div id="version-tag">BIOSTACK_v10.48_STABLE</div>
 
     <div id="login-screen">
         <div class="login-card">
@@ -177,15 +156,12 @@
 
             <div id="sidebar"><div id="exercise-picker"></div></div>
 
-            <div id="calibration-hud"><span id="cal-timer-display" class="hud-timer-cal"></span></div>
-
             <div id="stage-area">
                 <div id="set-bar-sidebar">
                     <div id="active-ex-context"></div>
                     <div id="hud-in-flow">
-                        <div id="in-progress-badge" style="display: none;"><span class="recording-dot"></span> SET IN PROGRESS</div>
-                        <button id="set-main-btn" class="flow-btn" onclick="startSetTimer()" style="background: var(--glow-blue); color:#000;">END SET</button>
-                        <span id="set-timer-display" style="display:none; font-size:0.75rem; color:#ffaa00; margin-bottom:10px; font-weight:800; text-transform:uppercase;">Analyzing vitals...</span>
+                        <div id="rest-helper-text">WAIT UNTIL MUSCLES ARE PRIMED</div>
+                        <button id="set-main-btn" class="flow-btn">START SET</button>
                         <button id="new-ex-btn" class="flow-btn" onclick="exitTraining()">NEW EXERCISE</button>
                     </div>
                 </div>
@@ -220,49 +196,18 @@
         </div>
 
         <div id="view-cardio" class="app-view view-active">
-            
             <canvas id="cardio-particles" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; pointer-events: none;"></canvas>
-
             <div id="cardio-layout">
-                
                 <div id="cardio-stats-row">
-                    <div>
-                        <div id="cardio-stat-cals" class="stat-value">0</div>
-                        <div class="stat-label">total cal burned</div>
-                    </div>
-                    <div>
-                        <div id="cardio-stat-fat" class="stat-value">0.000</div>
-                        <div class="stat-label">total lbs fat loss</div>
-                    </div>
+                    <div><div id="cardio-stat-cals" class="stat-value">0</div><div class="stat-label">total cal burned</div></div>
+                    <div><div id="cardio-stat-fat" class="stat-value">0.000</div><div class="stat-label">total lbs fat loss</div></div>
                 </div>
-
                 <div id="cardio-content">
                     <div id="cardio-panel">
-                        <div class="zone-card" id="zone-3">
-                            <div class="zone-header">
-                                <div class="zone-dot"></div>
-                                <div class="zone-title">ENDURANCE</div>
-                            </div>
-                            <div class="zone-pill" id="pill-z3">-- BPM</div>
-                        </div>
-
-                        <div class="zone-card" id="zone-2">
-                            <div class="zone-header">
-                                <div class="zone-dot"></div>
-                                <div class="zone-title">WEIGHT LOSS</div>
-                            </div>
-                            <div class="zone-pill" id="pill-z2">-- BPM</div>
-                        </div>
-
-                        <div class="zone-card" id="zone-1">
-                            <div class="zone-header">
-                                <div class="zone-dot"></div>
-                                <div class="zone-title">LEAN & MEAN</div>
-                            </div>
-                            <div class="zone-pill" id="pill-z1">-- BPM</div>
-                        </div>
+                        <div class="zone-card" id="zone-3"><div class="zone-header"><div class="zone-dot"></div><div class="zone-title">ENDURANCE</div></div><div class="zone-pill" id="pill-z3">-- BPM</div></div>
+                        <div class="zone-card" id="zone-2"><div class="zone-header"><div class="zone-dot"></div><div class="zone-title">WEIGHT LOSS</div></div><div class="zone-pill" id="pill-z2">-- BPM</div></div>
+                        <div class="zone-card" id="zone-1"><div class="zone-header"><div class="zone-dot"></div><div class="zone-title">LEAN & MEAN</div></div><div class="zone-pill" id="pill-z1">-- BPM</div></div>
                     </div>
-
                     <div id="cardio-visuals">
                         <img src="assets/base_cardio.png" style="position: relative; max-height: 100%; max-width: 100%; z-index: 5; object-fit: contain;">
                     </div>
@@ -274,8 +219,19 @@
             <h2 class="placeholder-text">NUTRITION MODULE<br><span style="font-size: 0.8rem; color: #666;">Awaiting architecture instructions</span></h2>
         </div>
 
-        <div id="view-dashboard" class="app-view">
-            <h2 class="placeholder-text">SYSTEM DASHBOARD<br><span style="font-size: 0.8rem; color: #666;">Awaiting architecture instructions</span></h2>
+        <div id="view-settings" class="app-view">
+            <div style="padding: 120px 30px; display:flex; flex-direction:column; gap:30px;">
+                <h2 style="color:var(--glow-blue); font-weight:900; margin:0;">SYSTEM SETTINGS</h2>
+                
+                <div class="settings-card">
+                    <div class="settings-row">
+                        <span class="settings-label">SET READY TRIGGER</span>
+                        <span id="trigger-val-display" class="settings-val">100 BPM</span>
+                    </div>
+                    <p class="settings-desc">Target heart rate threshold for automatic rest timers. When your BPM drops below this number, the system will instantly log your set and mark you as recovered.</p>
+                    <input type="range" id="trigger-slider" min="80" max="140" value="100" style="width:100%;" oninput="updateTriggerSetting(this.value)">
+                </div>
+            </div>
         </div>
 
         <nav id="bottom-nav">
@@ -291,14 +247,14 @@
                 <div class="nav-icon"></div>
                 <span>Food</span>
             </button>
-            <button class="nav-btn" onclick="switchAppTab('dashboard', this)">
+            <button class="nav-btn" onclick="switchAppTab('settings', this)">
                 <div class="nav-icon"></div>
-                <span>Dash</span>
+                <span>Settings</span>
             </button>
         </nav>
 
     </div>
 
-    <script src="js/biostack.js?v=48"></script>
+    <script src="js/biostack.js?v=50"></script>
 </body>
 </html>
