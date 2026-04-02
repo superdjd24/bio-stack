@@ -1,6 +1,6 @@
 /**
- * BIOSTACK ELITE ENGINE v10.35 STABLE
- * Multi-View SPA Architecture + Cache Bust
+ * BIOSTACK ELITE ENGINE v10.36 STABLE
+ * Cardio Module with Live Dynamic Zones + Cache Bust
  */
 
 let bpm = 0;
@@ -49,26 +49,40 @@ async function initSystem() {
         const service = await server.getPrimaryService('heart_rate');
         const char = await service.getCharacteristic('heart_rate_measurement');
         await char.startNotifications();
+        
+        // Save Context
         localStorage.setItem('bio_weight', w);
         localStorage.setItem('bio_age', a);
+        
+        // Initialize dynamic cardio math based on user age
+        initCardioZones();
+
         document.getElementById('login-screen').style.display = 'none';
         const dash = document.getElementById('main-dashboard');
         dash.style.display = 'block';
         setTimeout(() => { dash.style.opacity = '1'; }, 50);
+        
         generateHitMap();
+        
         char.addEventListener('characteristicvaluechanged', (e) => {
             bpm = e.target.value.getUint8(1);
             const hrEl = document.getElementById('hr-val');
             hrEl.innerText = bpm;
             hrEl.style.color = getEliteColor(bpm);
+            
             const now = Date.now();
             if (isCalibrating && bpm > tempMaxHr) tempMaxHr = bpm;
+            
             peakBuffer.push({ bpm: bpm, time: now });
             peakBuffer = peakBuffer.filter(p => now - p.time < 20000);
+            
             calculateCals(bpm);
+            
             hrHistory.push(bpm);
             if (hrHistory.length > 55) hrHistory.shift();
+            
             drawSparkline();
+            updateCardioUI(bpm); // Update the active Cardio zone tracker
             
             if (isResting) {
                 updateRestUI();
@@ -82,13 +96,59 @@ function calculateCals(currentBpm) {
     const age = localStorage.getItem('bio_age') || 30;
     const now = Date.now();
     if (!lastTimestamp) { lastTimestamp = now; return; }
+    
     const durationHours = (now - lastTimestamp) / (1000 * 60 * 60);
     lastTimestamp = now;
+    
     let calPerMinute = ( (age * 0.2017) + (weight * 0.09036) + (currentBpm * 0.6309) - 55.0969 ) / 4.184;
     if (calPerMinute < 0) calPerMinute = 0;
+    
     const sliceCals = ((calPerMinute / 60) * (durationHours * 60)) * 10;
     totalCalories += sliceCals;
-    document.getElementById('total-cal').innerText = Math.round(totalCalories);
+    
+    // Update calories globally across tabs
+    const calVal = Math.round(totalCalories);
+    document.getElementById('total-cal').innerText = calVal;
+    
+    // Safety check just in case cardio view isn't fully loaded yet
+    const cardioCal = document.getElementById('cardio-total-cal-display');
+    if(cardioCal) cardioCal.innerText = calVal;
+}
+
+// NEW: DYNAMIC CARDIO ZONE INITIALIZATION
+function initCardioZones() {
+    // Dynamic math utilizing user's profile age
+    const age = parseInt(localStorage.getItem('bio_age')) || 30; 
+    const maxHr = 220 - age;
+
+    const z1Min = Math.round(maxHr * 0.60);
+    const z1Max = Math.round(maxHr * 0.70);
+    const z2Min = Math.round(maxHr * 0.70);
+    const z2Max = Math.round(maxHr * 0.80);
+    const z3Min = Math.round(maxHr * 0.80);
+    const z3Max = Math.round(maxHr * 0.90);
+
+    document.getElementById('pill-z1').innerText = `${z1Min} - ${z1Max} BPM`;
+    document.getElementById('pill-z2').innerText = `${z2Min} - ${z2Max} BPM`;
+    document.getElementById('pill-z3').innerText = `${z3Min} - ${z3Max} BPM`;
+}
+
+// NEW: LIVE ZONE TRACKER
+function updateCardioUI(currentBpm) {
+    const age = parseInt(localStorage.getItem('bio_age')) || 30;
+    const maxHr = 220 - age;
+
+    // Reset all zone highlights
+    document.querySelectorAll('.zone-card').forEach(c => c.classList.remove('active-zone'));
+
+    // Highlight active zone based on current BPM threshold
+    if (currentBpm >= maxHr * 0.80 && currentBpm <= maxHr * 0.90) {
+        document.getElementById('zone-3').classList.add('active-zone');
+    } else if (currentBpm >= maxHr * 0.70 && currentBpm < maxHr * 0.80) {
+        document.getElementById('zone-2').classList.add('active-zone');
+    } else if (currentBpm >= maxHr * 0.60 && currentBpm < maxHr * 0.70) {
+        document.getElementById('zone-1').classList.add('active-zone');
+    }
 }
 
 function startTraining() {
@@ -395,19 +455,21 @@ function selectMuscle(m) {
 
 function closeAction() { document.getElementById('menu-action').style.display = 'none'; }
 
-// NEW: MULTI-VIEW SPA CONTROLLER
 function switchAppTab(tabId, btnElement) {
-    // Hide all application views
     document.querySelectorAll('.app-view').forEach(view => {
         view.classList.remove('view-active');
     });
     
-    // Show target view
     document.getElementById('view-' + tabId).classList.add('view-active');
     
-    // Update navigation styles
     document.querySelectorAll('.nav-btn').forEach(btn => {
         btn.classList.remove('active-nav');
     });
     btnElement.classList.add('active-nav');
+    
+    // Only fetch/calculate the exact ranges when opening the cardio tab 
+    // to ensure they use the most current localstorage age.
+    if (tabId === 'cardio') {
+        initCardioZones();
+    }
 }
