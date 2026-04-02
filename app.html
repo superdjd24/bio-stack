@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BioStack Elite v10.39 STABLE</title>
+    <title>BioStack Elite v10.40 STABLE</title>
     <style>
         :root { --glow-blue: #00f2ff; --bg-dark: #05070a; --glass: rgba(15, 20, 30, 0.95); --border: #30363d; }
         body { margin: 0; background: var(--bg-dark); color: white; font-family: -apple-system, system-ui, sans-serif; overflow: hidden; height: 100vh; }
@@ -83,10 +83,10 @@
         #cardio-panel { width: 50%; z-index: 2; display: flex; flex-direction: column; justify-content: center; gap: 20px; padding-left: 10px;}
         #cardio-visuals { position: absolute; right: -10%; top: -5%; width: 65%; height: 110%; display: flex; justify-content: flex-end; align-items: center; z-index: 5; pointer-events: none; }
         
-        /* FIX: Replaced CSS box rendering with User's Asset Shells */
+        /* FIX: Adjusted padding for tighter fit */
         .zone-card { 
             background-color: transparent; 
-            padding: 24px 20px; 
+            padding: 20px 15px; 
             display: flex; 
             flex-direction: column; 
             align-items: flex-start; 
@@ -99,6 +99,7 @@
             background-position: center;
             background-repeat: no-repeat;
             border: none;
+            overflow: hidden; 
         }
         
         .zone-card.active-zone { 
@@ -112,11 +113,21 @@
         #zone-2 { --zone-color: #ffcc00; background-image: url('assets/weight_loss_shell.png'); }
         #zone-1 { --zone-color: #33cc33; background-image: url('assets/fat_loss_shell.png'); }
 
-        .zone-header { display: flex; align-items: center; gap: 12px; }
-        .zone-dot { width: 14px; height: 14px; background: var(--zone-color); border-radius: 50%; box-shadow: 0 0 8px var(--zone-color); }
-        .zone-title { font-weight: 800; font-size: 1.05rem; letter-spacing: 0.5px; text-transform: uppercase; color: #fff; margin: 0; line-height: 1;}
+        .zone-header { display: flex; align-items: center; gap: 10px; width: 100%; }
+        .zone-dot { width: 14px; height: 14px; background: var(--zone-color); border-radius: 50%; box-shadow: 0 0 8px var(--zone-color); flex-shrink: 0; }
         
-        /* FIX: Forced pill text to stay on a single line */
+        /* FIX: Forced title to stay on a single line and slightly reduced font size */
+        .zone-title { 
+            font-weight: 800; 
+            font-size: 0.95rem; 
+            letter-spacing: 0.5px; 
+            text-transform: uppercase; 
+            color: #fff; 
+            margin: 0; 
+            line-height: 1;
+            white-space: nowrap;
+        }
+        
         .zone-pill { 
             border: 1px solid var(--zone-color); 
             border-radius: 50px; 
@@ -124,7 +135,7 @@
             font-size: 0.85rem; 
             font-weight: 700; 
             color: #fff; 
-            margin-left: 26px; 
+            margin-left: 24px; 
             white-space: nowrap; 
         }
 
@@ -141,7 +152,7 @@
 </head>
 <body>
 
-    <div id="version-tag">BIOSTACK_v10.39_STABLE</div>
+    <div id="version-tag">BIOSTACK_v10.40_STABLE</div>
 
     <div id="login-screen">
         <div class="login-card">
@@ -253,7 +264,6 @@
 
                     <div id="cardio-visuals">
                         <img src="assets/base_cardio.png" style="max-height: 100%; max-width: 100%; z-index: 5; object-fit: contain;">
-                        <img src="assets/heartbeat_monitor_animated.gif" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; z-index: 10; mix-blend-mode: screen; opacity: 0.85;">
                     </div>
                 </div>
             </div>
@@ -288,6 +298,6 @@
 
     </div>
 
-    <script src="js/biostack.js?v=42"></script>
+    <script src="js/biostack.js?v=43"></script>
 </body>
 </html>
