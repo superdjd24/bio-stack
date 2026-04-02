@@ -1,6 +1,6 @@
 /**
- * BIOSTACK ELITE ENGINE v10.33 STABLE
- * Seamless Smart-Calibration Integration + Cache Bust
+ * BIOSTACK ELITE ENGINE v10.34 STABLE
+ * Set-In-Progress Visual Indicator + Cache Bust
  */
 
 let bpm = 0;
@@ -180,11 +180,17 @@ function resetSetHUD() {
     btn.onclick = startSetTimer;
     btn.style.display = "block";
     document.getElementById('set-timer-display').style.display = "none";
+    
+    // Show in-progress indicator
+    document.getElementById('in-progress-badge').style.display = 'flex';
+    
     peakBuffer = []; 
 }
 
 function startSetTimer() {
     document.getElementById('set-main-btn').style.display = "none";
+    document.getElementById('in-progress-badge').style.display = "none"; // Hide indicator during analysis
+    
     const timerText = document.getElementById('set-timer-display');
     timerText.style.display = "block";
     let timeLeft = 20;
@@ -290,6 +296,7 @@ function exitTraining() {
     isResting = false;
     isLatchedReady = false;
     document.getElementById('hud-in-flow').style.display = "none";
+    document.getElementById('in-progress-badge').style.display = "none";
     document.getElementById('active-ex-context').style.display = 'none';
     clearIntensityBars();
     document.getElementById('sidebar').style.display = "block";
