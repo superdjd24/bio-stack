@@ -1,6 +1,6 @@
 /**
- * BIOSTACK ELITE ENGINE v10.32 STABLE
- * Modal Order Swap & Calibration Workflow Streamlining + Cache Bust
+ * BIOSTACK ELITE ENGINE v10.33 STABLE
+ * Seamless Smart-Calibration Integration + Cache Bust
  */
 
 let bpm = 0;
@@ -92,66 +92,26 @@ function calculateCals(currentBpm) {
     document.getElementById('total-cal').innerText = Math.round(totalCalories);
 }
 
-function calibrateExercise() {
-    isCalibrating = true; isTrain = false; tempMaxHr = 0;
-    activeExercise = document.getElementById('ex-name-modal').innerText;
-    document.getElementById('active-ex-tag').innerText = "CALIBRATING: " + activeExercise;
-    closeAction();
-    document.getElementById('sidebar').style.display = "none";
-    document.getElementById('calibration-hud').style.display = "block";
-    
-    // Reset the calibration button text and action in case it was previously changed to 'START SETS'
-    const calBtn = document.getElementById('cal-main-btn');
-    calBtn.innerText = "FINISH CALIBRATION";
-    calBtn.onclick = startCalTimer;
-    calBtn.style.display = "block";
-    
-    document.getElementById('cal-timer-display').style.display = "none";
-}
-
-function startCalTimer() {
-    document.getElementById('cal-main-btn').style.display = "none";
-    const timerText = document.getElementById('cal-timer-display');
-    timerText.style.display = "block";
-    let timeLeft = 20;
-    const countdown = setInterval(() => {
-        timeLeft--;
-        timerText.innerText = `Analyzing vitals... ${timeLeft}s`;
-        if (timeLeft <= 0) { clearInterval(countdown); lockMaxHr(); }
-    }, 1000);
-}
-
-function lockMaxHr() {
-    isCalibrating = false;
-    const bufferMax = peakBuffer.length > 0 ? Math.max(...peakBuffer.map(p => p.bpm)) : 0;
-    const trueMax = Math.max(tempMaxHr, bufferMax, bpm);
-    if (trueMax < 60) { alert("Calibration failed: Vitals too low."); exitCalHud(); return; }
-    localStorage.setItem('maxhr_' + activeExercise, trueMax);
-    document.getElementById('active-ex-tag').innerText = "CALIBRATED: " + trueMax + " BPM";
-    
-    // FIX: Provide direct pipeline to start sets from the calibration hud
-    document.getElementById('cal-timer-display').style.display = "none";
-    const calBtn = document.getElementById('cal-main-btn');
-    calBtn.innerText = "START SETS";
-    calBtn.onclick = () => {
-        exitCalHud();
-        startTraining(); 
-    };
-    calBtn.style.display = "block";
-}
-
-function exitCalHud() {
-    document.getElementById('calibration-hud').style.display = "none";
-    document.getElementById('sidebar').style.display = "block";
-}
-
 function startTraining() {
-    // Note: If entering directly from calibration, activeExercise is already accurate. 
-    // The modal text continues to be accurate because it's just hidden.
     const newEx = document.getElementById('ex-name-modal').innerText;
-    if (!localStorage.getItem('maxhr_' + newEx)) { alert(`${newEx} requires calibration.`); calibrateExercise(); return; }
-    isTrain = true; isCalibrating = false;
     activeExercise = newEx;
+    closeAction();
+    
+    // Smart Routing: If no Max HR exists, jump automatically into the 20s calibration phase
+    if (!localStorage.getItem('maxhr_' + newEx)) { 
+        isCalibrating = true; 
+        isTrain = false; 
+        tempMaxHr = 0;
+        document.getElementById('active-ex-tag').innerText = "CALIBRATING: " + activeExercise;
+        document.getElementById('sidebar').style.display = "none";
+        document.getElementById('calibration-hud').style.display = "block";
+        startCalTimer();
+        return; 
+    }
+    
+    // Normal Flow: Already Calibrated
+    isTrain = true; 
+    isCalibrating = false;
     document.getElementById('active-ex-tag').innerText = "WORK SET: " + activeExercise;
     const savedMax = localStorage.getItem('maxhr_' + activeExercise);
     const contextBox = document.getElementById('active-ex-context');
@@ -161,8 +121,51 @@ function startTraining() {
     clearIntensityBars();
     document.getElementById('hud-in-flow').style.display = "block";
     resetSetHUD();
-    closeAction();
     document.getElementById('sidebar').style.display = "none";
+}
+
+function startCalTimer() {
+    const timerText = document.getElementById('cal-timer-display');
+    timerText.style.display = "block";
+    let timeLeft = 20;
+    const countdown = setInterval(() => {
+        timeLeft--;
+        timerText.innerText = `Analyzing vitals... ${timeLeft}s`;
+        if (timeLeft <= 0) { 
+            clearInterval(countdown); 
+            lockMaxHr(); 
+        }
+    }, 1000);
+}
+
+function lockMaxHr() {
+    isCalibrating = false;
+    const bufferMax = peakBuffer.length > 0 ? Math.max(...peakBuffer.map(p => p.bpm)) : 0;
+    const trueMax = Math.max(tempMaxHr, bufferMax, bpm);
+    
+    if (trueMax < 60) { 
+        alert("Calibration failed: Vitals too low."); 
+        document.getElementById('calibration-hud').style.display = "none";
+        document.getElementById('sidebar').style.display = "block";
+        return; 
+    }
+    
+    localStorage.setItem('maxhr_' + activeExercise, trueMax);
+    document.getElementById('calibration-hud').style.display = "none";
+    
+    // Seamlessly transition into training mode and log the calibration as Set 1
+    isTrain = true;
+    document.getElementById('active-ex-tag').innerText = "WORK SET: " + activeExercise;
+    const contextBox = document.getElementById('active-ex-context');
+    contextBox.innerText = `Target HR for ${activeExercise}: ${trueMax}`;
+    contextBox.style.display = 'block';
+    setCounter = 0;
+    clearIntensityBars();
+    document.getElementById('hud-in-flow').style.display = "block";
+    resetSetHUD();
+    
+    // Automatically process Set 1 and enter REST phase
+    processSetResult(); 
 }
 
 function resetSetHUD() {
@@ -175,6 +178,7 @@ function resetSetHUD() {
     btn.style.color = '#000';
     btn.style.webkitTextStroke = '0px'; 
     btn.onclick = startSetTimer;
+    btn.style.display = "block";
     document.getElementById('set-timer-display').style.display = "none";
     peakBuffer = []; 
 }
