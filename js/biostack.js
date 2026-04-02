@@ -361,4 +361,109 @@ function drawSparkline() {
     const step = rect.width / (hrHistory.length - 1);
     const points = hrHistory.map((val, i) => ({ x: i * step, y: rect.height - ((val - 60) / 100) * rect.height }));
     ctx.beginPath(); ctx.moveTo(points[0].x, points[0].y);
-    for (let i = 1; i < points.length; i++) { ctx.
+    for (let i = 1; i < points.length; i++) { ctx.lineTo(points[i].x, points[i].y); }
+    ctx.stroke();
+}
+
+function generateHitMap() {
+    const map = document.getElementById('touch-map');
+    if (!map) return;
+    map.innerHTML = "";
+    
+    if (currentView === "front") {
+        map.style.gridTemplateRows = '19% 10% 9% 11% 23% 28%';
+        const fG = [
+            "", "", "TOGGLE_BACK",                   // R1 (19%) 
+            "Deltoids", "Pectorals", "Deltoids",     // R2 (10%) 
+            "Biceps", "Abdominals", "Biceps",        // R3 (9%) 
+            "Forearms", "Abdominals", "Forearms",    // R4 (11%) 
+            "", "Quads", "",                         // R5 (23%) 
+            "", "", ""                               // R6 (28%) 
+        ];
+        fG.forEach((m) => {
+            const div = document.createElement('div');
+            div.className = "hit";
+            if (m === "TOGGLE_BACK") div.onclick = () => switchView('back');
+            else if (m !== "") div.onclick = () => selectMuscle(m);
+            map.appendChild(div);
+        });
+    } else {
+        map.style.gridTemplateRows = '12% 10% 22% 8% 4% 20% 24%';
+        const bG = [
+            "TOGGLE_FRONT", "", "",                   
+            "Trapezoids", "Trapezoids", "Trapezoids", 
+            "Triceps", "Lats", "Triceps",             
+            "", "", "",                               
+            "Glutes", "Glutes", "Glutes",             
+            "Hamstrings", "Hamstrings", "Hamstrings", 
+            "Calves", "Calves", "Calves"              
+        ];
+        bG.forEach((m) => {
+            const div = document.createElement('div');
+            div.className = "hit";
+            if (m === "TOGGLE_FRONT") div.onclick = () => switchView('front');
+            else if (m !== "") div.onclick = () => selectMuscle(m);
+            map.appendChild(div);
+        });
+    }
+}
+
+function switchView(view) {
+    currentView = view;
+    document.querySelectorAll('.muscle-overlay').forEach(img => img.style.opacity = 0);
+    document.querySelectorAll('.stack-layer').forEach(l => l.classList.remove('layer-visible'));
+    if (view === 'front') {
+        document.getElementById('btn-to-back').classList.add('layer-visible');
+        ['trapezoids','deltoids','pectorals','biceps','forearms','abdominals','quads'].forEach(m => {
+            const el = document.getElementById(`overlay-${m}`);
+            if (el) el.classList.add('layer-visible');
+        });
+    } else {
+        document.getElementById('base-back').classList.add('layer-visible');
+        document.getElementById('btn-to-front').classList.add('layer-visible');
+        ['trapezoids', 'lats','triceps','glutes','hamstrings','calves'].forEach(m => {
+            const el = document.getElementById(`overlay-${m}`);
+            if (el) el.classList.add('layer-visible');
+        });
+    }
+    generateHitMap();
+}
+
+function selectMuscle(m) {
+    if ((isTrain || isCalibrating)) return;
+    document.querySelectorAll('.muscle-overlay').forEach(img => img.style.opacity = 0);
+    const overlay = document.getElementById(`overlay-${m.toLowerCase()}`);
+    if (overlay) overlay.style.opacity = 0.5;
+    document.getElementById('musc-header').innerText = "TARGET: " + m;
+    const picker = document.getElementById('exercise-picker');
+    picker.innerHTML = "";
+    DB[m].forEach(ex => {
+        const b = document.createElement('button');
+        b.className = "list-btn";
+        b.innerText = ex;
+        b.onclick = () => {
+            document.getElementById('ex-name-modal').innerText = ex;
+            document.getElementById('menu-action').style.display = 'block';
+        };
+        picker.appendChild(b);
+    });
+}
+
+function closeAction() { document.getElementById('menu-action').style.display = 'none'; }
+
+function switchAppTab(tabId, btnElement) {
+    document.querySelectorAll('.app-view').forEach(view => {
+        view.classList.remove('view-active');
+    });
+    
+    document.getElementById('view-' + tabId).classList.add('view-active');
+    
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.classList.remove('active-nav');
+    });
+    btnElement.classList.add('active-nav');
+    
+    if (tabId === 'cardio') {
+        initCardioZones();
+    }
+}
