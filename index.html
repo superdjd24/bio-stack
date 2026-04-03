@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BioStack Elite v10.90 STABLE</title>
+    <title>BioStack Elite v10.95 STABLE</title>
     <style>
         :root { --glow-blue: #00f2ff; --bg-dark: #05070a; --glass: rgba(15, 20, 30, 0.95); --border: #30363d; }
         body { margin: 0; background: var(--bg-dark); color: white; font-family: -apple-system, system-ui, sans-serif; overflow: hidden; height: 100vh; }
@@ -123,7 +123,7 @@
 </head>
 <body>
 
-    <div id="version-tag">BIOSTACK_v10.90_STABLE</div>
+    <div id="version-tag">BIOSTACK_v10.95_STABLE</div>
 
     <div id="login-screen">
         <img src="assets/biostack_v3_logo.png" style="width: 140px; margin-bottom: 30px; filter: drop-shadow(0 0 15px rgba(0,242,255,0.3));">
@@ -133,7 +133,7 @@
             <input type="number" id="user-age" placeholder="Age">
             <button id="init-btn" onclick="initSystem()">Initialize & Link</button>
         </div>
-        <div class="login-version">v10.90 STABLE</div>
+        <div class="login-version">v10.95 STABLE</div>
     </div>
 
     <div id="main-dashboard">
@@ -182,7 +182,7 @@
                 </div>
             </div>
 
-            <canvas id="lift-particles" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 8000; pointer-events: none;"></canvas>
+            <canvas id="lift-particles" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 8000; pointer-events: none;"></canvas>
 
             <div id="menu-action" class="overlay">
                 <h2 id="ex-name-modal" style="margin-bottom:25px;">EXERCISE</h2>
@@ -202,7 +202,7 @@
         </div>
 
         <div id="view-cardio" class="app-view view-active">
-            <canvas id="cardio-particles" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; pointer-events: none;"></canvas>
+            <canvas id="cardio-particles" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 100; pointer-events: none;"></canvas>
             <div id="cardio-layout">
                 <div id="cardio-stats-row">
                     <div><div id="cardio-stat-cals" class="stat-value">0</div><div class="stat-label">total cal burned</div></div>
@@ -258,6 +258,6 @@
         </nav>
 
     </div>
-    <script src="js/biostack.js?v=90"></script>
+    <script src="js/biostack.js?v=95"></script>
 </body>
 </html>
