@@ -1,6 +1,6 @@
 /**
- * BIOSTACK ELITE ENGINE v10.50 STABLE
- * Cardio Zones: UI uses Raw BPM, Engine maps to % MaxHR
+ * BIOSTACK ELITE ENGINE v10.55 STABLE
+ * Full Compilation: Bio-Logic State Machine + Scalable Dynamic Cardio Zones
  */
 
 let bpm = 0; 
@@ -51,7 +51,7 @@ function updateTriggerSetting(val) {
     localStorage.setItem('bio_ready_trigger', readyTriggerBpm);
 }
 
-// UPDATED: Convert raw user BPM input into percentages for scalable storage
+// Convert raw user BPM input into percentages for scalable storage
 function saveZoneSettings() {
     const age = parseInt(localStorage.getItem('bio_age')) || 30;
     const maxHr = 220 - age;
@@ -272,12 +272,10 @@ function exitTraining() {
     document.getElementById('active-ex-tag').innerText = "NO ACTIVE EXERCISE";
 }
 
-// --- STANDARD VISUAL & TAB LOGIC ---
 function initCardioZones() {
     const age = parseInt(localStorage.getItem('bio_age')) || 30; 
     const maxHr = 220 - age;
     
-    // Calculate raw BPM based on the dynamic percentage variables
     const z1Min = Math.round(maxHr * z1MinPct); const z1Max = Math.round(maxHr * z1MaxPct);
     const z2Min = Math.round(maxHr * z2MinPct); const z2Max = Math.round(maxHr * z2MaxPct);
     const z3Min = Math.round(maxHr * z3MinPct); const z3Max = Math.round(maxHr * z3MaxPct);
@@ -286,7 +284,6 @@ function initCardioZones() {
     document.getElementById('pill-z2').innerText = `${z2Min} - ${z2Max} BPM`;
     document.getElementById('pill-z3').innerText = `${z3Min} - ${z3Max} BPM`;
 
-    // UPDATED: Populate Settings UI Inputs with actual calculated BPM integers
     const z1MinInput = document.getElementById('set-z1-min');
     if (z1MinInput) {
         z1MinInput.value = z1Min;
