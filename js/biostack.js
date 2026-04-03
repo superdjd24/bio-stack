@@ -1,6 +1,6 @@
 /**
- * BIOSTACK ELITE ENGINE v10.60 STABLE
- * Added: Physical Data Logging (Weight/Reps) Integration
+ * BIOSTACK ELITE ENGINE v10.65 STABLE
+ * Field Test Hotfixes: UI Overlap, Auto-Scroll Lists, Checkmark Pills
  */
 
 let bpm = 0; 
@@ -15,7 +15,7 @@ let liftState = 'IDLE';
 let currentSetMax = 0;
 const DROP_THRESHOLD = 6;
 
-// NEW: Data Logging State
+// Data Logging State
 let editingActionContainerId = null;
 
 // DYNAMIC CARDIO ZONE VARIABLES (% of Max HR stored natively)
@@ -228,8 +228,8 @@ function finalizeSet() {
     
     const barPx = Math.min(100, (currentSetMax / 190) * 100) + "%"; 
 
-    const container = document.getElementById('set-bar-sidebar');
-    const hud = document.getElementById('hud-in-flow');
+    // FIXED: Appending sets specifically to the new scrollable list
+    const container = document.getElementById('sets-list');
     const item = document.createElement('div');
     item.className = 'intensity-item';
     
@@ -245,7 +245,6 @@ function finalizeSet() {
     inner.innerText = `${currentSetMax} BPM`; 
     bar.appendChild(inner);
     
-    // NEW: Action container for the edit button
     const actionContainer = document.createElement('div');
     actionContainer.id = `action-container-${setCounter}`;
     actionContainer.style.display = 'flex';
@@ -255,7 +254,6 @@ function finalizeSet() {
     editBtn.className = 'edit-set-btn';
     editBtn.innerText = '+';
     
-    // Bind the current set counter to the click event
     const currentNum = setCounter;
     editBtn.onclick = () => openSetData(currentNum, actionContainer.id);
     
@@ -264,7 +262,14 @@ function finalizeSet() {
     item.appendChild(label);
     item.appendChild(bar);
     item.appendChild(actionContainer);
-    container.insertBefore(item, hud);
+    
+    // Inject the set into the scrollable list
+    container.appendChild(item);
+
+    // Auto-scroll the list to the bottom so the newest set is always visible
+    setTimeout(() => {
+        container.scrollTop = container.scrollHeight;
+    }, 50);
 
     requestAnimationFrame(() => {
         setTimeout(() => {
@@ -278,7 +283,6 @@ function finalizeSet() {
     processBioState();
 }
 
-// --- NEW DATA LOGGING FUNCTIONS ---
 function openSetData(setNum, containerId) {
     document.getElementById('log-set-num').innerText = setNum;
     document.getElementById('log-weight').value = '';
@@ -286,7 +290,6 @@ function openSetData(setNum, containerId) {
     editingActionContainerId = containerId;
     document.getElementById('set-data-modal').style.display = 'block';
     
-    // Auto-focus the first input field for speed
     setTimeout(() => { document.getElementById('log-weight').focus(); }, 100);
 }
 
@@ -307,8 +310,8 @@ function saveSetData() {
     if(editingActionContainerId) {
         const container = document.getElementById(editingActionContainerId);
         if(container) {
-            // Replace the '+' button with the data pill
-            container.innerHTML = `<span class="set-data-pill">${weight}lbs × ${reps}</span>`;
+            // FIXED: Swap the verbose data pill out for the clean checkmark icon
+            container.innerHTML = `<button class="edit-set-btn" style="background:var(--glow-blue); color:#000; border: none; cursor: default;">✓</button>`;
         }
     }
     
@@ -316,8 +319,9 @@ function saveSetData() {
 }
 
 function clearIntensityBars() {
-    const items = document.querySelectorAll('#set-bar-sidebar .intensity-item');
-    items.forEach(i => i.remove());
+    // Clear out the scrollable list container
+    const list = document.getElementById('sets-list');
+    if (list) list.innerHTML = '';
 }
 
 function exitTraining() {
