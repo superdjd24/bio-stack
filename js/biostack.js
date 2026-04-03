@@ -1,6 +1,6 @@
 /**
- * BIOSTACK ELITE ENGINE v10.55 STABLE
- * Full Compilation: Bio-Logic State Machine + Scalable Dynamic Cardio Zones
+ * BIOSTACK ELITE ENGINE v10.60 STABLE
+ * Added: Physical Data Logging (Weight/Reps) Integration
  */
 
 let bpm = 0; 
@@ -14,6 +14,9 @@ let readyTriggerBpm = parseInt(localStorage.getItem('bio_ready_trigger')) || 100
 let liftState = 'IDLE'; 
 let currentSetMax = 0;
 const DROP_THRESHOLD = 6;
+
+// NEW: Data Logging State
+let editingActionContainerId = null;
 
 // DYNAMIC CARDIO ZONE VARIABLES (% of Max HR stored natively)
 let z1MinPct = parseFloat(localStorage.getItem('bio_z1_min')) || 0.60;
@@ -51,7 +54,6 @@ function updateTriggerSetting(val) {
     localStorage.setItem('bio_ready_trigger', readyTriggerBpm);
 }
 
-// Convert raw user BPM input into percentages for scalable storage
 function saveZoneSettings() {
     const age = parseInt(localStorage.getItem('bio_age')) || 30;
     const maxHr = 220 - age;
@@ -70,7 +72,7 @@ function saveZoneSettings() {
     localStorage.setItem('bio_z3_min', z3MinPct);
     localStorage.setItem('bio_z3_max', z3MaxPct);
 
-    initCardioZones(); // Instantly refresh labels and pills
+    initCardioZones(); 
     alert("Cardio Zone targets securely mapped and saved.");
 }
 
@@ -230,6 +232,7 @@ function finalizeSet() {
     const hud = document.getElementById('hud-in-flow');
     const item = document.createElement('div');
     item.className = 'intensity-item';
+    
     const label = document.createElement('span');
     label.className = 'intensity-label';
     label.innerText = `Set ${setCounter}`;
@@ -241,8 +244,26 @@ function finalizeSet() {
     inner.className = 'bar-inner-label';
     inner.innerText = `${currentSetMax} BPM`; 
     bar.appendChild(inner);
+    
+    // NEW: Action container for the edit button
+    const actionContainer = document.createElement('div');
+    actionContainer.id = `action-container-${setCounter}`;
+    actionContainer.style.display = 'flex';
+    actionContainer.style.alignItems = 'center';
+    
+    const editBtn = document.createElement('button');
+    editBtn.className = 'edit-set-btn';
+    editBtn.innerText = '+';
+    
+    // Bind the current set counter to the click event
+    const currentNum = setCounter;
+    editBtn.onclick = () => openSetData(currentNum, actionContainer.id);
+    
+    actionContainer.appendChild(editBtn);
+
     item.appendChild(label);
     item.appendChild(bar);
+    item.appendChild(actionContainer);
     container.insertBefore(item, hud);
 
     requestAnimationFrame(() => {
@@ -255,6 +276,43 @@ function finalizeSet() {
     currentSetMax = 0;
     liftState = 'READY';
     processBioState();
+}
+
+// --- NEW DATA LOGGING FUNCTIONS ---
+function openSetData(setNum, containerId) {
+    document.getElementById('log-set-num').innerText = setNum;
+    document.getElementById('log-weight').value = '';
+    document.getElementById('log-reps').value = '';
+    editingActionContainerId = containerId;
+    document.getElementById('set-data-modal').style.display = 'block';
+    
+    // Auto-focus the first input field for speed
+    setTimeout(() => { document.getElementById('log-weight').focus(); }, 100);
+}
+
+function closeSetData() {
+    document.getElementById('set-data-modal').style.display = 'none';
+    editingActionContainerId = null;
+}
+
+function saveSetData() {
+    const weight = document.getElementById('log-weight').value;
+    const reps = document.getElementById('log-reps').value;
+    
+    if(!weight || !reps) {
+        alert('Please enter both weight and reps.');
+        return;
+    }
+
+    if(editingActionContainerId) {
+        const container = document.getElementById(editingActionContainerId);
+        if(container) {
+            // Replace the '+' button with the data pill
+            container.innerHTML = `<span class="set-data-pill">${weight}lbs × ${reps}</span>`;
+        }
+    }
+    
+    closeSetData();
 }
 
 function clearIntensityBars() {
