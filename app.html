@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BioStack Elite v10.60 STABLE</title>
+    <title>BioStack Elite v10.65 STABLE</title>
     <style>
         :root { --glow-blue: #00f2ff; --bg-dark: #05070a; --glass: rgba(15, 20, 30, 0.95); --border: #30363d; }
         body { margin: 0; background: var(--bg-dark); color: white; font-family: -apple-system, system-ui, sans-serif; overflow: hidden; height: 100vh; }
@@ -38,23 +38,24 @@
 
         #stage-area { position: fixed; top: 120px; right: 0; width: 75vw; height: 65vh; display: flex; align-items: center; justify-content: flex-end; z-index: 10; }
         
-        #set-bar-sidebar { width: 240px; height: 450px; display: flex; flex-direction: column; gap: 12px; margin-right: 15px; padding: 10px; justify-content: flex-start; align-items: flex-start; border-right: none; }
-        #active-ex-context { font-size: 0.65rem; color: var(--glow-blue); text-transform: uppercase; border-bottom: 1px solid rgba(0,242,255,0.2); width: 100%; text-align: left; padding-bottom: 8px; margin-bottom: 5px; font-weight: 700; display: none; }
+        /* FIXED: Added margin-top to clear left HUD on narrow screens */
+        #set-bar-sidebar { width: 50vw; min-width: 200px; height: 100%; max-height: 480px; display: flex; flex-direction: column; margin-right: 15px; padding: 10px; justify-content: flex-start; align-items: flex-start; border-right: none; margin-top: 55px; }
+        #active-ex-context { font-size: 0.65rem; color: var(--glow-blue); text-transform: uppercase; border-bottom: 1px solid rgba(0,242,255,0.2); width: 100%; text-align: left; padding-bottom: 8px; margin-bottom: 10px; font-weight: 700; display: none; }
         
-        /* UPDATED: Modified flex layout to accommodate the new edit button/pill */
+        /* NEW: Scrollable container specifically for the sets */
+        #sets-list { flex-grow: 1; overflow-y: auto; width: 100%; display: flex; flex-direction: column; gap: 12px; margin-bottom: 10px; padding-right: 5px; }
+        
         .intensity-item { width: 100%; display: flex; align-items: center; justify-content: flex-start; gap: 8px; }
         .intensity-label { font-size: 0.7rem; color: #fff; font-weight: 600; flex-shrink: 0; width: 40px; }
         .set-bar { height: 18px; background: var(--glow-blue); border-radius: 4px; transition: width 1s cubic-bezier(0.1, 0.7, 1.0, 0.1); width: 0px; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); }
         .bar-inner-label { font-size: 0.65rem; color: #000; font-weight: 900; opacity: 0; transition: opacity 0.3s ease 0.8s; }
         .set-bar.revealed .bar-inner-label { opacity: 1; }
 
-        /* NEW: Styles for the set editing UI */
         .edit-set-btn { background: transparent; border: 1px solid var(--glow-blue); color: var(--glow-blue); border-radius: 6px; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; font-weight: 900; cursor: pointer; flex-shrink: 0; transition: all 0.2s ease; padding: 0; margin: 0; line-height: 1; }
         .edit-set-btn:hover { background: var(--glow-blue); color: #000; }
-        .set-data-pill { font-size: 0.65rem; color: #fff; background: rgba(255,255,255,0.05); padding: 4px 8px; border-radius: 6px; white-space: nowrap; font-weight: 800; border: 1px solid var(--border); flex-shrink: 0; }
         .modal-row { display: flex; gap: 10px; width: 100%; margin-bottom: 10px; }
 
-        #hud-in-flow { width: 100%; margin-top: 15px; display: none; }
+        #hud-in-flow { width: 100%; display: none; flex-shrink: 0; }
         #rest-helper-text { display:none; font-size:0.65rem; color:#ffaa00; font-weight:800; text-transform:uppercase; margin-bottom: 8px; text-align: center; }
         .flow-btn { width: 100%; padding: 14px; border-radius: 12px; border: none; font-weight: 800; text-transform: uppercase; cursor: pointer; margin-bottom: 10px; transition: all 0.3s ease; }
         #new-ex-btn { background: transparent; border: 1px solid #444; color: #888; font-size: 0.7rem; }
@@ -72,7 +73,8 @@
         #touch-map { position: absolute; top: 0; right: 10%; width: 80%; height: 100%; z-index: 100; display: grid; grid-template-columns: repeat(3, 1fr); }
         .hit { width: 100%; height: 100%; pointer-events: auto; }
 
-        .overlay { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); width: 92%; max-width: 400px; background: var(--glass); border-radius: 35px; padding: 30px; border: 1px solid var(--border); backdrop-filter: blur(25px); display: none; text-align: center; z-index: 9500; }
+        /* FIXED: Switched overlay anchoring to top: 15% to neutralize iOS Keyboard push */
+        .overlay { position: absolute; top: 15%; left: 50%; transform: translateX(-50%); width: 92%; max-width: 400px; background: var(--glass); border-radius: 35px; padding: 30px; border: 1px solid var(--border); backdrop-filter: blur(25px); display: none; text-align: center; z-index: 9500; }
 
         #cardio-layout { display: flex; flex-direction: column; height: 100%; width: 100%; box-sizing: border-box; padding: 110px 20px 100px 20px; position: relative; }
         #cardio-stats-row { display: flex; justify-content: space-around; width: 100%; margin-bottom: 25px; text-align: center; }
@@ -121,7 +123,7 @@
 </head>
 <body>
 
-    <div id="version-tag">BIOSTACK_v10.60_STABLE</div>
+    <div id="version-tag">BIOSTACK_v10.65_STABLE</div>
 
     <div id="login-screen">
         <img src="assets/biostack_v3_logo.png" style="width: 140px; margin-bottom: 30px; filter: drop-shadow(0 0 15px rgba(0,242,255,0.3));">
@@ -150,6 +152,7 @@
             <div id="stage-area">
                 <div id="set-bar-sidebar">
                     <div id="active-ex-context"></div>
+                    <div id="sets-list"></div>
                     <div id="hud-in-flow">
                         <div id="rest-helper-text">WAIT UNTIL MUSCLES ARE PRIMED</div>
                         <button id="set-main-btn" class="flow-btn">START SET</button>
@@ -251,6 +254,6 @@
         </nav>
 
     </div>
-    <script src="js/biostack.js?v=60"></script>
+    <script src="js/biostack.js?v=65"></script>
 </body>
 </html>
