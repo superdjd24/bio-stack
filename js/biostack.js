@@ -1,6 +1,6 @@
 /**
- * BIOSTACK ELITE ENGINE v10.90 STABLE
- * Engine Hotfixes: Heuristic Muscle-Bound Particle Emitters, Z-Index Overlay, Fluid Velocity
+ * BIOSTACK ELITE ENGINE v10.95 STABLE
+ * Engine Hotfixes: Viewport-Bound Canvas Scaling & Direct Matrix Math
  */
 
 let bpm = 0; 
@@ -485,10 +485,10 @@ function animateCardioParticles() {
     if (!document.getElementById('view-cardio').classList.contains('view-active')) return;
     if (!ctxP) return;
 
-    const parent = canvasP.parentElement;
-    if (canvasP.width !== parent.clientWidth || canvasP.height !== parent.clientHeight) {
-        canvasP.width = parent.clientWidth;
-        canvasP.height = parent.clientHeight;
+    // FIXED: Lock directly to viewport size to prevent zero-height collapse
+    if (canvasP.width !== window.innerWidth || canvasP.height !== window.innerHeight) {
+        canvasP.width = window.innerWidth;
+        canvasP.height = window.innerHeight;
     }
     if (canvasP.width === 0) return; 
 
@@ -541,10 +541,10 @@ function animateLiftParticles() {
         return;
     }
 
-    const parent = canvasL.parentElement;
-    if (canvasL.width !== parent.clientWidth || canvasL.height !== parent.clientHeight) {
-        canvasL.width = parent.clientWidth;
-        canvasL.height = parent.clientHeight;
+    // FIXED: Lock directly to viewport size to prevent zero-height collapse
+    if (canvasL.width !== window.innerWidth || canvasL.height !== window.innerHeight) {
+        canvasL.width = window.innerWidth;
+        canvasL.height = window.innerHeight;
     }
     if (canvasL.width === 0) return; 
 
@@ -554,7 +554,7 @@ function animateLiftParticles() {
     if (liftState === 'LIFTING' || liftState === 'RESTING') spawnState = 'BURN';
     else if (liftState === 'READY' && bpm > readyTriggerBpm) spawnState = 'REPAIR';
 
-    // Heuristic bounds mapping: (Top %, Height %)
+    // Heuristic bounds mapping
     const muscleBounds = {
         'trapezoids': { t: 0.15, h: 0.08 }, 'deltoids': { t: 0.18, h: 0.10 },
         'pectorals': { t: 0.21, h: 0.08 }, 'biceps': { t: 0.22, h: 0.12 },
@@ -567,15 +567,15 @@ function animateLiftParticles() {
     let spawnArea = { top: canvasL.height * 0.25, height: canvasL.height * 0.4, left: canvasL.width * 0.6, width: canvasL.width * 0.2 };
     const activeOverlay = Array.from(document.querySelectorAll('.muscle-overlay')).find(img => parseFloat(img.style.opacity) > 0);
 
+    // Map DOM coordinates directly to viewport pixel coordinates
     if (activeOverlay) {
         const imgRect = activeOverlay.getBoundingClientRect();
-        const canvasRect = canvasL.getBoundingClientRect();
         const id = activeOverlay.id.replace('overlay-', '');
         const bounds = muscleBounds[id] || { t: 0.2, h: 0.4 };
 
-        spawnArea.top = (imgRect.top - canvasRect.top) + (imgRect.height * bounds.t);
+        spawnArea.top = imgRect.top + (imgRect.height * bounds.t);
         spawnArea.height = imgRect.height * bounds.h;
-        spawnArea.left = (imgRect.left - canvasRect.left) + (imgRect.width * 0.3); 
+        spawnArea.left = imgRect.left + (imgRect.width * 0.3); 
         spawnArea.width = imgRect.width * 0.4;
     }
 
