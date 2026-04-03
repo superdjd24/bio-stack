@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BioStack Elite v10.55 STABLE</title>
+    <title>BioStack Elite v10.60 STABLE</title>
     <style>
         :root { --glow-blue: #00f2ff; --bg-dark: #05070a; --glass: rgba(15, 20, 30, 0.95); --border: #30363d; }
         body { margin: 0; background: var(--bg-dark); color: white; font-family: -apple-system, system-ui, sans-serif; overflow: hidden; height: 100vh; }
@@ -38,13 +38,21 @@
 
         #stage-area { position: fixed; top: 120px; right: 0; width: 75vw; height: 65vh; display: flex; align-items: center; justify-content: flex-end; z-index: 10; }
         
-        #set-bar-sidebar { width: 200px; height: 450px; display: flex; flex-direction: column; gap: 12px; margin-right: 15px; padding: 10px; justify-content: flex-start; align-items: flex-start; border-right: none; }
+        #set-bar-sidebar { width: 240px; height: 450px; display: flex; flex-direction: column; gap: 12px; margin-right: 15px; padding: 10px; justify-content: flex-start; align-items: flex-start; border-right: none; }
         #active-ex-context { font-size: 0.65rem; color: var(--glow-blue); text-transform: uppercase; border-bottom: 1px solid rgba(0,242,255,0.2); width: 100%; text-align: left; padding-bottom: 8px; margin-bottom: 5px; font-weight: 700; display: none; }
-        .intensity-item { width: 100%; display: flex; align-items: center; gap: 10px; justify-content: flex-start; }
-        .intensity-label { font-size: 0.7rem; color: #fff; font-weight: 600; flex-shrink: 0; width: 45px; }
+        
+        /* UPDATED: Modified flex layout to accommodate the new edit button/pill */
+        .intensity-item { width: 100%; display: flex; align-items: center; justify-content: flex-start; gap: 8px; }
+        .intensity-label { font-size: 0.7rem; color: #fff; font-weight: 600; flex-shrink: 0; width: 40px; }
         .set-bar { height: 18px; background: var(--glow-blue); border-radius: 4px; transition: width 1s cubic-bezier(0.1, 0.7, 1.0, 0.1); width: 0px; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); }
         .bar-inner-label { font-size: 0.65rem; color: #000; font-weight: 900; opacity: 0; transition: opacity 0.3s ease 0.8s; }
         .set-bar.revealed .bar-inner-label { opacity: 1; }
+
+        /* NEW: Styles for the set editing UI */
+        .edit-set-btn { background: transparent; border: 1px solid var(--glow-blue); color: var(--glow-blue); border-radius: 6px; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; font-weight: 900; cursor: pointer; flex-shrink: 0; transition: all 0.2s ease; padding: 0; margin: 0; line-height: 1; }
+        .edit-set-btn:hover { background: var(--glow-blue); color: #000; }
+        .set-data-pill { font-size: 0.65rem; color: #fff; background: rgba(255,255,255,0.05); padding: 4px 8px; border-radius: 6px; white-space: nowrap; font-weight: 800; border: 1px solid var(--border); flex-shrink: 0; }
+        .modal-row { display: flex; gap: 10px; width: 100%; margin-bottom: 10px; }
 
         #hud-in-flow { width: 100%; margin-top: 15px; display: none; }
         #rest-helper-text { display:none; font-size:0.65rem; color:#ffaa00; font-weight:800; text-transform:uppercase; margin-bottom: 8px; text-align: center; }
@@ -78,7 +86,6 @@
         .zone-card { background-color: transparent; padding: 20px 15px; display: flex; flex-direction: column; align-items: flex-start; gap: 12px; transition: all 0.3s ease; opacity: 0.35; filter: grayscale(100%); position: relative; background-size: 100% 100%; background-position: center; background-repeat: no-repeat; border: none; overflow: hidden; }
         .zone-card.active-zone { opacity: 1; filter: grayscale(0%); transform: scale(1.05); z-index: 10; }
         
-        /* FIXED: Rogue opacity rule removed for unified visual hierarchy */
         #zone-3 { --zone-color: #ff3333; background-image: url('assets/endurance_shell.png'); }
         #zone-2 { --zone-color: #ffcc00; background-image: url('assets/weight_loss_shell.png'); }
         #zone-1 { --zone-color: #33cc33; background-image: url('assets/fat_loss_shell.png'); }
@@ -114,7 +121,7 @@
 </head>
 <body>
 
-    <div id="version-tag">BIOSTACK_v10.55_STABLE</div>
+    <div id="version-tag">BIOSTACK_v10.60_STABLE</div>
 
     <div id="login-screen">
         <img src="assets/biostack_v3_logo.png" style="width: 140px; margin-bottom: 30px; filter: drop-shadow(0 0 15px rgba(0,242,255,0.3));">
@@ -175,6 +182,16 @@
                 <button onclick="startTraining()" style="width:100%; padding:18px; border-radius:50px; background:var(--glow-blue); color:#000; font-weight:800; border:none; cursor:pointer;">START SETS</button>
                 <p onclick="closeAction()" style="margin-top:15px; font-size:0.8rem; opacity:0.5; cursor:pointer;">CANCEL</p>
             </div>
+
+            <div id="set-data-modal" class="overlay" style="z-index: 9600;">
+                <h2 style="margin-top:0; margin-bottom:20px; color:var(--glow-blue); font-size: 1.1rem; text-transform: uppercase;">LOG SET <span id="log-set-num"></span></h2>
+                <div class="modal-row">
+                    <input type="number" id="log-weight" placeholder="Weight (lbs)">
+                    <input type="number" id="log-reps" placeholder="Reps">
+                </div>
+                <button class="flow-btn" style="background:var(--glow-blue); color:#000;" onclick="saveSetData()">SAVE SET</button>
+                <p onclick="closeSetData()" style="margin-top:15px; font-size:0.8rem; opacity:0.5; cursor:pointer;">CANCEL</p>
+            </div>
         </div>
 
         <div id="view-cardio" class="app-view view-active">
@@ -234,6 +251,6 @@
         </nav>
 
     </div>
-    <script src="js/biostack.js?v=57"></script>
+    <script src="js/biostack.js?v=60"></script>
 </body>
 </html>
