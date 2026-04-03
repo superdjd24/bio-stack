@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BioStack Elite v10.53 STABLE</title>
+    <title>BioStack Elite v10.55 STABLE</title>
     <style>
         :root { --glow-blue: #00f2ff; --bg-dark: #05070a; --glass: rgba(15, 20, 30, 0.95); --border: #30363d; }
         body { margin: 0; background: var(--bg-dark); color: white; font-family: -apple-system, system-ui, sans-serif; overflow: hidden; height: 100vh; }
@@ -77,8 +77,9 @@
         
         .zone-card { background-color: transparent; padding: 20px 15px; display: flex; flex-direction: column; align-items: flex-start; gap: 12px; transition: all 0.3s ease; opacity: 0.35; filter: grayscale(100%); position: relative; background-size: 100% 100%; background-position: center; background-repeat: no-repeat; border: none; overflow: hidden; }
         .zone-card.active-zone { opacity: 1; filter: grayscale(0%); transform: scale(1.05); z-index: 10; }
+        
+        /* FIXED: Rogue opacity rule removed for unified visual hierarchy */
         #zone-3 { --zone-color: #ff3333; background-image: url('assets/endurance_shell.png'); }
-        #zone-3:not(.active-zone) { opacity: 0.22; } 
         #zone-2 { --zone-color: #ffcc00; background-image: url('assets/weight_loss_shell.png'); }
         #zone-1 { --zone-color: #33cc33; background-image: url('assets/fat_loss_shell.png'); }
 
@@ -88,7 +89,7 @@
         .zone-title { font-weight: 800; font-size: 0.95rem; letter-spacing: 0.5px; text-transform: uppercase; color: #fff; margin: 0; line-height: 1; white-space: nowrap; }
         .zone-pill { border: 1px solid var(--zone-color); border-radius: 50px; padding: 5px 14px; font-size: 0.85rem; font-weight: 700; color: #fff; margin-left: 24px; white-space: nowrap; }
 
-        #settings-scroll-area { height: 100%; overflow-y: auto; padding: 110px 30px 120px 30px; box-sizing: border-box; }
+        #settings-scroll-area { height: 100vh; overflow-y: auto; padding: 110px 30px 120px 30px; box-sizing: border-box; }
         .settings-card { background:var(--glass); padding:25px; border-radius:20px; border:1px solid var(--border); margin-bottom: 20px; }
         .settings-row { display:flex; justify-content:space-between; margin-bottom:15px; align-items: center; }
         .settings-label { font-weight:700; font-size:0.9rem; }
@@ -113,7 +114,7 @@
 </head>
 <body>
 
-    <div id="version-tag">BIOSTACK_v10.53_STABLE</div>
+    <div id="version-tag">BIOSTACK_v10.55_STABLE</div>
 
     <div id="login-screen">
         <img src="assets/biostack_v3_logo.png" style="width: 140px; margin-bottom: 30px; filter: drop-shadow(0 0 15px rgba(0,242,255,0.3));">
@@ -233,6 +234,6 @@
         </nav>
 
     </div>
-    <script src="js/biostack.js?v=55"></script>
+    <script src="js/biostack.js?v=57"></script>
 </body>
 </html>
