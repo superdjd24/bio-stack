@@ -1,6 +1,6 @@
 /**
- * BIOSTACK ELITE ENGINE v10.65 STABLE
- * Field Test Hotfixes: UI Overlap, Auto-Scroll Lists, Checkmark Pills
+ * BIOSTACK ELITE ENGINE v10.70 STABLE
+ * Added: Clickable Checkmarks, Dynamic Lift Context Updates, Lift Particle Engine
  */
 
 let bpm = 0; 
@@ -9,8 +9,8 @@ let isTrain = false;
 let activeExercise = null;
 let setCounter = 0;
 
-// BIO-LOGIC VARIABLES
-let readyTriggerBpm = parseInt(localStorage.getItem('bio_ready_trigger')) || 100;
+// BIO-LOGIC VARIABLES (Defaulted safely to 110 to mirror UI)
+let readyTriggerBpm = parseInt(localStorage.getItem('bio_ready_trigger')) || 110;
 let liftState = 'IDLE'; 
 let currentSetMax = 0;
 const DROP_THRESHOLD = 6;
@@ -52,6 +52,12 @@ function updateTriggerSetting(val) {
     readyTriggerBpm = parseInt(val);
     document.getElementById('trigger-val-display').innerText = readyTriggerBpm + ' BPM';
     localStorage.setItem('bio_ready_trigger', readyTriggerBpm);
+    
+    // Live update the Lift Context text if it's active
+    const contextBox = document.getElementById('active-ex-context');
+    if (contextBox) {
+        contextBox.innerText = `Recovery Trigger: ${readyTriggerBpm} BPM`;
+    }
 }
 
 function saveZoneSettings() {
@@ -228,7 +234,6 @@ function finalizeSet() {
     
     const barPx = Math.min(100, (currentSetMax / 190) * 100) + "%"; 
 
-    // FIXED: Appending sets specifically to the new scrollable list
     const container = document.getElementById('sets-list');
     const item = document.createElement('div');
     item.className = 'intensity-item';
@@ -263,13 +268,9 @@ function finalizeSet() {
     item.appendChild(bar);
     item.appendChild(actionContainer);
     
-    // Inject the set into the scrollable list
     container.appendChild(item);
 
-    // Auto-scroll the list to the bottom so the newest set is always visible
-    setTimeout(() => {
-        container.scrollTop = container.scrollHeight;
-    }, 50);
+    setTimeout(() => { container.scrollTop = container.scrollHeight; }, 50);
 
     requestAnimationFrame(() => {
         setTimeout(() => {
@@ -301,6 +302,7 @@ function closeSetData() {
 function saveSetData() {
     const weight = document.getElementById('log-weight').value;
     const reps = document.getElementById('log-reps').value;
+    const setNum = document.getElementById('log-set-num').innerText;
     
     if(!weight || !reps) {
         alert('Please enter both weight and reps.');
@@ -310,8 +312,8 @@ function saveSetData() {
     if(editingActionContainerId) {
         const container = document.getElementById(editingActionContainerId);
         if(container) {
-            // FIXED: Swap the verbose data pill out for the clean checkmark icon
-            container.innerHTML = `<button class="edit-set-btn" style="background:var(--glow-blue); color:#000; border: none; cursor: default;">✓</button>`;
+            // FIXED: The checkmark is now fully interactive and retains the edit payload
+            container.innerHTML = `<button class="edit-set-btn" style="background:var(--glow-blue); color:#000; border: none; font-size: 0.9rem;" onclick="openSetData('${setNum}', '${editingActionContainerId}')">✓</button>`;
         }
     }
     
@@ -319,7 +321,6 @@ function saveSetData() {
 }
 
 function clearIntensityBars() {
-    // Clear out the scrollable list container
     const list = document.getElementById('sets-list');
     if (list) list.innerHTML = '';
 }
@@ -470,18 +471,23 @@ function switchAppTab(tabId, btnElement) {
     if (tabId === 'cardio') initCardioZones();
 }
 
-// --- PARTICLE PHYSICS ENGINE ---
+// --- PARTICLE PHYSICS ENGINES (CARDIO + LIFT) ---
+
 const canvasP = document.getElementById('cardio-particles');
 let ctxP = canvasP ? canvasP.getContext('2d') : null;
 let particles = [];
 
-function initCardioParticles() {
-    if (!canvasP) return;
-    requestAnimationFrame(animateParticles);
+const canvasL = document.getElementById('lift-particles');
+let ctxL = canvasL ? canvasL.getContext('2d') : null;
+let liftParticles = [];
+
+function initPhysicsEngines() {
+    if (canvasP) requestAnimationFrame(animateCardioParticles);
+    if (canvasL) requestAnimationFrame(animateLiftParticles);
 }
 
-function animateParticles() {
-    requestAnimationFrame(animateParticles);
+function animateCardioParticles() {
+    requestAnimationFrame(animateCardioParticles);
     
     if (!document.getElementById('view-cardio').classList.contains('view-active')) return;
     if (!ctxP) return;
@@ -491,14 +497,12 @@ function animateParticles() {
         canvasP.width = parent.clientWidth;
         canvasP.height = parent.clientHeight;
     }
-    
     if (canvasP.width === 0) return; 
 
     ctxP.clearRect(0, 0, canvasP.width, canvasP.height);
 
     const age = parseInt(localStorage.getItem('bio_age')) || 30;
     const maxHr = 220 - age;
-    
     let intensity = 0;
     const z1BpmThreshold = maxHr * z1MinPct; 
     
@@ -531,9 +535,73 @@ function animateParticles() {
         ctxP.fillStyle = p.color;
         ctxP.beginPath(); ctxP.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctxP.fill();
     }
-    
     ctxP.globalAlpha = 1.0;
     ctxP.globalCompositeOperation = 'source-over';
 }
 
-initCardioParticles();
+function animateLiftParticles() {
+    requestAnimationFrame(animateLiftParticles);
+    
+    if (!document.getElementById('view-weights').classList.contains('view-active')) return;
+    if (!ctxL || !isTrain) {
+        if (ctxL) ctxL.clearRect(0, 0, canvasL.width, canvasL.height);
+        return;
+    }
+
+    const parent = canvasL.parentElement;
+    if (canvasL.width !== parent.clientWidth || canvasL.height !== parent.clientHeight) {
+        canvasL.width = parent.clientWidth;
+        canvasL.height = parent.clientHeight;
+    }
+    if (canvasL.width === 0) return; 
+
+    ctxL.clearRect(0, 0, canvasL.width, canvasL.height);
+
+    // Determine the state logic for particle emission
+    let spawnState = 'NONE';
+    if (liftState === 'LIFTING' || liftState === 'RESTING') spawnState = 'BURN';
+    else if (liftState === 'READY' && bpm > readyTriggerBpm) spawnState = 'REPAIR';
+
+    if (spawnState !== 'NONE') {
+        let spawnRate = (spawnState === 'BURN') ? 3 : 2; 
+        for (let i = 0; i < spawnRate; i++) {
+            if (Math.random() > 0.4) { 
+                let isBurn = (spawnState === 'BURN');
+                
+                // Burn: Spawns from the body (center-right) and ejects left
+                // Repair: Spawns from the void (far left) and pulls right into the body
+                let startX = isBurn ? canvasL.width * 0.6 : canvasL.width * 0.1;
+                let startY = canvasL.height * 0.25 + Math.random() * (canvasL.height * 0.4);
+                let velX = isBurn ? -(1 + Math.random() * 2) : (1 + Math.random() * 2);
+                let particleColor = isBurn ? getEliteColor(bpm) : '#ffffff';
+
+                liftParticles.push({
+                    x: startX + (Math.random() * 20 - 10), 
+                    y: startY, 
+                    vx: velX, 
+                    vy: (Math.random() - 0.5) * 1.5, 
+                    life: 100 + Math.random() * 50,
+                    maxLife: 150,
+                    size: 1.0 + Math.random() * 2.0, 
+                    color: particleColor
+                });
+            }
+        }
+    }
+
+    ctxL.globalCompositeOperation = 'screen';
+
+    for (let i = liftParticles.length - 1; i >= 0; i--) {
+        let p = liftParticles[i];
+        p.x += p.vx; p.y += p.vy; p.life--;
+        if (p.life <= 0 || p.x < 0 || p.x > canvasL.width) { liftParticles.splice(i, 1); continue; }
+        
+        ctxL.globalAlpha = Math.max(0, p.life / p.maxLife) * 0.6;
+        ctxL.fillStyle = p.color;
+        ctxL.beginPath(); ctxL.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctxL.fill();
+    }
+    ctxL.globalAlpha = 1.0;
+    ctxL.globalCompositeOperation = 'source-over';
+}
+
+initPhysicsEngines();
