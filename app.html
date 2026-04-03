@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BioStack Elite v10.65 STABLE</title>
+    <title>BioStack Elite v10.70 STABLE</title>
     <style>
         :root { --glow-blue: #00f2ff; --bg-dark: #05070a; --glass: rgba(15, 20, 30, 0.95); --border: #30363d; }
         body { margin: 0; background: var(--bg-dark); color: white; font-family: -apple-system, system-ui, sans-serif; overflow: hidden; height: 100vh; }
@@ -38,11 +38,9 @@
 
         #stage-area { position: fixed; top: 120px; right: 0; width: 75vw; height: 65vh; display: flex; align-items: center; justify-content: flex-end; z-index: 10; }
         
-        /* FIXED: Added margin-top to clear left HUD on narrow screens */
         #set-bar-sidebar { width: 50vw; min-width: 200px; height: 100%; max-height: 480px; display: flex; flex-direction: column; margin-right: 15px; padding: 10px; justify-content: flex-start; align-items: flex-start; border-right: none; margin-top: 55px; }
-        #active-ex-context { font-size: 0.65rem; color: var(--glow-blue); text-transform: uppercase; border-bottom: 1px solid rgba(0,242,255,0.2); width: 100%; text-align: left; padding-bottom: 8px; margin-bottom: 10px; font-weight: 700; display: none; }
+        #active-ex-context { font-size: 0.65rem; color: var(--glow-blue); text-transform: uppercase; border-bottom: 1px solid rgba(0,242,255,0.2); width: 100%; text-align: left; padding-bottom: 8px; margin-bottom: 10px; font-weight: 700; display: none; transition: color 0.3s ease; }
         
-        /* NEW: Scrollable container specifically for the sets */
         #sets-list { flex-grow: 1; overflow-y: auto; width: 100%; display: flex; flex-direction: column; gap: 12px; margin-bottom: 10px; padding-right: 5px; }
         
         .intensity-item { width: 100%; display: flex; align-items: center; justify-content: flex-start; gap: 8px; }
@@ -73,7 +71,6 @@
         #touch-map { position: absolute; top: 0; right: 10%; width: 80%; height: 100%; z-index: 100; display: grid; grid-template-columns: repeat(3, 1fr); }
         .hit { width: 100%; height: 100%; pointer-events: auto; }
 
-        /* FIXED: Switched overlay anchoring to top: 15% to neutralize iOS Keyboard push */
         .overlay { position: absolute; top: 15%; left: 50%; transform: translateX(-50%); width: 92%; max-width: 400px; background: var(--glass); border-radius: 35px; padding: 30px; border: 1px solid var(--border); backdrop-filter: blur(25px); display: none; text-align: center; z-index: 9500; }
 
         #cardio-layout { display: flex; flex-direction: column; height: 100%; width: 100%; box-sizing: border-box; padding: 110px 20px 100px 20px; position: relative; }
@@ -123,7 +120,7 @@
 </head>
 <body>
 
-    <div id="version-tag">BIOSTACK_v10.65_STABLE</div>
+    <div id="version-tag">BIOSTACK_v10.70_STABLE</div>
 
     <div id="login-screen">
         <img src="assets/biostack_v3_logo.png" style="width: 140px; margin-bottom: 30px; filter: drop-shadow(0 0 15px rgba(0,242,255,0.3));">
@@ -176,6 +173,7 @@
                     <img src="assets/glutes.png" id="overlay-glutes" class="muscle-overlay stack-layer">
                     <img src="assets/hamstrings.png" id="overlay-hamstrings" class="muscle-overlay stack-layer">
                     <img src="assets/calves.png" id="overlay-calves" class="muscle-overlay stack-layer">
+                    <canvas id="lift-particles" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 30; pointer-events: none;"></canvas>
                     <div id="touch-map"></div>
                 </div>
             </div>
@@ -227,10 +225,10 @@
                 <div class="settings-card">
                     <div class="settings-row">
                         <span class="settings-label">SET READY TRIGGER</span>
-                        <span id="trigger-val-display" class="settings-val">100 BPM</span>
+                        <span id="trigger-val-display" class="settings-val">110 BPM</span>
                     </div>
                     <p class="settings-desc">Target heart rate threshold for automatic rest timers. When your BPM drops below this number, the system will instantly log your set and mark you as recovered.</p>
-                    <input type="range" id="trigger-slider" min="80" max="140" value="100" style="width:100%;" oninput="updateTriggerSetting(this.value)">
+                    <input type="range" id="trigger-slider" min="80" max="140" value="110" style="width:100%;" oninput="updateTriggerSetting(this.value)">
                 </div>
 
                 <div class="settings-card">
@@ -254,6 +252,6 @@
         </nav>
 
     </div>
-    <script src="js/biostack.js?v=65"></script>
+    <script src="js/biostack.js?v=70"></script>
 </body>
 </html>
