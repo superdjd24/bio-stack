@@ -1,21 +1,25 @@
 /**
- * BIOSTACK ELITE ENGINE v10.95 STABLE
- * Engine Hotfixes: Viewport-Bound Canvas Scaling & Direct Matrix Math
+ * BIOSTACK ELITE ENGINE v11.50 STABLE
+ * Major Update: Dynamic Effort Scaling, Top 10 Muscle DB, Native Local Logbook
  */
 
 let bpm = 0; 
 let currentView = "front";
 let isTrain = false;
 let activeExercise = null;
+let currentTargetMuscle = null;
 let setCounter = 0;
+
+let currentSessionSets = []; // State array for dynamic scaling
 
 let readyTriggerBpm = parseInt(localStorage.getItem('bio_ready_trigger')) || 110;
 let liftState = 'IDLE'; 
 let currentSetMax = 0;
 const DROP_THRESHOLD = 6;
 
-let editingActionContainerId = null;
+let editingSetId = null;
 
+// Cardio Zones
 let z1MinPct = parseFloat(localStorage.getItem('bio_z1_min')) || 0.60;
 let z1MaxPct = parseFloat(localStorage.getItem('bio_z1_max')) || 0.70;
 let z2MinPct = parseFloat(localStorage.getItem('bio_z2_min')) || 0.70;
@@ -27,13 +31,25 @@ let hrHistory = [];
 let totalCalories = 0;
 let lastTimestamp = null;
 
+// Time in Zone tracking (seconds)
+let z1Time = parseInt(localStorage.getItem('bio_z1_time')) || 0;
+let z2Time = parseInt(localStorage.getItem('bio_z2_time')) || 0;
+let z3Time = parseInt(localStorage.getItem('bio_z3_time')) || 0;
+
+// The Top 10 Elite Arsenal
 const DB = {
-    'Trapezoids': ['Dumbbell Shrugs', 'Barbell Shrugs'], 'Deltoids': ['Lateral Raises', 'Military Press'],
-    'Pectorals': ['Bench Press', 'Incline Press'], 'Biceps': ['Barbell Curls', 'Hammer Curls'],
-    'Triceps': ['Pushdowns', 'Dips'], 'Forearms': ['Wrist Curls'],
-    'Abdominals': ['Leg Raises', 'Crunches'], 'Quads': ['Squats', 'Leg Press'],
-    'Lats': ['Lat Pulldowns', 'Bent Over Rows'], 'Glutes': ['Hip Thrusts'],
-    'Hamstrings': ['Deadlifts'], 'Calves': ['Calf Raises']
+    'Trapezoids': ['Dumbbell Shrugs', 'Barbell Shrugs', 'Upright Rows', 'Farmer\'s Walk', 'Cable Shrugs', 'Trap Bar Shrugs', 'Smith Machine Shrugs', 'Snatch Grip High Pull', 'Overhead Shrugs', 'Kettlebell Shrugs'],
+    'Deltoids': ['Lateral Raises', 'Military Press', 'Front Raises', 'Reverse Pec Deck', 'Arnold Press', 'Face Pulls', 'Cable Lateral Raises', 'Seated Dumbbell Press', 'Machine Shoulder Press', 'Upright Rows'],
+    'Pectorals': ['Bench Press', 'Incline Press', 'Decline Press', 'Dumbbell Flyes', 'Cable Crossovers', 'Pec Deck Machine', 'Push-ups', 'Dips (Chest Focus)', 'Machine Chest Press', 'Pullovers'],
+    'Biceps': ['Barbell Curls', 'Hammer Curls', 'Preacher Curls', 'Concentration Curls', 'Cable Curls', 'Incline Dumbbell Curls', 'Spider Curls', 'EZ Bar Curls', 'Reverse Curls', 'Zottman Curls'],
+    'Triceps': ['Pushdowns', 'Dips', 'Skullcrushers', 'Overhead Extension', 'Close-Grip Bench', 'Kickbacks', 'Rope Pushdowns', 'Machine Extension', 'JM Press', 'Tate Press'],
+    'Forearms': ['Wrist Curls', 'Reverse Wrist Curls', 'Farmer\'s Walk', 'Plate Pinches', 'Wrist Rollers', 'Reverse Curls', 'Hammer Curls', 'Dead Hangs', 'Gripper Squeezes', 'Towel Rollups'],
+    'Abdominals': ['Leg Raises', 'Crunches', 'Planks', 'Russian Twists', 'Cable Crunches', 'Ab Wheel Rollouts', 'Hanging Knee Raises', 'V-Ups', 'Bicycle Twists', 'Decline Crunches'],
+    'Quads': ['Squats', 'Leg Press', 'Hack Squats', 'Front Squats', 'Lunges', 'Bulgarian Split Squats', 'Leg Extensions', 'Goblet Squats', 'Sissy Squats', 'Step-ups'],
+    'Lats': ['Lat Pulldowns', 'Bent Over Rows', 'Pull-ups', 'T-Bar Rows', 'Seated Cable Rows', 'Single-Arm DB Rows', 'Straight-Arm Pulldowns', 'Meadows Rows', 'Machine Rows', 'Pendlay Rows'],
+    'Glutes': ['Hip Thrusts', 'Glute Bridges', 'Romanian Deadlifts', 'Cable Pull-Throughs', 'Kickbacks', 'Bulgarian Split Squats', 'Walking Lunges', 'Reverse Hypers', 'Step-ups', 'Sumo Deadlifts'],
+    'Hamstrings': ['Deadlifts', 'Romanian Deadlifts', 'Lying Leg Curls', 'Seated Leg Curls', 'Glute-Ham Raises', 'Good Mornings', 'Stiff-Legged Deadlifts', 'Nordic Curls', 'Kettlebell Swings', 'Swiss Ball Curls'],
+    'Calves': ['Standing Calf Raises', 'Seated Calf Raises', 'Donkey Calf Raises', 'Leg Press Calf Raises', 'Single-Leg Calf Raises', 'Jump Rope', 'Tibialis Raises', 'Box Jumps', 'Sled Pushes', 'Toe Walks']
 };
 
 function getEliteColor(val) {
@@ -49,11 +65,8 @@ function updateTriggerSetting(val) {
     readyTriggerBpm = parseInt(val);
     document.getElementById('trigger-val-display').innerText = readyTriggerBpm + ' BPM';
     localStorage.setItem('bio_ready_trigger', readyTriggerBpm);
-    
     const contextBox = document.getElementById('active-ex-context');
-    if (contextBox) {
-        contextBox.innerText = `Recovery Trigger: ${readyTriggerBpm} BPM`;
-    }
+    if (contextBox) contextBox.innerText = `Recovery Trigger: ${readyTriggerBpm} BPM`;
 }
 
 function saveZoneSettings() {
@@ -75,7 +88,7 @@ function saveZoneSettings() {
     localStorage.setItem('bio_z3_max', z3MaxPct);
 
     initCardioZones(); 
-    alert("Cardio Zone targets securely mapped and saved.");
+    alert("Cardio Zone targets securely mapped.");
 }
 
 async function initSystem() {
@@ -96,6 +109,7 @@ async function initSystem() {
         document.getElementById('trigger-val-display').innerText = readyTriggerBpm + ' BPM';
 
         initCardioZones();
+        renderLogbook(); 
 
         document.getElementById('login-screen').style.display = 'none';
         const dash = document.getElementById('main-dashboard');
@@ -110,7 +124,7 @@ async function initSystem() {
             hrEl.innerText = bpm;
             hrEl.style.color = getEliteColor(bpm);
             
-            calculateCals(bpm);
+            calculateTelemetry(bpm);
             
             hrHistory.push(bpm);
             if (hrHistory.length > 55) hrHistory.shift();
@@ -122,14 +136,27 @@ async function initSystem() {
     } catch (e) { alert("Link Failed: " + e.message); }
 }
 
-function calculateCals(currentBpm) {
+function calculateTelemetry(currentBpm) {
     const weight = localStorage.getItem('bio_weight') || 180;
     const age = localStorage.getItem('bio_age') || 30;
+    const maxHr = 220 - age;
     const now = Date.now();
     if (!lastTimestamp) { lastTimestamp = now; return; }
     
-    const durationHours = (now - lastTimestamp) / (1000 * 60 * 60);
+    const deltaMs = now - lastTimestamp;
+    const durationHours = deltaMs / (1000 * 60 * 60);
+    const durationSecs = deltaMs / 1000;
     lastTimestamp = now;
+    
+    // Accumulate Time in Zones
+    if (currentBpm >= maxHr * z3MinPct) z3Time += durationSecs;
+    else if (currentBpm >= maxHr * z2MinPct) z2Time += durationSecs;
+    else if (currentBpm >= maxHr * z1MinPct) z1Time += durationSecs;
+
+    // Save zone time to storage periodically
+    localStorage.setItem('bio_z1_time', Math.round(z1Time));
+    localStorage.setItem('bio_z2_time', Math.round(z2Time));
+    localStorage.setItem('bio_z3_time', Math.round(z3Time));
     
     let calPerMinute = ( (age * 0.2017) + (weight * 0.09036) + (currentBpm * 0.6309) - 55.0969 ) / 4.184;
     if (calPerMinute < 0) calPerMinute = 0;
@@ -140,10 +167,8 @@ function calculateCals(currentBpm) {
     const calVal = Math.round(totalCalories);
     document.getElementById('total-cal').innerText = calVal;
     
-    const cardioCal = document.getElementById('cardio-stat-cals');
-    const cardioFat = document.getElementById('cardio-stat-fat');
-    if(cardioCal) cardioCal.innerText = calVal;
-    if(cardioFat) cardioFat.innerText = (totalCalories / 3500).toFixed(3);
+    if(document.getElementById('cardio-stat-cals')) document.getElementById('cardio-stat-cals').innerText = calVal;
+    if(document.getElementById('cardio-stat-fat')) document.getElementById('cardio-stat-fat').innerText = (totalCalories / 3500).toFixed(3);
 }
 
 function startTraining() {
@@ -157,7 +182,8 @@ function startTraining() {
     contextBox.style.display = 'block';
     
     setCounter = 0;
-    clearIntensityBars();
+    currentSessionSets = [];
+    document.getElementById('sets-list').innerHTML = '';
     
     document.getElementById('hud-in-flow').style.display = "block";
     document.getElementById('sidebar').style.display = "none";
@@ -200,9 +226,7 @@ function processBioState() {
         btn.style.background = '#333';
         btn.style.color = '#fff';
         btn.onclick = null; 
-        
         if (bpm > currentSetMax) currentSetMax = bpm;
-        
         if (bpm <= currentSetMax - DROP_THRESHOLD && currentSetMax > readyTriggerBpm) {
             liftState = 'RESTING';
             processBioState();
@@ -216,9 +240,7 @@ function processBioState() {
         btn.onclick = null;
         helper.innerText = "WAIT UNTIL MUSCLES ARE PRIMED";
         helper.style.display = 'block';
-
         if (bpm > currentSetMax) currentSetMax = bpm; 
-        
         if (bpm <= readyTriggerBpm) {
             finalizeSet();
         }
@@ -228,91 +250,136 @@ function processBioState() {
 function finalizeSet() {
     setCounter++;
     
-    const barPx = Math.min(100, (currentSetMax / 190) * 100) + "%"; 
-
-    const container = document.getElementById('sets-list');
-    const item = document.createElement('div');
-    item.className = 'intensity-item';
-    
-    const label = document.createElement('span');
-    label.className = 'intensity-label';
-    label.innerText = `Set ${setCounter}`;
-
-    const bar = document.createElement('div');
-    bar.className = 'set-bar';
-
-    const inner = document.createElement('span');
-    inner.className = 'bar-inner-label';
-    inner.innerText = `${currentSetMax} BPM`; 
-    bar.appendChild(inner);
-    
-    const actionContainer = document.createElement('div');
-    actionContainer.id = `action-container-${setCounter}`;
-    actionContainer.style.display = 'flex';
-    actionContainer.style.alignItems = 'center';
-    
-    const editBtn = document.createElement('button');
-    editBtn.className = 'edit-set-btn';
-    editBtn.innerText = '+';
-    
-    const currentNum = setCounter;
-    editBtn.onclick = () => openSetData(currentNum, actionContainer.id);
-    
-    actionContainer.appendChild(editBtn);
-
-    item.appendChild(label);
-    item.appendChild(bar);
-    item.appendChild(actionContainer);
-    
-    container.appendChild(item);
-
-    setTimeout(() => { container.scrollTop = container.scrollHeight; }, 50);
-
-    requestAnimationFrame(() => {
-        setTimeout(() => {
-            bar.style.width = barPx;
-            bar.classList.add('revealed');
-        }, 50);
+    // Add raw set to the session array
+    currentSessionSets.push({
+        id: setCounter,
+        maxBpm: currentSetMax,
+        weight: null,
+        reps: null,
+        volume: 0
     });
+
+    renderDynamicSetList();
 
     currentSetMax = 0;
     liftState = 'READY';
     processBioState();
 }
 
-function openSetData(setNum, containerId) {
-    document.getElementById('log-set-num').innerText = setNum;
-    document.getElementById('log-weight').value = '';
-    document.getElementById('log-reps').value = '';
-    editingActionContainerId = containerId;
-    document.getElementById('set-data-modal').style.display = 'block';
+// --- NEW DYNAMIC EFFORT SCALING ENGINE ---
+function renderDynamicSetList() {
+    const container = document.getElementById('sets-list');
+    container.innerHTML = ''; // Rebuild clean for accurate CSS animations
     
+    if (currentSessionSets.length === 0) return;
+
+    let globalMaxBpm = 150; // Base floor to prevent giant jumps
+    let globalMaxVol = 1;
+
+    // Find the highest marks in the current session
+    currentSessionSets.forEach(s => {
+        if (s.maxBpm > globalMaxBpm) globalMaxBpm = s.maxBpm;
+        if (s.volume > globalMaxVol) globalMaxVol = s.volume;
+    });
+
+    currentSessionSets.forEach(set => {
+        let barPx = "0%";
+        let barLabel = "";
+        let hasData = set.volume > 0;
+
+        if (hasData) {
+            barPx = Math.min(100, (set.volume / globalMaxVol) * 100) + "%";
+            barLabel = set.volume + " EFFORT";
+        } else {
+            barPx = Math.min(100, (set.maxBpm / globalMaxBpm) * 100) + "%";
+            barLabel = set.maxBpm + " BPM";
+        }
+
+        const item = document.createElement('div');
+        item.className = 'intensity-item';
+        
+        const label = document.createElement('span');
+        label.className = 'intensity-label';
+        label.innerText = `Set ${set.id}`;
+
+        const bar = document.createElement('div');
+        bar.className = 'set-bar';
+        
+        const inner = document.createElement('span');
+        inner.className = 'bar-inner-label';
+        inner.innerText = barLabel;
+        bar.appendChild(inner);
+        
+        const actionContainer = document.createElement('div');
+        actionContainer.style.display = 'flex';
+        
+        const actionBtn = document.createElement('button');
+        actionBtn.className = 'edit-set-btn';
+        
+        if (hasData) {
+            // Completed checkmark pill
+            actionBtn.innerText = '✓';
+            actionBtn.style.background = 'var(--glow-blue)';
+            actionBtn.style.color = '#000';
+            actionBtn.style.border = 'none';
+            actionBtn.style.fontSize = '0.9rem';
+        } else {
+            // Pending Add button
+            actionBtn.innerText = '+';
+        }
+        
+        actionBtn.onclick = () => openSetData(set.id);
+        actionContainer.appendChild(actionBtn);
+
+        item.appendChild(label);
+        item.appendChild(bar);
+        item.appendChild(actionContainer);
+        container.appendChild(item);
+
+        // Trigger CSS width transition safely
+        requestAnimationFrame(() => {
+            setTimeout(() => {
+                bar.style.width = barPx;
+                bar.classList.add('revealed');
+            }, 50);
+        });
+    });
+
+    setTimeout(() => { container.scrollTop = container.scrollHeight; }, 50);
+}
+
+function openSetData(setId) {
+    document.getElementById('log-set-num').innerText = setId;
+    const setObj = currentSessionSets.find(s => s.id === parseInt(setId));
+    
+    document.getElementById('log-weight').value = setObj.weight || '';
+    document.getElementById('log-reps').value = setObj.reps || '';
+    editingSetId = setId;
+    
+    document.getElementById('set-data-modal').style.display = 'block';
     setTimeout(() => { document.getElementById('log-weight').focus(); }, 100);
 }
 
 function closeSetData() {
     document.getElementById('set-data-modal').style.display = 'none';
-    editingActionContainerId = null;
+    editingSetId = null;
 }
 
 function saveSetData() {
-    const weight = document.getElementById('log-weight').value;
-    const reps = document.getElementById('log-reps').value;
-    const setNum = document.getElementById('log-set-num').innerText;
+    const w = parseFloat(document.getElementById('log-weight').value);
+    const r = parseFloat(document.getElementById('log-reps').value);
     
-    if(!weight || !reps) {
-        alert('Please enter both weight and reps.');
-        return;
-    }
+    if(!w || !r) return alert('Please enter both weight and reps.');
 
-    if(editingActionContainerId) {
-        const container = document.getElementById(editingActionContainerId);
-        if(container) {
-            container.innerHTML = `<button class="edit-set-btn" style="background:var(--glow-blue); color:#000; border: none; font-size: 0.9rem;" onclick="openSetData('${setNum}', '${editingActionContainerId}')">✓</button>`;
-        }
+    const setObj = currentSessionSets.find(s => s.id === parseInt(editingSetId));
+    if (setObj) {
+        setObj.weight = w;
+        setObj.reps = r;
+        setObj.volume = w * r; // Update the effort metric
     }
     
     closeSetData();
+    renderDynamicSetList(); // Re-render all bars to adjust to the new max volume scale
 }
 
 function clearIntensityBars() {
@@ -320,7 +387,31 @@ function clearIntensityBars() {
     if (list) list.innerHTML = '';
 }
 
+// --- LOGBOOK ENGINE ---
 function exitTraining() {
+    // Save current session to the logbook before clearing
+    if (currentSessionSets.length > 0 && activeExercise) {
+        let logbook = JSON.parse(localStorage.getItem('bio_logbook')) || [];
+        
+        // Calculate maxes for the log
+        let mBpm = 0; let mVol = 0;
+        currentSessionSets.forEach(s => {
+            if(s.maxBpm > mBpm) mBpm = s.maxBpm;
+            if(s.volume > mVol) mVol = s.volume;
+        });
+
+        const newEntry = {
+            date: new Date().toISOString(),
+            exercise: activeExercise,
+            muscle: currentTargetMuscle,
+            setsCount: currentSessionSets.length,
+            maxBpm: mBpm,
+            maxVol: mVol
+        };
+        logbook.push(newEntry);
+        localStorage.setItem('bio_logbook', JSON.stringify(logbook));
+    }
+
     isTrain = false;
     liftState = 'IDLE';
     document.getElementById('hud-in-flow').style.display = "none";
@@ -328,6 +419,69 @@ function exitTraining() {
     clearIntensityBars();
     document.getElementById('sidebar').style.display = "block";
     document.getElementById('active-ex-tag').innerText = "NO ACTIVE EXERCISE";
+}
+
+function formatTime(totalSeconds) {
+    if (totalSeconds < 60) return `${Math.round(totalSeconds)}s`;
+    return `${Math.floor(totalSeconds / 60)}m`;
+}
+
+function renderLogbook() {
+    // Update daily stats
+    document.getElementById('log-tot-cal').innerText = Math.round(totalCalories);
+    document.getElementById('log-tot-fat').innerText = (totalCalories / 3500).toFixed(3);
+    
+    document.getElementById('log-z1-time').innerText = formatTime(z1Time);
+    document.getElementById('log-z2-time').innerText = formatTime(z2Time);
+    document.getElementById('log-z3-time').innerText = formatTime(z3Time);
+
+    // Build timeline
+    const container = document.getElementById('logbook-content');
+    container.innerHTML = '';
+    
+    let logbook = JSON.parse(localStorage.getItem('bio_logbook')) || [];
+    if (logbook.length === 0) {
+        container.innerHTML = '<div style="text-align:center; color:#555; padding-top:30px; font-weight:800; font-size:0.8rem; text-transform:uppercase;">No completed sessions found.</div>';
+        return;
+    }
+
+    // Sort newest first
+    logbook.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    let currentDateStr = "";
+
+    logbook.forEach(entry => {
+        const d = new Date(entry.date);
+        const dateString = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+        
+        // Group by Date Headers
+        if (dateString !== currentDateStr) {
+            const h = document.createElement('div');
+            h.className = 'log-date-header';
+            h.innerText = dateString;
+            container.appendChild(h);
+            currentDateStr = dateString;
+        }
+
+        const card = document.createElement('div');
+        card.className = 'log-card';
+
+        let volString = entry.maxVol > 0 ? `<span style="color:var(--glow-blue)">${entry.maxVol} MAX EFFORT</span>` : `<span style="color:#ff0044">${entry.maxBpm} MAX BPM</span>`;
+
+        card.innerHTML = `
+            <div class="log-ex-title">${entry.exercise}</div>
+            <div class="log-ex-muscle">${entry.muscle}</div>
+            <div class="log-set-row">
+                <span>Completed Sets:</span>
+                <span style="font-weight:900; color:#fff;">${entry.setsCount}</span>
+            </div>
+            <div class="log-set-row">
+                <span>Peak Metric:</span>
+                <span style="font-weight:900;">${volString}</span>
+            </div>
+        `;
+        container.appendChild(card);
+    });
 }
 
 function initCardioZones() {
@@ -341,16 +495,6 @@ function initCardioZones() {
     document.getElementById('pill-z1').innerText = `${z1Min} - ${z1Max} BPM`;
     document.getElementById('pill-z2').innerText = `${z2Min} - ${z2Max} BPM`;
     document.getElementById('pill-z3').innerText = `${z3Min} - ${z3Max} BPM`;
-
-    const z1MinInput = document.getElementById('set-z1-min');
-    if (z1MinInput) {
-        z1MinInput.value = z1Min;
-        document.getElementById('set-z1-max').value = z1Max;
-        document.getElementById('set-z2-min').value = z2Min;
-        document.getElementById('set-z2-max').value = z2Max;
-        document.getElementById('set-z3-min').value = z3Min;
-        document.getElementById('set-z3-max').value = z3Max;
-    }
 }
 
 function updateCardioUI(currentBpm) {
@@ -438,6 +582,7 @@ function switchView(view) {
 
 function selectMuscle(m) {
     if (isTrain) return;
+    currentTargetMuscle = m; // Saved for Logbook tagging
     document.querySelectorAll('.muscle-overlay').forEach(img => img.style.opacity = 0);
     const overlay = document.getElementById(`overlay-${m.toLowerCase()}`);
     if (overlay) overlay.style.opacity = 0.5;
@@ -463,7 +608,9 @@ function switchAppTab(tabId, btnElement) {
     document.getElementById('view-' + tabId).classList.add('view-active');
     document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active-nav'));
     btnElement.classList.add('active-nav');
+    
     if (tabId === 'cardio') initCardioZones();
+    if (tabId === 'logbook') renderLogbook(); 
 }
 
 const canvasP = document.getElementById('cardio-particles');
@@ -481,11 +628,9 @@ function initPhysicsEngines() {
 
 function animateCardioParticles() {
     requestAnimationFrame(animateCardioParticles);
-    
     if (!document.getElementById('view-cardio').classList.contains('view-active')) return;
     if (!ctxP) return;
 
-    // FIXED: Lock directly to viewport size to prevent zero-height collapse
     if (canvasP.width !== window.innerWidth || canvasP.height !== window.innerHeight) {
         canvasP.width = window.innerWidth;
         canvasP.height = window.innerHeight;
@@ -519,7 +664,6 @@ function animateCardioParticles() {
     }
 
     ctxP.globalCompositeOperation = 'screen';
-
     for (let i = particles.length - 1; i >= 0; i--) {
         let p = particles[i];
         p.x += p.vx; p.y += p.vy; p.life--;
@@ -534,27 +678,28 @@ function animateCardioParticles() {
 
 function animateLiftParticles() {
     requestAnimationFrame(animateLiftParticles);
-    
     if (!document.getElementById('view-weights').classList.contains('view-active')) return;
     if (!ctxL || !isTrain) {
         if (ctxL) ctxL.clearRect(0, 0, canvasL.width, canvasL.height);
         return;
     }
 
-    // FIXED: Lock directly to viewport size to prevent zero-height collapse
-    if (canvasL.width !== window.innerWidth || canvasL.height !== window.innerHeight) {
-        canvasL.width = window.innerWidth;
-        canvasL.height = window.innerHeight;
+    const parent = canvasL.parentElement;
+    if (canvasL.width !== parent.clientWidth || canvasL.height !== parent.clientHeight) {
+        canvasL.width = parent.clientWidth;
+        canvasL.height = parent.clientHeight;
     }
     if (canvasL.width === 0) return; 
 
     ctxL.clearRect(0, 0, canvasL.width, canvasL.height);
 
     let spawnState = 'NONE';
-    if (liftState === 'LIFTING' || liftState === 'RESTING') spawnState = 'BURN';
-    else if (liftState === 'READY' && bpm > readyTriggerBpm) spawnState = 'REPAIR';
+    if (liftState === 'LIFTING') {
+        spawnState = 'BURN';
+    } else if (liftState === 'RESTING' || (liftState === 'READY' && bpm > readyTriggerBpm)) {
+        spawnState = 'REPAIR';
+    }
 
-    // Heuristic bounds mapping
     const muscleBounds = {
         'trapezoids': { t: 0.15, h: 0.08 }, 'deltoids': { t: 0.18, h: 0.10 },
         'pectorals': { t: 0.21, h: 0.08 }, 'biceps': { t: 0.22, h: 0.12 },
@@ -567,15 +712,15 @@ function animateLiftParticles() {
     let spawnArea = { top: canvasL.height * 0.25, height: canvasL.height * 0.4, left: canvasL.width * 0.6, width: canvasL.width * 0.2 };
     const activeOverlay = Array.from(document.querySelectorAll('.muscle-overlay')).find(img => parseFloat(img.style.opacity) > 0);
 
-    // Map DOM coordinates directly to viewport pixel coordinates
     if (activeOverlay) {
         const imgRect = activeOverlay.getBoundingClientRect();
+        const parentRect = parent.getBoundingClientRect(); 
         const id = activeOverlay.id.replace('overlay-', '');
         const bounds = muscleBounds[id] || { t: 0.2, h: 0.4 };
 
-        spawnArea.top = imgRect.top + (imgRect.height * bounds.t);
+        spawnArea.top = (imgRect.top - parentRect.top) + (imgRect.height * bounds.t);
         spawnArea.height = imgRect.height * bounds.h;
-        spawnArea.left = imgRect.left + (imgRect.width * 0.3); 
+        spawnArea.left = (imgRect.left - parentRect.left) + (imgRect.width * 0.3); 
         spawnArea.width = imgRect.width * 0.4;
     }
 
@@ -606,14 +751,13 @@ function animateLiftParticles() {
                     size: 1.0 + Math.random() * 2.0,
                     color: isBurn ? getEliteColor(bpm) : '#ffffff',
                     type: spawnState,
-                    targetX: spawnArea.left 
+                    targetX: spawnArea.left + (spawnArea.width * 0.5)
                 });
             }
         }
     }
 
     ctxL.globalCompositeOperation = 'screen';
-
     for (let i = liftParticles.length - 1; i >= 0; i--) {
         let p = liftParticles[i];
         p.x += p.vx; p.y += p.vy; p.life--;
@@ -621,7 +765,7 @@ function animateLiftParticles() {
         let dead = false;
         if (p.life <= 0) dead = true;
         if (p.type === 'BURN' && p.x < 0) dead = true;
-        if (p.type === 'REPAIR' && p.x > p.targetX + 20) dead = true; 
+        if (p.type === 'REPAIR' && p.x > p.targetX) dead = true; 
 
         if (dead) { liftParticles.splice(i, 1); continue; }
 
@@ -629,7 +773,6 @@ function animateLiftParticles() {
         ctxL.fillStyle = p.color;
         ctxL.beginPath(); ctxL.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctxL.fill();
     }
-    
     ctxL.globalAlpha = 1.0;
     ctxL.globalCompositeOperation = 'source-over';
 }
