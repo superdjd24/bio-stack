@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BioStack Elite v10.85 STABLE</title>
+    <title>BioStack Elite v10.86 STABLE</title>
     <style>
         :root { --glow-blue: #00f2ff; --bg-dark: #05070a; --glass: rgba(15, 20, 30, 0.95); --border: #30363d; }
         body { margin: 0; background: var(--bg-dark); color: white; font-family: -apple-system, system-ui, sans-serif; overflow: hidden; height: 100vh; }
@@ -16,7 +16,6 @@
         input { width: 100%; padding: 15px; margin-bottom: 15px; border-radius: 12px; border: 1px solid #444; background: #000; color: #fff; box-sizing: border-box; }
         #init-btn { width: 100%; padding: 18px; background: var(--glow-blue); border-radius: 50px; font-weight: 800; border: none; cursor: pointer; }
 
-        /* NEW: Version tag locked to the absolute bottom of the login screen */
         .login-version { position: absolute; bottom: 35px; font-size: 0.65rem; color: #555; letter-spacing: 2px; font-weight: 800; text-transform: uppercase; }
 
         #main-dashboard { display: none; opacity: 0; transition: opacity 0.8s ease; }
@@ -117,10 +116,15 @@
         .nav-icon { width: 24px; height: 24px; background: #555; border-radius: 6px; transition: background 0.3s ease; }
         .nav-btn.active-nav .nav-icon { background: var(--glow-blue); }
 
+        /* THE RETURN OF THE VERSION TAG */
+        #version-tag { position: fixed; bottom: 100px; left: 15px; font-size: 0.6rem; color: #333; font-weight: 800; z-index: 8000; pointer-events: none; }
+        
         .placeholder-text { padding-top: 150px; text-align: center; color: var(--glow-blue); font-weight: 800; text-transform: uppercase; letter-spacing: 2px; }
     </style>
 </head>
 <body>
+
+    <div id="version-tag">BIOSTACK_v10.86_STABLE</div>
 
     <div id="login-screen">
         <img src="assets/biostack_v3_logo.png" style="width: 140px; margin-bottom: 30px; filter: drop-shadow(0 0 15px rgba(0,242,255,0.3));">
@@ -130,7 +134,7 @@
             <input type="number" id="user-age" placeholder="Age">
             <button id="init-btn" onclick="initSystem()">Initialize & Link</button>
         </div>
-        <div class="login-version">v10.85 STABLE</div>
+        <div class="login-version">v10.86 STABLE</div>
     </div>
 
     <div id="main-dashboard">
