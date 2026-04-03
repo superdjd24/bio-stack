@@ -1,6 +1,6 @@
 /**
- * BIOSTACK ELITE ENGINE v10.75 STABLE
- * Field Test Hotfixes: Dynamic Muscle-Anchored Particle Emitters
+ * BIOSTACK ELITE ENGINE v10.90 STABLE
+ * Engine Hotfixes: Heuristic Muscle-Bound Particle Emitters, Z-Index Overlay, Fluid Velocity
  */
 
 let bpm = 0; 
@@ -9,16 +9,13 @@ let isTrain = false;
 let activeExercise = null;
 let setCounter = 0;
 
-// BIO-LOGIC VARIABLES
 let readyTriggerBpm = parseInt(localStorage.getItem('bio_ready_trigger')) || 110;
 let liftState = 'IDLE'; 
 let currentSetMax = 0;
 const DROP_THRESHOLD = 6;
 
-// Data Logging State
 let editingActionContainerId = null;
 
-// DYNAMIC CARDIO ZONE VARIABLES (% of Max HR stored natively)
 let z1MinPct = parseFloat(localStorage.getItem('bio_z1_min')) || 0.60;
 let z1MaxPct = parseFloat(localStorage.getItem('bio_z1_max')) || 0.70;
 let z2MinPct = parseFloat(localStorage.getItem('bio_z2_min')) || 0.70;
@@ -469,8 +466,6 @@ function switchAppTab(tabId, btnElement) {
     if (tabId === 'cardio') initCardioZones();
 }
 
-// --- PARTICLE PHYSICS ENGINES (CARDIO + LIFT) ---
-
 const canvasP = document.getElementById('cardio-particles');
 let ctxP = canvasP ? canvasP.getContext('2d') : null;
 let particles = [];
@@ -512,7 +507,7 @@ function animateCardioParticles() {
                 particles.push({
                     x: canvasP.width * 0.65 + (Math.random() * 20 - 10), 
                     y: canvasP.height * 0.3 + Math.random() * (canvasP.height * 0.45), 
-                    vx: -(0.5 + intensity * 1.5) - Math.random(), 
+                    vx: -(0.5 + Math.random() * 1.5), 
                     vy: (Math.random() - 0.5) * 1.0 - (intensity * 0.3), 
                     life: 150 + Math.random() * 100,
                     maxLife: 250,
@@ -559,30 +554,29 @@ function animateLiftParticles() {
     if (liftState === 'LIFTING' || liftState === 'RESTING') spawnState = 'BURN';
     else if (liftState === 'READY' && bpm > readyTriggerBpm) spawnState = 'REPAIR';
 
-    // --- DYNAMIC MUSCLE BOUNDING BOX LOGIC ---
-    // Fallback coordinates if no active muscle is found
-    let spawnArea = { 
-        top: canvasL.height * 0.25, 
-        height: canvasL.height * 0.4, 
-        left: canvasL.width * 0.6, 
-        width: canvasL.width * 0.2 
+    // Heuristic bounds mapping: (Top %, Height %)
+    const muscleBounds = {
+        'trapezoids': { t: 0.15, h: 0.08 }, 'deltoids': { t: 0.18, h: 0.10 },
+        'pectorals': { t: 0.21, h: 0.08 }, 'biceps': { t: 0.22, h: 0.12 },
+        'triceps': { t: 0.22, h: 0.12 }, 'forearms': { t: 0.35, h: 0.10 },
+        'abdominals': { t: 0.30, h: 0.12 }, 'lats': { t: 0.25, h: 0.15 },
+        'glutes': { t: 0.45, h: 0.10 }, 'quads': { t: 0.48, h: 0.20 },
+        'hamstrings': { t: 0.48, h: 0.20 }, 'calves': { t: 0.70, h: 0.15 }
     };
-    
-    // Find the currently active muscle PNG by checking for opacity > 0
+
+    let spawnArea = { top: canvasL.height * 0.25, height: canvasL.height * 0.4, left: canvasL.width * 0.6, width: canvasL.width * 0.2 };
     const activeOverlay = Array.from(document.querySelectorAll('.muscle-overlay')).find(img => parseFloat(img.style.opacity) > 0);
 
     if (activeOverlay) {
-        const canvasRect = canvasL.getBoundingClientRect();
         const imgRect = activeOverlay.getBoundingClientRect();
-        if (canvasRect.width > 0 && canvasRect.height > 0) {
-            // Map the DOM rect to the internal canvas resolution
-            const scaleY = canvasL.height / canvasRect.height;
-            const scaleX = canvasL.width / canvasRect.width;
-            spawnArea.top = (imgRect.top - canvasRect.top) * scaleY;
-            spawnArea.height = imgRect.height * scaleY;
-            spawnArea.left = (imgRect.left - canvasRect.left) * scaleX;
-            spawnArea.width = imgRect.width * scaleX;
-        }
+        const canvasRect = canvasL.getBoundingClientRect();
+        const id = activeOverlay.id.replace('overlay-', '');
+        const bounds = muscleBounds[id] || { t: 0.2, h: 0.4 };
+
+        spawnArea.top = (imgRect.top - canvasRect.top) + (imgRect.height * bounds.t);
+        spawnArea.height = imgRect.height * bounds.h;
+        spawnArea.left = (imgRect.left - canvasRect.left) + (imgRect.width * 0.3); 
+        spawnArea.width = imgRect.width * 0.4;
     }
 
     if (spawnState !== 'NONE') {
@@ -593,30 +587,26 @@ function animateLiftParticles() {
                 let startX, startY, velX;
                 
                 if (isBurn) {
-                    // Burn: Spawn near the left edge of the muscle and shoot left
                     startX = spawnArea.left + Math.random() * (spawnArea.width * 0.3); 
                     startY = spawnArea.top + Math.random() * spawnArea.height;
-                    velX = -(2.5 + Math.random() * 3.5); // Fast horizontal traversal
+                    velX = -(0.8 + Math.random() * 1.2); 
                 } else {
-                    // Repair: Spawn far left and shoot right into the muscle
                     startX = canvasL.width * 0.05; 
                     startY = spawnArea.top + Math.random() * spawnArea.height;
-                    velX = (2.5 + Math.random() * 3.5);
+                    velX = (0.8 + Math.random() * 1.2);
                 }
-
-                let particleColor = isBurn ? getEliteColor(bpm) : '#ffffff';
 
                 liftParticles.push({
                     x: startX,
                     y: startY,
                     vx: velX,
-                    vy: (Math.random() - 0.5) * 0.8, // Flattened Y trajectory for a 'dust blowing' effect
+                    vy: (Math.random() - 0.5) * 0.8, 
                     life: 200 + Math.random() * 100, 
                     maxLife: 300,
                     size: 1.0 + Math.random() * 2.0,
-                    color: particleColor,
+                    color: isBurn ? getEliteColor(bpm) : '#ffffff',
                     type: spawnState,
-                    targetX: spawnArea.left // Target for repair particles to die upon impact
+                    targetX: spawnArea.left 
                 });
             }
         }
@@ -631,12 +621,10 @@ function animateLiftParticles() {
         let dead = false;
         if (p.life <= 0) dead = true;
         if (p.type === 'BURN' && p.x < 0) dead = true;
-        // Repair particles die the moment they hit the left boundary of the muscle image
         if (p.type === 'REPAIR' && p.x > p.targetX + 20) dead = true; 
 
         if (dead) { liftParticles.splice(i, 1); continue; }
 
-        // Particles now fade out naturally based on their remaining life
         ctxL.globalAlpha = Math.max(0, p.life / p.maxLife) * 0.7; 
         ctxL.fillStyle = p.color;
         ctxL.beginPath(); ctxL.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctxL.fill();
