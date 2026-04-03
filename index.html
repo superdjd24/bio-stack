@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BioStack Elite v10.86 STABLE</title>
+    <title>BioStack Elite v10.90 STABLE</title>
     <style>
         :root { --glow-blue: #00f2ff; --bg-dark: #05070a; --glass: rgba(15, 20, 30, 0.95); --border: #30363d; }
         body { margin: 0; background: var(--bg-dark); color: white; font-family: -apple-system, system-ui, sans-serif; overflow: hidden; height: 100vh; }
@@ -43,7 +43,7 @@
         #set-bar-sidebar { width: 50vw; min-width: 200px; height: 100%; max-height: 480px; display: flex; flex-direction: column; margin-right: 15px; padding: 10px; justify-content: flex-start; align-items: flex-start; border-right: none; margin-top: 55px; }
         #active-ex-context { font-size: 0.65rem; color: var(--glow-blue); text-transform: uppercase; border-bottom: 1px solid rgba(0,242,255,0.2); width: 100%; text-align: left; padding-bottom: 8px; margin-bottom: 10px; font-weight: 700; display: none; transition: color 0.3s ease; }
         
-        #sets-list { flex-grow: 1; overflow-y: auto; width: 100%; display: flex; flex-direction: column; gap: 12px; margin-bottom: 10px; padding-right: 5px; }
+        #sets-list { flex-grow: 1; overflow-y: auto; width: 100%; display: flex; flex-direction: column; gap: 12px; margin-bottom: 10px; padding-right: 5px; z-index: 40; }
         
         .intensity-item { width: 100%; display: flex; align-items: center; justify-content: flex-start; gap: 8px; }
         .intensity-label { font-size: 0.7rem; color: #fff; font-weight: 600; flex-shrink: 0; width: 40px; }
@@ -55,7 +55,7 @@
         .edit-set-btn:hover { background: var(--glow-blue); color: #000; }
         .modal-row { display: flex; gap: 10px; width: 100%; margin-bottom: 10px; }
 
-        #hud-in-flow { width: 100%; display: none; flex-shrink: 0; }
+        #hud-in-flow { width: 100%; display: none; flex-shrink: 0; z-index: 40; position: relative; }
         #rest-helper-text { display:none; font-size:0.65rem; color:#ffaa00; font-weight:800; text-transform:uppercase; margin-bottom: 8px; text-align: center; }
         .flow-btn { width: 100%; padding: 14px; border-radius: 12px; border: none; font-weight: 800; text-transform: uppercase; cursor: pointer; margin-bottom: 10px; transition: all 0.3s ease; }
         #new-ex-btn { background: transparent; border: 1px solid #444; color: #888; font-size: 0.7rem; }
@@ -116,7 +116,6 @@
         .nav-icon { width: 24px; height: 24px; background: #555; border-radius: 6px; transition: background 0.3s ease; }
         .nav-btn.active-nav .nav-icon { background: var(--glow-blue); }
 
-        /* THE RETURN OF THE VERSION TAG */
         #version-tag { position: fixed; bottom: 100px; left: 15px; font-size: 0.6rem; color: #333; font-weight: 800; z-index: 8000; pointer-events: none; }
         
         .placeholder-text { padding-top: 150px; text-align: center; color: var(--glow-blue); font-weight: 800; text-transform: uppercase; letter-spacing: 2px; }
@@ -124,7 +123,7 @@
 </head>
 <body>
 
-    <div id="version-tag">BIOSTACK_v10.86_STABLE</div>
+    <div id="version-tag">BIOSTACK_v10.90_STABLE</div>
 
     <div id="login-screen">
         <img src="assets/biostack_v3_logo.png" style="width: 140px; margin-bottom: 30px; filter: drop-shadow(0 0 15px rgba(0,242,255,0.3));">
@@ -134,7 +133,7 @@
             <input type="number" id="user-age" placeholder="Age">
             <button id="init-btn" onclick="initSystem()">Initialize & Link</button>
         </div>
-        <div class="login-version">v10.86 STABLE</div>
+        <div class="login-version">v10.90 STABLE</div>
     </div>
 
     <div id="main-dashboard">
@@ -151,6 +150,7 @@
                 <div id="active-ex-tag">NO ACTIVE EXERCISE</div>
             </div>
             <div id="sidebar"><div id="exercise-picker"></div></div>
+            
             <div id="stage-area">
                 <div id="set-bar-sidebar">
                     <div id="active-ex-context"></div>
@@ -178,10 +178,11 @@
                     <img src="assets/glutes.png" id="overlay-glutes" class="muscle-overlay stack-layer">
                     <img src="assets/hamstrings.png" id="overlay-hamstrings" class="muscle-overlay stack-layer">
                     <img src="assets/calves.png" id="overlay-calves" class="muscle-overlay stack-layer">
-                    <canvas id="lift-particles" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 30; pointer-events: none;"></canvas>
                     <div id="touch-map"></div>
                 </div>
             </div>
+
+            <canvas id="lift-particles" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 8000; pointer-events: none;"></canvas>
 
             <div id="menu-action" class="overlay">
                 <h2 id="ex-name-modal" style="margin-bottom:25px;">EXERCISE</h2>
@@ -257,6 +258,6 @@
         </nav>
 
     </div>
-    <script src="js/biostack.js?v=85"></script>
+    <script src="js/biostack.js?v=90"></script>
 </body>
 </html>
