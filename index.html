@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BioStack Elite v11.65 STABLE</title>
+    <title>BioStack Elite v11.70 STABLE</title>
     <style>
         :root { --glow-blue: #00f2ff; --bg-dark: #05070a; --glass: rgba(15, 20, 30, 0.95); --border: #30363d; }
         body { margin: 0; background: var(--bg-dark); color: white; font-family: -apple-system, system-ui, sans-serif; overflow: hidden; height: 100vh; }
@@ -27,7 +27,8 @@
         #graph-box { width: 200px; height: 50px; position: relative; }
         #sparkline-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
 
-        .app-view { display: none; width: 100%; height: 100%; position: relative; }
+        /* FIXED: Enforced 100vh so the container never calculates a 0px height */
+        .app-view { display: none; width: 100%; height: 100vh; position: relative; }
         .view-active { display: block; }
 
         #mid-dash { position: fixed; top: 110px; left: 20px; z-index: 900; }
@@ -35,9 +36,8 @@
         #musc-header { font-size: 0.8rem; margin-top: 10px; color: var(--glow-blue); letter-spacing: 1px; }
         #active-ex-tag { font-size: 0.6rem; color: #666; margin-top: 5px; text-transform: uppercase; }
 
-        /* FIXED: Bound the sidebar height and enabled scrolling */
         #sidebar { position: fixed; top: 200px; left: 20px; width: 140px; z-index: 500; height: calc(100vh - 310px); overflow-y: auto; padding-bottom: 20px; }
-        #sidebar::-webkit-scrollbar { display: none; } /* Keeps the UI clean by hiding the scrollbar track */
+        #sidebar::-webkit-scrollbar { display: none; } 
         
         .list-btn { width: 100%; padding: 12px; margin-bottom: 8px; border-radius: 12px; border: 1px solid var(--border); background: var(--glass); color: white; font-size: 0.7rem; text-align: left; }
 
@@ -136,7 +136,7 @@
 </head>
 <body>
 
-    <div id="version-tag">BIOSTACK_v11.65_STABLE</div>
+    <div id="version-tag">BIOSTACK_v11.70_STABLE</div>
 
     <div id="login-screen">
         <img src="assets/biostack_v3_logo.png" style="width: 140px; margin-bottom: 30px; filter: drop-shadow(0 0 15px rgba(0,242,255,0.3));">
@@ -146,7 +146,7 @@
             <input type="number" id="user-age" placeholder="Age">
             <button id="init-btn" onclick="initSystem()">Initialize & Link</button>
         </div>
-        <div class="login-version">v11.65 STABLE</div>
+        <div class="login-version">v11.70 STABLE</div>
     </div>
 
     <div id="main-dashboard">
@@ -296,6 +296,6 @@
         </nav>
 
     </div>
-    <script src="js/biostack.js?v=165"></script>
+    <script src="js/biostack.js?v=170"></script>
 </body>
 </html>
