@@ -1,6 +1,6 @@
 /**
- * BIOSTACK ELITE ENGINE v11.50 STABLE
- * Major Update: Dynamic Effort Scaling, Top 10 Muscle DB, Native Local Logbook
+ * BIOSTACK ELITE ENGINE v11.70 STABLE
+ * Engine Hotfixes: Decoupled canvas sizing from DOM flow for Safari/Mobile stability
  */
 
 let bpm = 0; 
@@ -10,7 +10,7 @@ let activeExercise = null;
 let currentTargetMuscle = null;
 let setCounter = 0;
 
-let currentSessionSets = []; // State array for dynamic scaling
+let currentSessionSets = [];
 
 let readyTriggerBpm = parseInt(localStorage.getItem('bio_ready_trigger')) || 110;
 let liftState = 'IDLE'; 
@@ -19,7 +19,6 @@ const DROP_THRESHOLD = 6;
 
 let editingSetId = null;
 
-// Cardio Zones
 let z1MinPct = parseFloat(localStorage.getItem('bio_z1_min')) || 0.60;
 let z1MaxPct = parseFloat(localStorage.getItem('bio_z1_max')) || 0.70;
 let z2MinPct = parseFloat(localStorage.getItem('bio_z2_min')) || 0.70;
@@ -31,12 +30,10 @@ let hrHistory = [];
 let totalCalories = 0;
 let lastTimestamp = null;
 
-// Time in Zone tracking (seconds)
 let z1Time = parseInt(localStorage.getItem('bio_z1_time')) || 0;
 let z2Time = parseInt(localStorage.getItem('bio_z2_time')) || 0;
 let z3Time = parseInt(localStorage.getItem('bio_z3_time')) || 0;
 
-// The Top 10 Elite Arsenal
 const DB = {
     'Trapezoids': ['Dumbbell Shrugs', 'Barbell Shrugs', 'Upright Rows', 'Farmer\'s Walk', 'Cable Shrugs', 'Trap Bar Shrugs', 'Smith Machine Shrugs', 'Snatch Grip High Pull', 'Overhead Shrugs', 'Kettlebell Shrugs'],
     'Deltoids': ['Lateral Raises', 'Military Press', 'Front Raises', 'Reverse Pec Deck', 'Arnold Press', 'Face Pulls', 'Cable Lateral Raises', 'Seated Dumbbell Press', 'Machine Shoulder Press', 'Upright Rows'],
@@ -148,12 +145,10 @@ function calculateTelemetry(currentBpm) {
     const durationSecs = deltaMs / 1000;
     lastTimestamp = now;
     
-    // Accumulate Time in Zones
     if (currentBpm >= maxHr * z3MinPct) z3Time += durationSecs;
     else if (currentBpm >= maxHr * z2MinPct) z2Time += durationSecs;
     else if (currentBpm >= maxHr * z1MinPct) z1Time += durationSecs;
 
-    // Save zone time to storage periodically
     localStorage.setItem('bio_z1_time', Math.round(z1Time));
     localStorage.setItem('bio_z2_time', Math.round(z2Time));
     localStorage.setItem('bio_z3_time', Math.round(z3Time));
@@ -250,7 +245,6 @@ function processBioState() {
 function finalizeSet() {
     setCounter++;
     
-    // Add raw set to the session array
     currentSessionSets.push({
         id: setCounter,
         maxBpm: currentSetMax,
@@ -266,17 +260,15 @@ function finalizeSet() {
     processBioState();
 }
 
-// --- NEW DYNAMIC EFFORT SCALING ENGINE ---
 function renderDynamicSetList() {
     const container = document.getElementById('sets-list');
-    container.innerHTML = ''; // Rebuild clean for accurate CSS animations
+    container.innerHTML = ''; 
     
     if (currentSessionSets.length === 0) return;
 
-    let globalMaxBpm = 150; // Base floor to prevent giant jumps
+    let globalMaxBpm = 150; 
     let globalMaxVol = 1;
 
-    // Find the highest marks in the current session
     currentSessionSets.forEach(s => {
         if (s.maxBpm > globalMaxBpm) globalMaxBpm = s.maxBpm;
         if (s.volume > globalMaxVol) globalMaxVol = s.volume;
@@ -317,14 +309,12 @@ function renderDynamicSetList() {
         actionBtn.className = 'edit-set-btn';
         
         if (hasData) {
-            // Completed checkmark pill
             actionBtn.innerText = '✓';
             actionBtn.style.background = 'var(--glow-blue)';
             actionBtn.style.color = '#000';
             actionBtn.style.border = 'none';
             actionBtn.style.fontSize = '0.9rem';
         } else {
-            // Pending Add button
             actionBtn.innerText = '+';
         }
         
@@ -336,7 +326,6 @@ function renderDynamicSetList() {
         item.appendChild(actionContainer);
         container.appendChild(item);
 
-        // Trigger CSS width transition safely
         requestAnimationFrame(() => {
             setTimeout(() => {
                 bar.style.width = barPx;
@@ -375,11 +364,11 @@ function saveSetData() {
     if (setObj) {
         setObj.weight = w;
         setObj.reps = r;
-        setObj.volume = w * r; // Update the effort metric
+        setObj.volume = w * r; 
     }
     
     closeSetData();
-    renderDynamicSetList(); // Re-render all bars to adjust to the new max volume scale
+    renderDynamicSetList(); 
 }
 
 function clearIntensityBars() {
@@ -387,13 +376,10 @@ function clearIntensityBars() {
     if (list) list.innerHTML = '';
 }
 
-// --- LOGBOOK ENGINE ---
 function exitTraining() {
-    // Save current session to the logbook before clearing
     if (currentSessionSets.length > 0 && activeExercise) {
         let logbook = JSON.parse(localStorage.getItem('bio_logbook')) || [];
         
-        // Calculate maxes for the log
         let mBpm = 0; let mVol = 0;
         currentSessionSets.forEach(s => {
             if(s.maxBpm > mBpm) mBpm = s.maxBpm;
@@ -427,7 +413,6 @@ function formatTime(totalSeconds) {
 }
 
 function renderLogbook() {
-    // Update daily stats
     document.getElementById('log-tot-cal').innerText = Math.round(totalCalories);
     document.getElementById('log-tot-fat').innerText = (totalCalories / 3500).toFixed(3);
     
@@ -435,7 +420,6 @@ function renderLogbook() {
     document.getElementById('log-z2-time').innerText = formatTime(z2Time);
     document.getElementById('log-z3-time').innerText = formatTime(z3Time);
 
-    // Build timeline
     const container = document.getElementById('logbook-content');
     container.innerHTML = '';
     
@@ -445,7 +429,6 @@ function renderLogbook() {
         return;
     }
 
-    // Sort newest first
     logbook.sort((a, b) => new Date(b.date) - new Date(a.date));
 
     let currentDateStr = "";
@@ -454,7 +437,6 @@ function renderLogbook() {
         const d = new Date(entry.date);
         const dateString = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
         
-        // Group by Date Headers
         if (dateString !== currentDateStr) {
             const h = document.createElement('div');
             h.className = 'log-date-header';
@@ -582,7 +564,7 @@ function switchView(view) {
 
 function selectMuscle(m) {
     if (isTrain) return;
-    currentTargetMuscle = m; // Saved for Logbook tagging
+    currentTargetMuscle = m; 
     document.querySelectorAll('.muscle-overlay').forEach(img => img.style.opacity = 0);
     const overlay = document.getElementById(`overlay-${m.toLowerCase()}`);
     if (overlay) overlay.style.opacity = 0.5;
@@ -684,10 +666,10 @@ function animateLiftParticles() {
         return;
     }
 
-    const parent = canvasL.parentElement;
-    if (canvasL.width !== parent.clientWidth || canvasL.height !== parent.clientHeight) {
-        canvasL.width = parent.clientWidth;
-        canvasL.height = parent.clientHeight;
+    // FIXED: Bulletproof scaling bound purely to the viewport
+    if (canvasL.width !== window.innerWidth || canvasL.height !== window.innerHeight) {
+        canvasL.width = window.innerWidth;
+        canvasL.height = window.innerHeight;
     }
     if (canvasL.width === 0) return; 
 
@@ -714,13 +696,12 @@ function animateLiftParticles() {
 
     if (activeOverlay) {
         const imgRect = activeOverlay.getBoundingClientRect();
-        const parentRect = parent.getBoundingClientRect(); 
         const id = activeOverlay.id.replace('overlay-', '');
         const bounds = muscleBounds[id] || { t: 0.2, h: 0.4 };
 
-        spawnArea.top = (imgRect.top - parentRect.top) + (imgRect.height * bounds.t);
+        spawnArea.top = imgRect.top + (imgRect.height * bounds.t);
         spawnArea.height = imgRect.height * bounds.h;
-        spawnArea.left = (imgRect.left - parentRect.left) + (imgRect.width * 0.3); 
+        spawnArea.left = imgRect.left + (imgRect.width * 0.3); 
         spawnArea.width = imgRect.width * 0.4;
     }
 
@@ -773,6 +754,7 @@ function animateLiftParticles() {
         ctxL.fillStyle = p.color;
         ctxL.beginPath(); ctxL.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctxL.fill();
     }
+    
     ctxL.globalAlpha = 1.0;
     ctxL.globalCompositeOperation = 'source-over';
 }
