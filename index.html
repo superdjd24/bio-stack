@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BioStack Elite v11.80 STABLE</title>
+    <title>BioStack Elite v12.00 STABLE</title>
     <style>
         :root { --glow-blue: #00f2ff; --bg-dark: #05070a; --glass: rgba(15, 20, 30, 0.95); --border: #30363d; }
         body { margin: 0; background: var(--bg-dark); color: white; font-family: -apple-system, system-ui, sans-serif; overflow: hidden; height: 100vh; }
@@ -16,7 +16,7 @@
         input { width: 100%; padding: 15px; margin-bottom: 15px; border-radius: 12px; border: 1px solid #444; background: #000; color: #fff; box-sizing: border-box; }
         #init-btn { width: 100%; padding: 18px; background: var(--glow-blue); border-radius: 50px; font-weight: 800; border: none; cursor: pointer; }
 
-        .login-version { position: absolute; bottom: 35px; font-size: 0.65rem; color: #555; letter-spacing: 2px; font-weight: 800; text-transform: uppercase; }
+        .login-version { position: absolute; bottom: 35px; font-size: 0.65rem; color: #555; letter-spacing: 2px; font-weight: 800; text-transform: uppercase; text-align: center; }
 
         #main-dashboard { display: none; opacity: 0; transition: opacity 0.8s ease; }
         
@@ -42,9 +42,8 @@
 
         #stage-area { position: fixed; top: 120px; right: 0; width: 85vw; height: 65vh; display: flex; align-items: center; justify-content: flex-end; z-index: 10; }
         
-        #set-bar-sidebar { width: 50vw; min-width: 160px; height: 100%; max-height: 480px; display: flex; flex-direction: column; margin-right: 15px; padding: 10px; justify-content: flex-start; align-items: flex-start; border-right: none; margin-top: 85px; }
-        
-        #active-ex-context { font-size: 0.65rem; color: var(--glow-blue); text-transform: uppercase; border-bottom: 1px solid rgba(0,242,255,0.2); width: 100%; text-align: left; padding-bottom: 8px; margin-bottom: 10px; font-weight: 700; display: none; transition: color 0.3s ease; }
+        #set-bar-sidebar { width: 50vw; min-width: 160px; height: 100%; max-height: 480px; display: flex; flex-direction: column; margin-right: 15px; padding: 10px; justify-content: flex-start; align-items: flex-start; border-right: none; margin-top: 100px; }
+        #active-ex-context { font-size: 0.65rem; color: var(--glow-blue); text-transform: uppercase; border-bottom: 1px solid rgba(0,242,255,0.2); width: 100%; text-align: right; padding-bottom: 8px; margin-bottom: 10px; font-weight: 700; display: none; transition: color 0.3s ease; }
         
         #sets-list { flex-grow: 1; overflow-y: auto; width: 100%; display: flex; flex-direction: column; gap: 12px; margin-bottom: 10px; padding-right: 5px; z-index: 40; }
         
@@ -59,7 +58,7 @@
         .modal-row { display: flex; gap: 10px; width: 100%; margin-bottom: 10px; }
 
         #hud-in-flow { width: 100%; display: none; flex-shrink: 0; z-index: 40; position: relative; }
-        #rest-helper-text { display:none; font-size:0.65rem; color:#ffaa00; font-weight:800; text-transform:uppercase; margin-bottom: 8px; text-align: center; width: 100%; line-height: 1.3; }
+        #rest-helper-text { display:none; font-size:0.65rem; color:#ffaa00; font-weight:800; text-transform:uppercase; margin-bottom: 8px; text-align: right; width: 100%; line-height: 1.3; }
         .flow-btn { width: 100%; padding: 14px; border-radius: 12px; border: none; font-weight: 800; text-transform: uppercase; cursor: pointer; margin-bottom: 10px; transition: all 0.3s ease; }
         #new-ex-btn { background: transparent; border: 1px solid #444; color: #888; font-size: 0.7rem; }
 
@@ -144,7 +143,7 @@
             <input type="number" id="user-age" placeholder="Age">
             <button id="init-btn" onclick="initSystem()">Initialize & Link</button>
         </div>
-        <div class="login-version">v11.80 STABLE</div>
+        <div class="login-version">v12.00 STABLE<br><span style="font-size: 0.5rem;">(GHOST MODE: WT 999)</span></div>
     </div>
 
     <div id="main-dashboard">
@@ -283,7 +282,7 @@
                     <button class="flow-btn" style="background:#222; color:#fff; border: 1px solid #444; margin-top:15px; margin-bottom:0;" onclick="saveZoneSettings()">SAVE ZONES</button>
                 </div>
                 
-                <div class="version-footer">BIOSTACK_v11.80_STABLE</div>
+                <div class="version-footer">BIOSTACK_v12.00_STABLE</div>
             </div>
         </div>
 
@@ -295,6 +294,6 @@
         </nav>
 
     </div>
-    <script src="js/biostack.js?v=180"></script>
+    <script src="js/biostack.js?v=200"></script>
 </body>
 </html>
