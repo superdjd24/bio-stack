@@ -1,5 +1,5 @@
 /**
- * BIOSTACK ELITE ENGINE v11.90 STABLE
+ * BIOSTACK ELITE ENGINE v12.00 STABLE
  * Full File Restore & Ghost Mode (Dev Bypass) Engine Active
  */
 
@@ -110,7 +110,6 @@ async function initSystem() {
         setTimeout(() => { dash.style.opacity = '1'; }, 50);
         generateHitMap();
 
-        // Simulated Heart Rate Generator
         bpm = 85; 
         setInterval(() => {
             let targetBpm = 85;
@@ -119,7 +118,7 @@ async function initSystem() {
             else if (liftState === 'READY' && isTrain) targetBpm = 95 + (Math.random() * 5);
             else targetBpm = 85 + (Math.random() * 5);
 
-            bpm += (targetBpm - bpm) * 0.15; // Smooth easing
+            bpm += (targetBpm - bpm) * 0.15; 
             let liveBpm = Math.round(bpm);
 
             const hrEl = document.getElementById('hr-val');
@@ -133,7 +132,6 @@ async function initSystem() {
             drawSparkline();
             updateCardioUI(liveBpm); 
             
-            // Push simulated BPM to the lift state machine
             let tempBpm = bpm; 
             bpm = liveBpm; 
             processBioState(); 
