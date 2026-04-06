@@ -1,6 +1,6 @@
 /**
- * BIOSTACK ELITE ENGINE v12.00 STABLE
- * Full File Restore & Ghost Mode (Dev Bypass) Engine Active
+ * BIOSTACK ELITE ENGINE v12.10 STABLE
+ * Engine Hotfixes: Particle Funneling Physics for Magnetic REPAIR States
  */
 
 let bpm = 0; 
@@ -760,23 +760,36 @@ function animateLiftParticles() {
         for (let i = 0; i < spawnRate; i++) {
             if (Math.random() > 0.4) {
                 let isBurn = (spawnState === 'BURN');
-                let startX, startY, velX;
+                let startX, startY, velX, velY;
                 
                 if (isBurn) {
                     startX = spawnArea.left + Math.random() * (spawnArea.width * 0.3); 
                     startY = spawnArea.top + Math.random() * spawnArea.height;
                     velX = -(0.8 + Math.random() * 1.2); 
+                    velY = (Math.random() - 0.5) * 0.8;
                 } else {
-                    startX = canvasL.width * 0.05; 
-                    startY = spawnArea.top + Math.random() * spawnArea.height;
-                    velX = (0.8 + Math.random() * 1.2);
+                    // NEW: Precise Funneling Algorithm for REPAIR state
+                    startX = canvasL.width * -0.05; 
+                    
+                    // 1. Start Wide
+                    let screenCenterY = canvasL.height / 2;
+                    startY = screenCenterY + (Math.random() * canvasL.height * 0.8) - (canvasL.height * 0.4);
+                    
+                    velX = (1.2 + Math.random() * 1.5); 
+                    
+                    // 2. Converge Small
+                    let targetX = spawnArea.left + (Math.random() * spawnArea.width * 0.5);
+                    let targetY = spawnArea.top + (Math.random() * spawnArea.height);
+                    
+                    let ticksToTarget = (targetX - startX) / velX;
+                    velY = (targetY - startY) / ticksToTarget; // 3. Dynamically set exact vertical trajectory
                 }
 
                 liftParticles.push({
                     x: startX,
                     y: startY,
                     vx: velX,
-                    vy: (Math.random() - 0.5) * 0.8, 
+                    vy: velY, 
                     life: 200 + Math.random() * 100, 
                     maxLife: 300,
                     size: 1.0 + Math.random() * 2.0,
