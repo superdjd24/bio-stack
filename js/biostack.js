@@ -1,762 +1,300 @@
-/**
- * BIOSTACK ELITE ENGINE v11.70 STABLE
- * Engine Hotfixes: Decoupled canvas sizing from DOM flow for Safari/Mobile stability
- */
-
-let bpm = 0; 
-let currentView = "front";
-let isTrain = false;
-let activeExercise = null;
-let currentTargetMuscle = null;
-let setCounter = 0;
-
-let currentSessionSets = [];
-
-let readyTriggerBpm = parseInt(localStorage.getItem('bio_ready_trigger')) || 110;
-let liftState = 'IDLE'; 
-let currentSetMax = 0;
-const DROP_THRESHOLD = 6;
-
-let editingSetId = null;
-
-let z1MinPct = parseFloat(localStorage.getItem('bio_z1_min')) || 0.60;
-let z1MaxPct = parseFloat(localStorage.getItem('bio_z1_max')) || 0.70;
-let z2MinPct = parseFloat(localStorage.getItem('bio_z2_min')) || 0.70;
-let z2MaxPct = parseFloat(localStorage.getItem('bio_z2_max')) || 0.80;
-let z3MinPct = parseFloat(localStorage.getItem('bio_z3_min')) || 0.80;
-let z3MaxPct = parseFloat(localStorage.getItem('bio_z3_max')) || 0.90;
-
-let hrHistory = [];
-let totalCalories = 0;
-let lastTimestamp = null;
-
-let z1Time = parseInt(localStorage.getItem('bio_z1_time')) || 0;
-let z2Time = parseInt(localStorage.getItem('bio_z2_time')) || 0;
-let z3Time = parseInt(localStorage.getItem('bio_z3_time')) || 0;
-
-const DB = {
-    'Trapezoids': ['Dumbbell Shrugs', 'Barbell Shrugs', 'Upright Rows', 'Farmer\'s Walk', 'Cable Shrugs', 'Trap Bar Shrugs', 'Smith Machine Shrugs', 'Snatch Grip High Pull', 'Overhead Shrugs', 'Kettlebell Shrugs'],
-    'Deltoids': ['Lateral Raises', 'Military Press', 'Front Raises', 'Reverse Pec Deck', 'Arnold Press', 'Face Pulls', 'Cable Lateral Raises', 'Seated Dumbbell Press', 'Machine Shoulder Press', 'Upright Rows'],
-    'Pectorals': ['Bench Press', 'Incline Press', 'Decline Press', 'Dumbbell Flyes', 'Cable Crossovers', 'Pec Deck Machine', 'Push-ups', 'Dips (Chest Focus)', 'Machine Chest Press', 'Pullovers'],
-    'Biceps': ['Barbell Curls', 'Hammer Curls', 'Preacher Curls', 'Concentration Curls', 'Cable Curls', 'Incline Dumbbell Curls', 'Spider Curls', 'EZ Bar Curls', 'Reverse Curls', 'Zottman Curls'],
-    'Triceps': ['Pushdowns', 'Dips', 'Skullcrushers', 'Overhead Extension', 'Close-Grip Bench', 'Kickbacks', 'Rope Pushdowns', 'Machine Extension', 'JM Press', 'Tate Press'],
-    'Forearms': ['Wrist Curls', 'Reverse Wrist Curls', 'Farmer\'s Walk', 'Plate Pinches', 'Wrist Rollers', 'Reverse Curls', 'Hammer Curls', 'Dead Hangs', 'Gripper Squeezes', 'Towel Rollups'],
-    'Abdominals': ['Leg Raises', 'Crunches', 'Planks', 'Russian Twists', 'Cable Crunches', 'Ab Wheel Rollouts', 'Hanging Knee Raises', 'V-Ups', 'Bicycle Twists', 'Decline Crunches'],
-    'Quads': ['Squats', 'Leg Press', 'Hack Squats', 'Front Squats', 'Lunges', 'Bulgarian Split Squats', 'Leg Extensions', 'Goblet Squats', 'Sissy Squats', 'Step-ups'],
-    'Lats': ['Lat Pulldowns', 'Bent Over Rows', 'Pull-ups', 'T-Bar Rows', 'Seated Cable Rows', 'Single-Arm DB Rows', 'Straight-Arm Pulldowns', 'Meadows Rows', 'Machine Rows', 'Pendlay Rows'],
-    'Glutes': ['Hip Thrusts', 'Glute Bridges', 'Romanian Deadlifts', 'Cable Pull-Throughs', 'Kickbacks', 'Bulgarian Split Squats', 'Walking Lunges', 'Reverse Hypers', 'Step-ups', 'Sumo Deadlifts'],
-    'Hamstrings': ['Deadlifts', 'Romanian Deadlifts', 'Lying Leg Curls', 'Seated Leg Curls', 'Glute-Ham Raises', 'Good Mornings', 'Stiff-Legged Deadlifts', 'Nordic Curls', 'Kettlebell Swings', 'Swiss Ball Curls'],
-    'Calves': ['Standing Calf Raises', 'Seated Calf Raises', 'Donkey Calf Raises', 'Leg Press Calf Raises', 'Single-Leg Calf Raises', 'Jump Rope', 'Tibialis Raises', 'Box Jumps', 'Sled Pushes', 'Toe Walks']
-};
-
-function getEliteColor(val) {
-    const age = parseInt(localStorage.getItem('bio_age')) || 30;
-    const maxHr = 220 - age;
-    if (val >= maxHr * z3MinPct) return '#ff3333'; 
-    if (val >= maxHr * z2MinPct) return '#ffcc00'; 
-    if (val >= maxHr * z1MinPct) return '#33cc33'; 
-    return '#00f2ff'; 
-}
-
-function updateTriggerSetting(val) {
-    readyTriggerBpm = parseInt(val);
-    document.getElementById('trigger-val-display').innerText = readyTriggerBpm + ' BPM';
-    localStorage.setItem('bio_ready_trigger', readyTriggerBpm);
-    const contextBox = document.getElementById('active-ex-context');
-    if (contextBox) contextBox.innerText = `Recovery Trigger: ${readyTriggerBpm} BPM`;
-}
-
-function saveZoneSettings() {
-    const age = parseInt(localStorage.getItem('bio_age')) || 30;
-    const maxHr = 220 - age;
-
-    z1MinPct = parseFloat(document.getElementById('set-z1-min').value) / maxHr;
-    z1MaxPct = parseFloat(document.getElementById('set-z1-max').value) / maxHr;
-    z2MinPct = parseFloat(document.getElementById('set-z2-min').value) / maxHr;
-    z2MaxPct = parseFloat(document.getElementById('set-z2-max').value) / maxHr;
-    z3MinPct = parseFloat(document.getElementById('set-z3-min').value) / maxHr;
-    z3MaxPct = parseFloat(document.getElementById('set-z3-max').value) / maxHr;
-
-    localStorage.setItem('bio_z1_min', z1MinPct);
-    localStorage.setItem('bio_z1_max', z1MaxPct);
-    localStorage.setItem('bio_z2_min', z2MinPct);
-    localStorage.setItem('bio_z2_max', z2MaxPct);
-    localStorage.setItem('bio_z3_min', z3MinPct);
-    localStorage.setItem('bio_z3_max', z3MaxPct);
-
-    initCardioZones(); 
-    alert("Cardio Zone targets securely mapped.");
-}
-
-async function initSystem() {
-    const w = document.getElementById('user-weight').value;
-    const a = document.getElementById('user-age').value;
-    if (!w || !a) return alert("Weight and Age required.");
-    try {
-        const device = await navigator.bluetooth.requestDevice({ filters: [{ services: ['heart_rate'] }] });
-        const server = await device.gatt.connect();
-        const service = await server.getPrimaryService('heart_rate');
-        const char = await service.getCharacteristic('heart_rate_measurement');
-        await char.startNotifications();
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>BioStack Elite v11.80 STABLE</title>
+    <style>
+        :root { --glow-blue: #00f2ff; --bg-dark: #05070a; --glass: rgba(15, 20, 30, 0.95); --border: #30363d; }
+        body { margin: 0; background: var(--bg-dark); color: white; font-family: -apple-system, system-ui, sans-serif; overflow: hidden; height: 100vh; }
         
-        localStorage.setItem('bio_weight', w);
-        localStorage.setItem('bio_age', a);
+        #login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-dark); z-index: 10000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .login-card { background: var(--glass); padding: 40px; border-radius: 30px; border: 1px solid var(--border); text-align: center; width: 85%; max-width: 400px; }
         
-        document.getElementById('trigger-slider').value = readyTriggerBpm;
-        document.getElementById('trigger-val-display').innerText = readyTriggerBpm + ' BPM';
-
-        initCardioZones();
-        renderLogbook(); 
-
-        document.getElementById('login-screen').style.display = 'none';
-        const dash = document.getElementById('main-dashboard');
-        dash.style.display = 'block';
-        setTimeout(() => { dash.style.opacity = '1'; }, 50);
+        .brand-header { margin-top: 0; margin-bottom: 25px; font-weight: 900; letter-spacing: 3px; font-size: 1.4rem; color: var(--glow-blue); text-transform: uppercase; }
         
-        generateHitMap();
+        input { width: 100%; padding: 15px; margin-bottom: 15px; border-radius: 12px; border: 1px solid #444; background: #000; color: #fff; box-sizing: border-box; }
+        #init-btn { width: 100%; padding: 18px; background: var(--glow-blue); border-radius: 50px; font-weight: 800; border: none; cursor: pointer; }
+
+        .login-version { position: absolute; bottom: 35px; font-size: 0.65rem; color: #555; letter-spacing: 2px; font-weight: 800; text-transform: uppercase; }
+
+        #main-dashboard { display: none; opacity: 0; transition: opacity 0.8s ease; }
         
-        char.addEventListener('characteristicvaluechanged', (e) => {
-            bpm = e.target.value.getUint8(1);
-            const hrEl = document.getElementById('hr-val');
-            hrEl.innerText = bpm;
-            hrEl.style.color = getEliteColor(bpm);
-            
-            calculateTelemetry(bpm);
-            
-            hrHistory.push(bpm);
-            if (hrHistory.length > 55) hrHistory.shift();
-            
-            drawSparkline();
-            updateCardioUI(bpm); 
-            processBioState(); 
-        });
-    } catch (e) { alert("Link Failed: " + e.message); }
-}
+        #top-dash { position: fixed; top: 0; width: 100%; height: 100px; display: flex; align-items: center; justify-content: space-between; padding: 20px 30px; box-sizing: border-box; z-index: 9000; }
+        #hr-pill { background: var(--glass); padding: 0 15px; width: 135px; height: 65px; border-radius: 50px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: flex-start; gap: 8px; }
+        #hr-val { font-size: 2.4rem; font-weight: 900; color: var(--glow-blue); flex-grow: 1; text-align: center; }
+        #hr-icon { width: 24px; height: auto; margin-left: 5px; }
+        #graph-box { width: 200px; height: 50px; position: relative; }
+        #sparkline-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
 
-function calculateTelemetry(currentBpm) {
-    const weight = localStorage.getItem('bio_weight') || 180;
-    const age = localStorage.getItem('bio_age') || 30;
-    const maxHr = 220 - age;
-    const now = Date.now();
-    if (!lastTimestamp) { lastTimestamp = now; return; }
-    
-    const deltaMs = now - lastTimestamp;
-    const durationHours = deltaMs / (1000 * 60 * 60);
-    const durationSecs = deltaMs / 1000;
-    lastTimestamp = now;
-    
-    if (currentBpm >= maxHr * z3MinPct) z3Time += durationSecs;
-    else if (currentBpm >= maxHr * z2MinPct) z2Time += durationSecs;
-    else if (currentBpm >= maxHr * z1MinPct) z1Time += durationSecs;
+        .app-view { display: none; width: 100%; height: 100vh; position: relative; }
+        .view-active { display: block; }
 
-    localStorage.setItem('bio_z1_time', Math.round(z1Time));
-    localStorage.setItem('bio_z2_time', Math.round(z2Time));
-    localStorage.setItem('bio_z3_time', Math.round(z3Time));
-    
-    let calPerMinute = ( (age * 0.2017) + (weight * 0.09036) + (currentBpm * 0.6309) - 55.0969 ) / 4.184;
-    if (calPerMinute < 0) calPerMinute = 0;
-    
-    const sliceCals = ((calPerMinute / 60) * (durationHours * 60)) * 10;
-    totalCalories += sliceCals;
-    
-    const calVal = Math.round(totalCalories);
-    document.getElementById('total-cal').innerText = calVal;
-    
-    if(document.getElementById('cardio-stat-cals')) document.getElementById('cardio-stat-cals').innerText = calVal;
-    if(document.getElementById('cardio-stat-fat')) document.getElementById('cardio-stat-fat').innerText = (totalCalories / 3500).toFixed(3);
-}
+        #mid-dash { position: fixed; top: 110px; left: 20px; z-index: 900; }
+        #total-cal { color: var(--glow-blue); font-size: 1.4rem; font-weight: 700; }
+        #musc-header { font-size: 0.8rem; margin-top: 10px; color: var(--glow-blue); letter-spacing: 1px; }
+        #active-ex-tag { font-size: 0.6rem; color: #666; margin-top: 5px; text-transform: uppercase; }
 
-function startTraining() {
-    activeExercise = document.getElementById('ex-name-modal').innerText;
-    closeAction();
-    
-    isTrain = true; 
-    document.getElementById('active-ex-tag').innerText = activeExercise;
-    const contextBox = document.getElementById('active-ex-context');
-    contextBox.innerText = `Recovery Trigger: ${readyTriggerBpm} BPM`;
-    contextBox.style.display = 'block';
-    
-    setCounter = 0;
-    currentSessionSets = [];
-    document.getElementById('sets-list').innerHTML = '';
-    
-    document.getElementById('hud-in-flow').style.display = "block";
-    document.getElementById('sidebar').style.display = "none";
-    
-    liftState = 'READY';
-    processBioState(); 
-}
-
-function processBioState() {
-    if (!isTrain) return;
-
-    const btn = document.getElementById('set-main-btn');
-    const helper = document.getElementById('rest-helper-text');
-
-    if (liftState === 'READY') {
-        if (bpm > readyTriggerBpm) {
-            btn.innerText = "COOL DOWN";
-            btn.classList.add('blinking-rest');
-            btn.style.background = '#ff0044';
-            btn.style.color = '#fff';
-            btn.onclick = null; 
-            helper.innerText = "WAIT UNTIL MUSCLES ARE PRIMED";
-            helper.style.display = 'block';
-        } else {
-            btn.innerText = "START SET";
-            btn.classList.remove('blinking-rest');
-            btn.style.background = 'var(--glow-blue)';
-            btn.style.color = '#000';
-            btn.onclick = () => { 
-                liftState = 'LIFTING'; 
-                currentSetMax = bpm; 
-                processBioState(); 
-            };
-            helper.style.display = 'none';
-        }
-    } 
-    else if (liftState === 'LIFTING') {
-        btn.innerText = "SET IN PROGRESS...";
-        btn.classList.remove('blinking-rest');
-        btn.style.background = '#333';
-        btn.style.color = '#fff';
-        btn.onclick = null; 
-        if (bpm > currentSetMax) currentSetMax = bpm;
-        if (bpm <= currentSetMax - DROP_THRESHOLD && currentSetMax > readyTriggerBpm) {
-            liftState = 'RESTING';
-            processBioState();
-        }
-    }
-    else if (liftState === 'RESTING') {
-        btn.innerText = "REST";
-        btn.classList.add('blinking-rest');
-        btn.style.background = '#ff0044';
-        btn.style.color = '#fff';
-        btn.onclick = null;
-        helper.innerText = "WAIT UNTIL MUSCLES ARE PRIMED";
-        helper.style.display = 'block';
-        if (bpm > currentSetMax) currentSetMax = bpm; 
-        if (bpm <= readyTriggerBpm) {
-            finalizeSet();
-        }
-    }
-}
-
-function finalizeSet() {
-    setCounter++;
-    
-    currentSessionSets.push({
-        id: setCounter,
-        maxBpm: currentSetMax,
-        weight: null,
-        reps: null,
-        volume: 0
-    });
-
-    renderDynamicSetList();
-
-    currentSetMax = 0;
-    liftState = 'READY';
-    processBioState();
-}
-
-function renderDynamicSetList() {
-    const container = document.getElementById('sets-list');
-    container.innerHTML = ''; 
-    
-    if (currentSessionSets.length === 0) return;
-
-    let globalMaxBpm = 150; 
-    let globalMaxVol = 1;
-
-    currentSessionSets.forEach(s => {
-        if (s.maxBpm > globalMaxBpm) globalMaxBpm = s.maxBpm;
-        if (s.volume > globalMaxVol) globalMaxVol = s.volume;
-    });
-
-    currentSessionSets.forEach(set => {
-        let barPx = "0%";
-        let barLabel = "";
-        let hasData = set.volume > 0;
-
-        if (hasData) {
-            barPx = Math.min(100, (set.volume / globalMaxVol) * 100) + "%";
-            barLabel = set.volume + " EFFORT";
-        } else {
-            barPx = Math.min(100, (set.maxBpm / globalMaxBpm) * 100) + "%";
-            barLabel = set.maxBpm + " BPM";
-        }
-
-        const item = document.createElement('div');
-        item.className = 'intensity-item';
+        #sidebar { position: fixed; top: 200px; left: 20px; width: 140px; z-index: 500; height: calc(100vh - 310px); overflow-y: auto; padding-bottom: 20px; }
+        #sidebar::-webkit-scrollbar { display: none; } 
         
-        const label = document.createElement('span');
-        label.className = 'intensity-label';
-        label.innerText = `Set ${set.id}`;
+        .list-btn { width: 100%; padding: 12px; margin-bottom: 8px; border-radius: 12px; border: 1px solid var(--border); background: var(--glass); color: white; font-size: 0.7rem; text-align: left; }
 
-        const bar = document.createElement('div');
-        bar.className = 'set-bar';
+        #stage-area { position: fixed; top: 120px; right: 0; width: 85vw; height: 65vh; display: flex; align-items: center; justify-content: flex-end; z-index: 10; }
         
-        const inner = document.createElement('span');
-        inner.className = 'bar-inner-label';
-        inner.innerText = barLabel;
-        bar.appendChild(inner);
+        #set-bar-sidebar { width: 50vw; min-width: 160px; height: 100%; max-height: 480px; display: flex; flex-direction: column; margin-right: 15px; padding: 10px; justify-content: flex-start; align-items: flex-start; border-right: none; margin-top: 85px; }
         
-        const actionContainer = document.createElement('div');
-        actionContainer.style.display = 'flex';
+        #active-ex-context { font-size: 0.65rem; color: var(--glow-blue); text-transform: uppercase; border-bottom: 1px solid rgba(0,242,255,0.2); width: 100%; text-align: left; padding-bottom: 8px; margin-bottom: 10px; font-weight: 700; display: none; transition: color 0.3s ease; }
         
-        const actionBtn = document.createElement('button');
-        actionBtn.className = 'edit-set-btn';
+        #sets-list { flex-grow: 1; overflow-y: auto; width: 100%; display: flex; flex-direction: column; gap: 12px; margin-bottom: 10px; padding-right: 5px; z-index: 40; }
         
-        if (hasData) {
-            actionBtn.innerText = '✓';
-            actionBtn.style.background = 'var(--glow-blue)';
-            actionBtn.style.color = '#000';
-            actionBtn.style.border = 'none';
-            actionBtn.style.fontSize = '0.9rem';
-        } else {
-            actionBtn.innerText = '+';
-        }
+        .intensity-item { width: 100%; display: flex; align-items: center; justify-content: flex-start; gap: 8px; }
+        .intensity-label { font-size: 0.7rem; color: #fff; font-weight: 600; flex-shrink: 0; width: 40px; }
+        .set-bar { height: 18px; background: var(--glow-blue); border-radius: 4px; transition: width 0.5s cubic-bezier(0.1, 0.7, 1.0, 0.1); width: 0px; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); }
+        .bar-inner-label { font-size: 0.65rem; color: #000; font-weight: 900; opacity: 0; transition: opacity 0.3s ease 0.3s; white-space: nowrap; padding: 0 5px; }
+        .set-bar.revealed .bar-inner-label { opacity: 1; }
+
+        .edit-set-btn { background: transparent; border: 1px solid var(--glow-blue); color: var(--glow-blue); border-radius: 6px; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; font-weight: 900; cursor: pointer; flex-shrink: 0; transition: all 0.2s ease; padding: 0; margin: 0; line-height: 1; }
+        .edit-set-btn:hover { background: var(--glow-blue); color: #000; }
+        .modal-row { display: flex; gap: 10px; width: 100%; margin-bottom: 10px; }
+
+        #hud-in-flow { width: 100%; display: none; flex-shrink: 0; z-index: 40; position: relative; }
+        #rest-helper-text { display:none; font-size:0.65rem; color:#ffaa00; font-weight:800; text-transform:uppercase; margin-bottom: 8px; text-align: center; width: 100%; line-height: 1.3; }
+        .flow-btn { width: 100%; padding: 14px; border-radius: 12px; border: none; font-weight: 800; text-transform: uppercase; cursor: pointer; margin-bottom: 10px; transition: all 0.3s ease; }
+        #new-ex-btn { background: transparent; border: 1px solid #444; color: #888; font-size: 0.7rem; }
+
+        @keyframes restBlink { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        .blinking-rest { animation: restBlink 1.5s infinite ease-in-out; }
+
+        #image-container { position: relative; height: 100%; width: auto; display: inline-block; }
+        #base-front { height: 100%; width: auto; display: block; z-index: 5; }
+        .stack-layer { position: absolute; top: 0; right: 0; height: 100%; width: auto; pointer-events: none; transition: opacity 0.4s ease; display: none; }
+        .layer-visible { display: block; }
+        .muscle-overlay { z-index: 10; opacity: 0; mix-blend-mode: screen; }
+        .ui-overlay { z-index: 20; opacity: 1; pointer-events: none; }
+
+        #touch-map { position: absolute; top: 0; right: 10%; width: 80%; height: 100%; z-index: 100; display: grid; grid-template-columns: repeat(3, 1fr); }
+        .hit { width: 100%; height: 100%; pointer-events: auto; }
+
+        .overlay { position: absolute; top: 15%; left: 50%; transform: translateX(-50%); width: 92%; max-width: 400px; background: var(--glass); border-radius: 35px; padding: 30px; border: 1px solid var(--border); backdrop-filter: blur(25px); display: none; text-align: center; z-index: 9500; }
+
+        #cardio-layout { display: flex; flex-direction: column; height: 100%; width: 100%; box-sizing: border-box; padding: 110px 20px 100px 20px; position: relative; }
+        #cardio-stats-row { display: flex; justify-content: space-around; width: 100%; margin-bottom: 25px; text-align: center; }
+        .stat-value { font-size: 2.5rem; font-weight: 900; color: #fff; line-height: 1; }
+        .stat-label { font-size: 0.8rem; color: var(--glow-blue); text-transform: uppercase; font-weight: 700; margin-top: 5px; }
+
+        #cardio-content { display: flex; flex-direction: row; position: relative; flex-grow: 1; }
+        #cardio-panel { width: 50%; z-index: 15; display: flex; flex-direction: column; justify-content: center; gap: 20px; padding-left: 10px;}
+        #cardio-visuals { position: absolute; right: -10%; top: -5%; width: 65%; height: 110%; display: flex; justify-content: flex-end; align-items: center; z-index: 5; pointer-events: none; }
         
-        actionBtn.onclick = () => openSetData(set.id);
-        actionContainer.appendChild(actionBtn);
-
-        item.appendChild(label);
-        item.appendChild(bar);
-        item.appendChild(actionContainer);
-        container.appendChild(item);
-
-        requestAnimationFrame(() => {
-            setTimeout(() => {
-                bar.style.width = barPx;
-                bar.classList.add('revealed');
-            }, 50);
-        });
-    });
-
-    setTimeout(() => { container.scrollTop = container.scrollHeight; }, 50);
-}
-
-function openSetData(setId) {
-    document.getElementById('log-set-num').innerText = setId;
-    const setObj = currentSessionSets.find(s => s.id === parseInt(setId));
-    
-    document.getElementById('log-weight').value = setObj.weight || '';
-    document.getElementById('log-reps').value = setObj.reps || '';
-    editingSetId = setId;
-    
-    document.getElementById('set-data-modal').style.display = 'block';
-    setTimeout(() => { document.getElementById('log-weight').focus(); }, 100);
-}
-
-function closeSetData() {
-    document.getElementById('set-data-modal').style.display = 'none';
-    editingSetId = null;
-}
-
-function saveSetData() {
-    const w = parseFloat(document.getElementById('log-weight').value);
-    const r = parseFloat(document.getElementById('log-reps').value);
-    
-    if(!w || !r) return alert('Please enter both weight and reps.');
-
-    const setObj = currentSessionSets.find(s => s.id === parseInt(editingSetId));
-    if (setObj) {
-        setObj.weight = w;
-        setObj.reps = r;
-        setObj.volume = w * r; 
-    }
-    
-    closeSetData();
-    renderDynamicSetList(); 
-}
-
-function clearIntensityBars() {
-    const list = document.getElementById('sets-list');
-    if (list) list.innerHTML = '';
-}
-
-function exitTraining() {
-    if (currentSessionSets.length > 0 && activeExercise) {
-        let logbook = JSON.parse(localStorage.getItem('bio_logbook')) || [];
+        .zone-card { background-color: transparent; padding: 20px 15px; display: flex; flex-direction: column; align-items: flex-start; gap: 12px; transition: all 0.3s ease; opacity: 0.35; filter: grayscale(100%); position: relative; background-size: 100% 100%; background-position: center; background-repeat: no-repeat; border: none; overflow: hidden; }
+        .zone-card.active-zone { opacity: 1; filter: grayscale(0%); transform: scale(1.05); z-index: 10; }
         
-        let mBpm = 0; let mVol = 0;
-        currentSessionSets.forEach(s => {
-            if(s.maxBpm > mBpm) mBpm = s.maxBpm;
-            if(s.volume > mVol) mVol = s.volume;
-        });
+        #zone-3 { --zone-color: #ff3333; background-image: url('assets/endurance_shell.png'); }
+        #zone-2 { --zone-color: #ffcc00; background-image: url('assets/weight_loss_shell.png'); }
+        #zone-1 { --zone-color: #33cc33; background-image: url('assets/fat_loss_shell.png'); }
 
-        const newEntry = {
-            date: new Date().toISOString(),
-            exercise: activeExercise,
-            muscle: currentTargetMuscle,
-            setsCount: currentSessionSets.length,
-            maxBpm: mBpm,
-            maxVol: mVol
-        };
-        logbook.push(newEntry);
-        localStorage.setItem('bio_logbook', JSON.stringify(logbook));
-    }
-
-    isTrain = false;
-    liftState = 'IDLE';
-    document.getElementById('hud-in-flow').style.display = "none";
-    document.getElementById('active-ex-context').style.display = 'none';
-    clearIntensityBars();
-    document.getElementById('sidebar').style.display = "block";
-    document.getElementById('active-ex-tag').innerText = "NO ACTIVE EXERCISE";
-}
-
-function formatTime(totalSeconds) {
-    if (totalSeconds < 60) return `${Math.round(totalSeconds)}s`;
-    return `${Math.floor(totalSeconds / 60)}m`;
-}
-
-function renderLogbook() {
-    document.getElementById('log-tot-cal').innerText = Math.round(totalCalories);
-    document.getElementById('log-tot-fat').innerText = (totalCalories / 3500).toFixed(3);
-    
-    document.getElementById('log-z1-time').innerText = formatTime(z1Time);
-    document.getElementById('log-z2-time').innerText = formatTime(z2Time);
-    document.getElementById('log-z3-time').innerText = formatTime(z3Time);
-
-    const container = document.getElementById('logbook-content');
-    container.innerHTML = '';
-    
-    let logbook = JSON.parse(localStorage.getItem('bio_logbook')) || [];
-    if (logbook.length === 0) {
-        container.innerHTML = '<div style="text-align:center; color:#555; padding-top:30px; font-weight:800; font-size:0.8rem; text-transform:uppercase;">No completed sessions found.</div>';
-        return;
-    }
-
-    logbook.sort((a, b) => new Date(b.date) - new Date(a.date));
-
-    let currentDateStr = "";
-
-    logbook.forEach(entry => {
-        const d = new Date(entry.date);
-        const dateString = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+        .zone-header { display: flex; align-items: center; gap: 10px; width: 100%; }
+        .zone-dot { width: 14px; height: 14px; background: var(--zone-color); border-radius: 50%; box-shadow: 0 0 8px var(--zone-color); flex-shrink: 0; }
         
-        if (dateString !== currentDateStr) {
-            const h = document.createElement('div');
-            h.className = 'log-date-header';
-            h.innerText = dateString;
-            container.appendChild(h);
-            currentDateStr = dateString;
-        }
+        .zone-title { font-weight: 800; font-size: 0.95rem; letter-spacing: 0.5px; text-transform: uppercase; color: #fff; margin: 0; line-height: 1; white-space: nowrap; }
+        .zone-pill { border: 1px solid var(--zone-color); border-radius: 50px; padding: 5px 14px; font-size: 0.85rem; font-weight: 700; color: #fff; margin-left: 24px; white-space: nowrap; }
 
-        const card = document.createElement('div');
-        card.className = 'log-card';
+        #logbook-scroll-area { height: 100vh; overflow-y: auto; padding: 110px 20px 120px 20px; box-sizing: border-box; }
+        .log-date-header { font-weight: 900; color: var(--glow-blue); border-bottom: 1px solid #333; padding-bottom: 5px; margin-top: 20px; margin-bottom: 15px; font-size: 1.1rem; text-transform: uppercase; }
+        .log-card { background: var(--glass); border: 1px solid var(--border); border-radius: 15px; padding: 15px; margin-bottom: 15px; }
+        .log-ex-title { font-weight: 800; font-size: 1rem; color: #fff; margin: 0 0 5px 0; }
+        .log-ex-muscle { font-size: 0.7rem; color: #888; text-transform: uppercase; margin-bottom: 12px; }
+        .log-set-row { display: flex; justify-content: space-between; font-size: 0.8rem; border-bottom: 1px solid rgba(255,255,255,0.05); padding: 5px 0; }
+        .log-set-row:last-child { border-bottom: none; }
+        .log-stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .log-stat-box { background: #111; border: 1px solid #333; border-radius: 10px; padding: 12px; text-align: center; }
+        .log-stat-val { font-size: 1.4rem; font-weight: 900; color: var(--glow-blue); }
+        .log-stat-lbl { font-size: 0.6rem; color: #888; text-transform: uppercase; margin-top: 4px; }
 
-        let volString = entry.maxVol > 0 ? `<span style="color:var(--glow-blue)">${entry.maxVol} MAX EFFORT</span>` : `<span style="color:#ff0044">${entry.maxBpm} MAX BPM</span>`;
+        #settings-scroll-area { height: 100vh; overflow-y: auto; padding: 110px 30px 120px 30px; box-sizing: border-box; }
+        .settings-card { background:var(--glass); padding:25px; border-radius:20px; border:1px solid var(--border); margin-bottom: 20px; }
+        .settings-row { display:flex; justify-content:space-between; margin-bottom:15px; align-items: center; }
+        .settings-label { font-weight:700; font-size:0.9rem; }
+        .settings-val { color:var(--glow-blue); font-weight:800; font-size: 1.1rem; }
+        .settings-desc { font-size:0.75rem; color:#888; margin-bottom:20px; line-height:1.4; }
+        input[type="range"] { -webkit-appearance: none; background: #222; height: 8px; border-radius: 4px; outline: none; padding: 0; border: none; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 24px; height: 24px; border-radius: 50%; background: var(--glow-blue); cursor: pointer; box-shadow: 0 0 10px rgba(0, 242, 255, 0.5); }
+        
+        .zone-input { width: 55px; background: #111; border: 1px solid #444; color: #fff; padding: 8px; border-radius: 6px; text-align: center; font-weight: 800; font-size: 0.9rem; margin: 0 5px; }
+        .zone-setting-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .zone-setting-label { font-size: 0.8rem; font-weight: 800; letter-spacing: 0.5px; }
 
-        card.innerHTML = `
-            <div class="log-ex-title">${entry.exercise}</div>
-            <div class="log-ex-muscle">${entry.muscle}</div>
-            <div class="log-set-row">
-                <span>Completed Sets:</span>
-                <span style="font-weight:900; color:#fff;">${entry.setsCount}</span>
+        #bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; height: 85px; background: var(--glass); border-top: 1px solid var(--border); display: flex; justify-content: space-around; align-items: center; z-index: 9900; backdrop-filter: blur(25px); padding-bottom: max(env(safe-area-inset-bottom), 10px); box-sizing: border-box; }
+        .nav-btn { background: transparent; border: none; color: #555; font-size: 0.65rem; font-weight: 800; text-transform: uppercase; display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; width: 25%; transition: color 0.3s ease; }
+        .nav-btn.active-nav { color: var(--glow-blue); }
+        .nav-icon { width: 24px; height: 24px; background: #555; border-radius: 6px; transition: background 0.3s ease; }
+        .nav-btn.active-nav .nav-icon { background: var(--glow-blue); }
+
+        .version-footer { text-align: center; padding: 20px 0; color: #555; font-size: 0.65rem; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; }
+    </style>
+</head>
+<body>
+
+    <div id="login-screen">
+        <img src="assets/biostack_v3_logo.png" style="width: 140px; margin-bottom: 30px; filter: drop-shadow(0 0 15px rgba(0,242,255,0.3));">
+        <div class="login-card">
+            <h2 class="brand-header">BIOSTACK ELITE</h2>
+            <input type="number" id="user-weight" placeholder="Weight (lbs)">
+            <input type="number" id="user-age" placeholder="Age">
+            <button id="init-btn" onclick="initSystem()">Initialize & Link</button>
+        </div>
+        <div class="login-version">v11.80 STABLE</div>
+    </div>
+
+    <div id="main-dashboard">
+        
+        <div id="top-dash">
+            <div id="hr-pill"><img src="assets/heartbeat_icon.png" id="hr-icon"><span id="hr-val">--</span></div>
+            <div id="graph-box"><canvas id="sparkline-canvas"></canvas></div>
+        </div>
+
+        <div id="view-weights" class="app-view">
+            <div id="mid-dash">
+                <div><span id="total-cal">0</span> <span style="font-size:0.7rem; opacity:0.5;">CALORIES</span></div>
+                <div id="musc-header">TARGET: --</div>
+                <div id="active-ex-tag">NO ACTIVE EXERCISE</div>
             </div>
-            <div class="log-set-row">
-                <span>Peak Metric:</span>
-                <span style="font-weight:900;">${volString}</span>
+            
+            <div id="sidebar"><div id="exercise-picker"></div></div>
+            
+            <div id="stage-area">
+                <div id="set-bar-sidebar">
+                    <div id="active-ex-context"></div>
+                    <div id="sets-list"></div>
+                    <div id="hud-in-flow">
+                        <div id="rest-helper-text">WAIT UNTIL MUSCLES ARE PRIMED</div>
+                        <button id="set-main-btn" class="flow-btn">START SET</button>
+                        <button id="new-ex-btn" class="flow-btn" onclick="exitTraining()">NEW EXERCISE</button>
+                    </div>
+                </div>
+                <div id="image-container">
+                    <img src="assets/base_front.png" id="base-front">
+                    <img src="assets/back_button.png" id="btn-to-back" class="stack-layer ui-overlay layer-visible">
+                    <img src="assets/front_button.png" id="btn-to-front" class="stack-layer ui-overlay">
+                    <img src="assets/trapezoids.png" id="overlay-trapezoids" class="muscle-overlay stack-layer layer-visible">
+                    <img src="assets/deltoids.png" id="overlay-deltoids" class="muscle-overlay stack-layer layer-visible">
+                    <img src="assets/pectorals.png" id="overlay-pectorals" class="muscle-overlay stack-layer layer-visible">
+                    <img src="assets/biceps.png" id="overlay-biceps" class="muscle-overlay stack-layer layer-visible">
+                    <img src="assets/forearms.png" id="overlay-forearms" class="muscle-overlay stack-layer layer-visible">
+                    <img src="assets/abdominals.png" id="overlay-abdominals" class="muscle-overlay stack-layer layer-visible">
+                    <img src="assets/quads.png" id="overlay-quads" class="muscle-overlay stack-layer layer-visible">
+                    <img src="assets/base_back.png" id="base-back" class="stack-layer" style="z-index: 6;">
+                    <img src="assets/lats.png" id="overlay-lats" class="muscle-overlay stack-layer">
+                    <img src="assets/triceps.png" id="overlay-triceps" class="muscle-overlay stack-layer">
+                    <img src="assets/glutes.png" id="overlay-glutes" class="muscle-overlay stack-layer">
+                    <img src="assets/hamstrings.png" id="overlay-hamstrings" class="muscle-overlay stack-layer">
+                    <img src="assets/calves.png" id="overlay-calves" class="muscle-overlay stack-layer">
+                    <div id="touch-map"></div>
+                </div>
             </div>
-        `;
-        container.appendChild(card);
-    });
-}
 
-function initCardioZones() {
-    const age = parseInt(localStorage.getItem('bio_age')) || 30; 
-    const maxHr = 220 - age;
-    
-    const z1Min = Math.round(maxHr * z1MinPct); const z1Max = Math.round(maxHr * z1MaxPct);
-    const z2Min = Math.round(maxHr * z2MinPct); const z2Max = Math.round(maxHr * z2MaxPct);
-    const z3Min = Math.round(maxHr * z3MinPct); const z3Max = Math.round(maxHr * z3MaxPct);
-    
-    document.getElementById('pill-z1').innerText = `${z1Min} - ${z1Max} BPM`;
-    document.getElementById('pill-z2').innerText = `${z2Min} - ${z2Max} BPM`;
-    document.getElementById('pill-z3').innerText = `${z3Min} - ${z3Max} BPM`;
-}
+            <canvas id="lift-particles" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 8000; pointer-events: none;"></canvas>
 
-function updateCardioUI(currentBpm) {
-    const age = parseInt(localStorage.getItem('bio_age')) || 30;
-    const maxHr = 220 - age;
-    document.querySelectorAll('.zone-card').forEach(c => c.classList.remove('active-zone'));
-    
-    if (currentBpm >= maxHr * z3MinPct && currentBpm <= maxHr * z3MaxPct) document.getElementById('zone-3').classList.add('active-zone');
-    else if (currentBpm >= maxHr * z2MinPct && currentBpm < maxHr * z2MaxPct) document.getElementById('zone-2').classList.add('active-zone');
-    else if (currentBpm >= maxHr * z1MinPct && currentBpm < maxHr * z1MaxPct) document.getElementById('zone-1').classList.add('active-zone');
-}
+            <div id="menu-action" class="overlay">
+                <h2 id="ex-name-modal" style="margin-bottom:25px;">EXERCISE</h2>
+                <button onclick="startTraining()" style="width:100%; padding:18px; border-radius:50px; background:var(--glow-blue); color:#000; font-weight:800; border:none; cursor:pointer;">START SETS</button>
+                <p onclick="closeAction()" style="margin-top:15px; font-size:0.8rem; opacity:0.5; cursor:pointer;">CANCEL</p>
+            </div>
 
-function drawSparkline() {
-    const canvas = document.getElementById('sparkline-canvas');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    const dpr = window.devicePixelRatio || 1;
-    const rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width * dpr; canvas.height = rect.height * dpr;
-    ctx.scale(dpr, dpr); ctx.clearRect(0, 0, rect.width, rect.height);
-    
-    if (hrHistory.length < 2) return;
-    ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-    
-    const step = rect.width / (hrHistory.length - 1);
-    const points = hrHistory.map((val, i) => ({ x: i * step, y: rect.height - ((val - 60) / 100) * rect.height }));
-    
-    for (let i = 1; i < points.length; i++) {
-        ctx.beginPath();
-        ctx.moveTo(points[i-1].x, points[i-1].y);
-        ctx.lineTo(points[i].x, points[i].y);
-        ctx.strokeStyle = getEliteColor(hrHistory[i]);
-        ctx.stroke();
-    }
-}
+            <div id="set-data-modal" class="overlay" style="z-index: 9600;">
+                <h2 style="margin-top:0; margin-bottom:20px; color:var(--glow-blue); font-size: 1.1rem; text-transform: uppercase;">LOG SET <span id="log-set-num"></span></h2>
+                <div class="modal-row">
+                    <input type="number" id="log-weight" placeholder="Weight (lbs)">
+                    <input type="number" id="log-reps" placeholder="Reps">
+                </div>
+                <button class="flow-btn" style="background:var(--glow-blue); color:#000;" onclick="saveSetData()">SAVE SET</button>
+                <p onclick="closeSetData()" style="margin-top:15px; font-size:0.8rem; opacity:0.5; cursor:pointer;">CANCEL</p>
+            </div>
+        </div>
 
-function generateHitMap() {
-    const map = document.getElementById('touch-map');
-    if (!map) return;
-    map.innerHTML = "";
-    
-    if (currentView === "front") {
-        map.style.gridTemplateRows = '19% 10% 9% 11% 23% 28%';
-        const fG = ["", "", "TOGGLE_BACK", "Deltoids", "Pectorals", "Deltoids", "Biceps", "Abdominals", "Biceps", "Forearms", "Abdominals", "Forearms", "", "Quads", "", "", "", ""];
-        fG.forEach((m) => {
-            const div = document.createElement('div');
-            div.className = "hit";
-            if (m === "TOGGLE_BACK") div.onclick = () => switchView('back');
-            else if (m !== "") div.onclick = () => selectMuscle(m);
-            map.appendChild(div);
-        });
-    } else {
-        map.style.gridTemplateRows = '12% 10% 22% 8% 4% 20% 24%';
-        const bG = ["TOGGLE_FRONT", "", "", "Trapezoids", "Trapezoids", "Trapezoids", "Triceps", "Lats", "Triceps", "", "", "", "Glutes", "Glutes", "Glutes", "Hamstrings", "Hamstrings", "Hamstrings", "Calves", "Calves", "Calves"];
-        bG.forEach((m) => {
-            const div = document.createElement('div');
-            div.className = "hit";
-            if (m === "TOGGLE_FRONT") div.onclick = () => switchView('front');
-            else if (m !== "") div.onclick = () => selectMuscle(m);
-            map.appendChild(div);
-        });
-    }
-}
+        <div id="view-cardio" class="app-view view-active">
+            <canvas id="cardio-particles" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; pointer-events: none;"></canvas>
+            <div id="cardio-layout">
+                <div id="cardio-stats-row">
+                    <div><div id="cardio-stat-cals" class="stat-value">0</div><div class="stat-label">total cal burned</div></div>
+                    <div><div id="cardio-stat-fat" class="stat-value">0.000</div><div class="stat-label">total lbs fat loss</div></div>
+                </div>
+                <div id="cardio-content">
+                    <div id="cardio-panel">
+                        <div class="zone-card" id="zone-3"><div class="zone-header"><div class="zone-dot"></div><div class="zone-title">ENDURANCE</div></div><div class="zone-pill" id="pill-z3">-- BPM</div></div>
+                        <div class="zone-card" id="zone-2"><div class="zone-header"><div class="zone-dot"></div><div class="zone-title">WEIGHT LOSS</div></div><div class="zone-pill" id="pill-z2">-- BPM</div></div>
+                        <div class="zone-card" id="zone-1"><div class="zone-header"><div class="zone-dot"></div><div class="zone-title">LEAN & MEAN</div></div><div class="zone-pill" id="pill-z1">-- BPM</div></div>
+                    </div>
+                    <div id="cardio-visuals">
+                        <img src="assets/base_cardio.png" style="position: relative; max-height: 100%; max-width: 100%; z-index: 5; object-fit: contain;">
+                    </div>
+                </div>
+            </div>
+        </div>
 
-function switchView(view) {
-    currentView = view;
-    document.querySelectorAll('.muscle-overlay').forEach(img => img.style.opacity = 0);
-    document.querySelectorAll('.stack-layer').forEach(l => l.classList.remove('layer-visible'));
-    if (view === 'front') {
-        document.getElementById('btn-to-back').classList.add('layer-visible');
-        ['trapezoids','deltoids','pectorals','biceps','forearms','abdominals','quads'].forEach(m => {
-            const el = document.getElementById(`overlay-${m}`);
-            if (el) el.classList.add('layer-visible');
-        });
-    } else {
-        document.getElementById('base-back').classList.add('layer-visible');
-        document.getElementById('btn-to-front').classList.add('layer-visible');
-        ['trapezoids', 'lats','triceps','glutes','hamstrings','calves'].forEach(m => {
-            const el = document.getElementById(`overlay-${m}`);
-            if (el) el.classList.add('layer-visible');
-        });
-    }
-    generateHitMap();
-}
-
-function selectMuscle(m) {
-    if (isTrain) return;
-    currentTargetMuscle = m; 
-    document.querySelectorAll('.muscle-overlay').forEach(img => img.style.opacity = 0);
-    const overlay = document.getElementById(`overlay-${m.toLowerCase()}`);
-    if (overlay) overlay.style.opacity = 0.5;
-    document.getElementById('musc-header').innerText = "TARGET: " + m;
-    const picker = document.getElementById('exercise-picker');
-    picker.innerHTML = "";
-    DB[m].forEach(ex => {
-        const b = document.createElement('button');
-        b.className = "list-btn";
-        b.innerText = ex;
-        b.onclick = () => {
-            document.getElementById('ex-name-modal').innerText = ex;
-            document.getElementById('menu-action').style.display = 'block';
-        };
-        picker.appendChild(b);
-    });
-}
-
-function closeAction() { document.getElementById('menu-action').style.display = 'none'; }
-
-function switchAppTab(tabId, btnElement) {
-    document.querySelectorAll('.app-view').forEach(view => view.classList.remove('view-active'));
-    document.getElementById('view-' + tabId).classList.add('view-active');
-    document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active-nav'));
-    btnElement.classList.add('active-nav');
-    
-    if (tabId === 'cardio') initCardioZones();
-    if (tabId === 'logbook') renderLogbook(); 
-}
-
-const canvasP = document.getElementById('cardio-particles');
-let ctxP = canvasP ? canvasP.getContext('2d') : null;
-let particles = [];
-
-const canvasL = document.getElementById('lift-particles');
-let ctxL = canvasL ? canvasL.getContext('2d') : null;
-let liftParticles = [];
-
-function initPhysicsEngines() {
-    if (canvasP) requestAnimationFrame(animateCardioParticles);
-    if (canvasL) requestAnimationFrame(animateLiftParticles);
-}
-
-function animateCardioParticles() {
-    requestAnimationFrame(animateCardioParticles);
-    if (!document.getElementById('view-cardio').classList.contains('view-active')) return;
-    if (!ctxP) return;
-
-    if (canvasP.width !== window.innerWidth || canvasP.height !== window.innerHeight) {
-        canvasP.width = window.innerWidth;
-        canvasP.height = window.innerHeight;
-    }
-    if (canvasP.width === 0) return; 
-
-    ctxP.clearRect(0, 0, canvasP.width, canvasP.height);
-
-    const age = parseInt(localStorage.getItem('bio_age')) || 30;
-    const maxHr = 220 - age;
-    let intensity = 0;
-    const z1BpmThreshold = maxHr * z1MinPct; 
-    
-    if (bpm >= z1BpmThreshold) {
-        intensity = Math.max(0, Math.min(1, (bpm - z1BpmThreshold) / (maxHr - z1BpmThreshold)));
-        let spawnRate = 1 + Math.floor(intensity * 4); 
-        for (let i = 0; i < spawnRate; i++) {
-            if (Math.random() > 0.4) { 
-                particles.push({
-                    x: canvasP.width * 0.65 + (Math.random() * 20 - 10), 
-                    y: canvasP.height * 0.3 + Math.random() * (canvasP.height * 0.45), 
-                    vx: -(0.5 + Math.random() * 1.5), 
-                    vy: (Math.random() - 0.5) * 1.0 - (intensity * 0.3), 
-                    life: 150 + Math.random() * 100,
-                    maxLife: 250,
-                    size: 1.0 + Math.random() * 1.5, 
-                    color: getEliteColor(bpm)
-                });
-            }
-        }
-    }
-
-    ctxP.globalCompositeOperation = 'screen';
-    for (let i = particles.length - 1; i >= 0; i--) {
-        let p = particles[i];
-        p.x += p.vx; p.y += p.vy; p.life--;
-        if (p.life <= 0 || p.x < 0) { particles.splice(i, 1); continue; }
-        ctxP.globalAlpha = Math.max(0, p.life / p.maxLife) * 0.5;
-        ctxP.fillStyle = p.color;
-        ctxP.beginPath(); ctxP.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctxP.fill();
-    }
-    ctxP.globalAlpha = 1.0;
-    ctxP.globalCompositeOperation = 'source-over';
-}
-
-function animateLiftParticles() {
-    requestAnimationFrame(animateLiftParticles);
-    if (!document.getElementById('view-weights').classList.contains('view-active')) return;
-    if (!ctxL || !isTrain) {
-        if (ctxL) ctxL.clearRect(0, 0, canvasL.width, canvasL.height);
-        return;
-    }
-
-    // FIXED: Bulletproof scaling bound purely to the viewport
-    if (canvasL.width !== window.innerWidth || canvasL.height !== window.innerHeight) {
-        canvasL.width = window.innerWidth;
-        canvasL.height = window.innerHeight;
-    }
-    if (canvasL.width === 0) return; 
-
-    ctxL.clearRect(0, 0, canvasL.width, canvasL.height);
-
-    let spawnState = 'NONE';
-    if (liftState === 'LIFTING') {
-        spawnState = 'BURN';
-    } else if (liftState === 'RESTING' || (liftState === 'READY' && bpm > readyTriggerBpm)) {
-        spawnState = 'REPAIR';
-    }
-
-    const muscleBounds = {
-        'trapezoids': { t: 0.15, h: 0.08 }, 'deltoids': { t: 0.18, h: 0.10 },
-        'pectorals': { t: 0.21, h: 0.08 }, 'biceps': { t: 0.22, h: 0.12 },
-        'triceps': { t: 0.22, h: 0.12 }, 'forearms': { t: 0.35, h: 0.10 },
-        'abdominals': { t: 0.30, h: 0.12 }, 'lats': { t: 0.25, h: 0.15 },
-        'glutes': { t: 0.45, h: 0.10 }, 'quads': { t: 0.48, h: 0.20 },
-        'hamstrings': { t: 0.48, h: 0.20 }, 'calves': { t: 0.70, h: 0.15 }
-    };
-
-    let spawnArea = { top: canvasL.height * 0.25, height: canvasL.height * 0.4, left: canvasL.width * 0.6, width: canvasL.width * 0.2 };
-    const activeOverlay = Array.from(document.querySelectorAll('.muscle-overlay')).find(img => parseFloat(img.style.opacity) > 0);
-
-    if (activeOverlay) {
-        const imgRect = activeOverlay.getBoundingClientRect();
-        const id = activeOverlay.id.replace('overlay-', '');
-        const bounds = muscleBounds[id] || { t: 0.2, h: 0.4 };
-
-        spawnArea.top = imgRect.top + (imgRect.height * bounds.t);
-        spawnArea.height = imgRect.height * bounds.h;
-        spawnArea.left = imgRect.left + (imgRect.width * 0.3); 
-        spawnArea.width = imgRect.width * 0.4;
-    }
-
-    if (spawnState !== 'NONE') {
-        let spawnRate = (spawnState === 'BURN') ? 3 : 2;
-        for (let i = 0; i < spawnRate; i++) {
-            if (Math.random() > 0.4) {
-                let isBurn = (spawnState === 'BURN');
-                let startX, startY, velX;
+        <div id="view-logbook" class="app-view">
+            <div id="logbook-scroll-area">
+                <h2 style="color:var(--glow-blue); font-weight:900; margin-top:0; margin-bottom: 25px; letter-spacing: 2px;">TRAINING LOG</h2>
                 
-                if (isBurn) {
-                    startX = spawnArea.left + Math.random() * (spawnArea.width * 0.3); 
-                    startY = spawnArea.top + Math.random() * spawnArea.height;
-                    velX = -(0.8 + Math.random() * 1.2); 
-                } else {
-                    startX = canvasL.width * 0.05; 
-                    startY = spawnArea.top + Math.random() * spawnArea.height;
-                    velX = (0.8 + Math.random() * 1.2);
-                }
+                <div class="log-stat-grid">
+                    <div class="log-stat-box">
+                        <div id="log-tot-cal" class="log-stat-val">0</div>
+                        <div class="log-stat-lbl">Total Calories</div>
+                    </div>
+                    <div class="log-stat-box">
+                        <div id="log-tot-fat" class="log-stat-val">0.00</div>
+                        <div class="log-stat-lbl">Lbs Fat Burned</div>
+                    </div>
+                    <div class="log-stat-box" style="grid-column: span 2;">
+                        <div class="log-stat-lbl" style="margin-bottom: 8px; color: #fff;">TIME IN ZONES</div>
+                        <div style="display:flex; justify-content:space-between; font-size:0.8rem; font-weight:700;">
+                            <span style="color:#33cc33;">L&M: <span id="log-z1-time">0m</span></span>
+                            <span style="color:#ffcc00;">WL: <span id="log-z2-time">0m</span></span>
+                            <span style="color:#ff3333;">END: <span id="log-z3-time">0m</span></span>
+                        </div>
+                    </div>
+                </div>
 
-                liftParticles.push({
-                    x: startX,
-                    y: startY,
-                    vx: velX,
-                    vy: (Math.random() - 0.5) * 0.8, 
-                    life: 200 + Math.random() * 100, 
-                    maxLife: 300,
-                    size: 1.0 + Math.random() * 2.0,
-                    color: isBurn ? getEliteColor(bpm) : '#ffffff',
-                    type: spawnState,
-                    targetX: spawnArea.left + (spawnArea.width * 0.5)
-                });
-            }
-        }
-    }
+                <div id="logbook-content"></div>
+            </div>
+        </div>
 
-    ctxL.globalCompositeOperation = 'screen';
-    for (let i = liftParticles.length - 1; i >= 0; i--) {
-        let p = liftParticles[i];
-        p.x += p.vx; p.y += p.vy; p.life--;
+        <div id="view-settings" class="app-view">
+            <div id="settings-scroll-area">
+                <h2 style="color:var(--glow-blue); font-weight:900; margin-top:0; margin-bottom: 25px;">SYSTEM SETTINGS</h2>
+                <div class="settings-card">
+                    <div class="settings-row">
+                        <span class="settings-label">SET READY TRIGGER</span>
+                        <span id="trigger-val-display" class="settings-val">110 BPM</span>
+                    </div>
+                    <p class="settings-desc">Target heart rate threshold for automatic rest timers. When your BPM drops below this number, the system will instantly log your set and mark you as recovered.</p>
+                    <input type="range" id="trigger-slider" min="80" max="140" value="110" style="width:100%;" oninput="updateTriggerSetting(this.value)">
+                </div>
 
-        let dead = false;
-        if (p.life <= 0) dead = true;
-        if (p.type === 'BURN' && p.x < 0) dead = true;
-        if (p.type === 'REPAIR' && p.x > p.targetX) dead = true; 
+                <div class="settings-card">
+                    <div class="settings-row" style="margin-bottom: 5px;">
+                        <span class="settings-label">CARDIO ZONES (Target BPM)</span>
+                    </div>
+                    <p class="settings-desc">Fine-tune the physiological thresholds that trigger your visual cardio states. We'll securely sync these as percentages of your Max HR to scale dynamically as you age.</p>
+                    <div class="zone-setting-row"><span class="zone-setting-label" style="color: #33cc33;">LEAN & MEAN</span><div><input type="number" class="zone-input" id="set-z1-min"> - <input type="number" class="zone-input" id="set-z1-max"></div></div>
+                    <div class="zone-setting-row"><span class="zone-setting-label" style="color: #ffcc00;">WEIGHT LOSS</span><div><input type="number" class="zone-input" id="set-z2-min"> - <input type="number" class="zone-input" id="set-z2-max"></div></div>
+                    <div class="zone-setting-row"><span class="zone-setting-label" style="color: #ff3333;">ENDURANCE</span><div><input type="number" class="zone-input" id="set-z3-min"> - <input type="number" class="zone-input" id="set-z3-max"></div></div>
+                    <button class="flow-btn" style="background:#222; color:#fff; border: 1px solid #444; margin-top:15px; margin-bottom:0;" onclick="saveZoneSettings()">SAVE ZONES</button>
+                </div>
+                
+                <div class="version-footer">BIOSTACK_v11.80_STABLE</div>
+            </div>
+        </div>
 
-        if (dead) { liftParticles.splice(i, 1); continue; }
+        <nav id="bottom-nav">
+            <button class="nav-btn active-nav" onclick="switchAppTab('cardio', this)"><div class="nav-icon"></div><span>Cardio</span></button>
+            <button class="nav-btn" onclick="switchAppTab('weights', this)"><div class="nav-icon"></div><span>Lift</span></button>
+            <button class="nav-btn" onclick="switchAppTab('logbook', this)"><div class="nav-icon"></div><span>Logbook</span></button>
+            <button class="nav-btn" onclick="switchAppTab('settings', this)"><div class="nav-icon"></div><span>Settings</span></button>
+        </nav>
 
-        ctxL.globalAlpha = Math.max(0, p.life / p.maxLife) * 0.7; 
-        ctxL.fillStyle = p.color;
-        ctxL.beginPath(); ctxL.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctxL.fill();
-    }
-    
-    ctxL.globalAlpha = 1.0;
-    ctxL.globalCompositeOperation = 'source-over';
-}
-
-initPhysicsEngines();
+    </div>
+    <script src="js/biostack.js?v=180"></script>
+</body>
+</html>
