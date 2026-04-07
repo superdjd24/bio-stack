@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BioStack Elite v12.10 STABLE</title>
+    <title>BioStack Elite v12.20 STABLE</title>
     <style>
         :root { --glow-blue: #00f2ff; --bg-dark: #05070a; --glass: rgba(15, 20, 30, 0.95); --border: #30363d; }
         body { margin: 0; background: var(--bg-dark); color: white; font-family: -apple-system, system-ui, sans-serif; overflow: hidden; height: 100vh; }
@@ -34,6 +34,9 @@
         #total-cal { color: var(--glow-blue); font-size: 1.4rem; font-weight: 700; }
         #musc-header { font-size: 0.8rem; margin-top: 10px; color: var(--glow-blue); letter-spacing: 1px; }
         #active-ex-tag { font-size: 0.6rem; color: #666; margin-top: 5px; text-transform: uppercase; }
+        
+        /* FIXED: Context block completely decoupled from the sidebar and visually grouped in the left HUD */
+        #active-ex-context { font-size: 0.65rem; color: var(--glow-blue); text-transform: uppercase; margin-top: 6px; font-weight: 700; display: none; transition: color 0.3s ease; }
 
         #sidebar { position: fixed; top: 200px; left: 20px; width: 140px; z-index: 500; height: calc(100vh - 310px); overflow-y: auto; padding-bottom: 20px; }
         #sidebar::-webkit-scrollbar { display: none; } 
@@ -42,8 +45,7 @@
 
         #stage-area { position: fixed; top: 120px; right: 0; width: 85vw; height: 65vh; display: flex; align-items: center; justify-content: flex-end; z-index: 10; }
         
-        #set-bar-sidebar { width: 50vw; min-width: 160px; height: 100%; max-height: 480px; display: flex; flex-direction: column; margin-right: 15px; padding: 10px; justify-content: flex-start; align-items: flex-start; border-right: none; margin-top: 100px; }
-        #active-ex-context { font-size: 0.65rem; color: var(--glow-blue); text-transform: uppercase; border-bottom: 1px solid rgba(0,242,255,0.2); width: 100%; text-align: right; padding-bottom: 8px; margin-bottom: 10px; font-weight: 700; display: none; transition: color 0.3s ease; }
+        #set-bar-sidebar { width: 50vw; min-width: 160px; height: 100%; max-height: 480px; display: flex; flex-direction: column; margin-right: 15px; padding: 10px; justify-content: flex-start; align-items: flex-start; border-right: none; margin-top: 85px; }
         
         #sets-list { flex-grow: 1; overflow-y: auto; width: 100%; display: flex; flex-direction: column; gap: 12px; margin-bottom: 10px; padding-right: 5px; z-index: 40; }
         
@@ -143,7 +145,7 @@
             <input type="number" id="user-age" placeholder="Age">
             <button id="init-btn" onclick="initSystem()">Initialize & Link</button>
         </div>
-        <div class="login-version">v12.10 STABLE<br><span style="font-size: 0.5rem;">(GHOST MODE: WT 999)</span></div>
+        <div class="login-version">v12.20 STABLE<br><span style="font-size: 0.5rem;">(GHOST MODE: WT 999)</span></div>
     </div>
 
     <div id="main-dashboard">
@@ -158,13 +160,13 @@
                 <div><span id="total-cal">0</span> <span style="font-size:0.7rem; opacity:0.5;">CALORIES</span></div>
                 <div id="musc-header">TARGET: --</div>
                 <div id="active-ex-tag">NO ACTIVE EXERCISE</div>
+                <div id="active-ex-context"></div>
             </div>
             
             <div id="sidebar"><div id="exercise-picker"></div></div>
             
             <div id="stage-area">
                 <div id="set-bar-sidebar">
-                    <div id="active-ex-context"></div>
                     <div id="sets-list"></div>
                     <div id="hud-in-flow">
                         <div id="rest-helper-text">WAIT UNTIL MUSCLES ARE PRIMED</div>
@@ -282,7 +284,7 @@
                     <button class="flow-btn" style="background:#222; color:#fff; border: 1px solid #444; margin-top:15px; margin-bottom:0;" onclick="saveZoneSettings()">SAVE ZONES</button>
                 </div>
                 
-                <div class="version-footer">BIOSTACK_v12.10_STABLE</div>
+                <div class="version-footer">BIOSTACK_v12.20_STABLE</div>
             </div>
         </div>
 
@@ -294,6 +296,6 @@
         </nav>
 
     </div>
-    <script src="js/biostack.js?v=210"></script>
+    <script src="js/biostack.js?v=220"></script>
 </body>
 </html>
