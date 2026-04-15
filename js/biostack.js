@@ -1,6 +1,6 @@
 /**
- * BIOSTACK ELITE ENGINE v12.10 STABLE
- * Engine Hotfixes: Particle Funneling Physics for Magnetic REPAIR States
+ * BIOSTACK ELITE ENGINE v12.50 STABLE
+ * Hotfixes: Relative Bar Chart Scaling, Flex-Track Architecture, Lbs x Reps Data Parsing
  */
 
 let bpm = 0; 
@@ -94,7 +94,6 @@ async function initSystem() {
     
     if (!w || !a) return alert("Weight and Age required.");
 
-    // ---- GHOST MODE BYPASS ----
     if (w === '999') {
         localStorage.setItem('bio_weight', '180');
         localStorage.setItem('bio_age', a);
@@ -141,7 +140,6 @@ async function initSystem() {
 
         return; 
     }
-    // ---- END GHOST MODE ----
 
     try {
         const device = await navigator.bluetooth.requestDevice({ filters: [{ services: ['heart_rate'] }] });
@@ -317,12 +315,13 @@ function renderDynamicSetList() {
     
     if (currentSessionSets.length === 0) return;
 
-    let globalMaxBpm = 150; 
-    let globalMaxVol = 1;
+    // FIXED: Calculate true maximums across the current array to establish the 100% baseline.
+    let sessionMaxBpm = 80; // Baseline floor for visual math
+    let sessionMaxVol = 1;
 
     currentSessionSets.forEach(s => {
-        if (s.maxBpm > globalMaxBpm) globalMaxBpm = s.maxBpm;
-        if (s.volume > globalMaxVol) globalMaxVol = s.volume;
+        if (s.maxBpm > sessionMaxBpm) sessionMaxBpm = s.maxBpm;
+        if (s.volume > sessionMaxVol) sessionMaxVol = s.volume;
     });
 
     currentSessionSets.forEach(set => {
@@ -331,10 +330,15 @@ function renderDynamicSetList() {
         let hasData = set.volume > 0;
 
         if (hasData) {
-            barPx = Math.min(100, (set.volume / globalMaxVol) * 100) + "%";
-            barLabel = set.volume + " EFFORT";
+            // FIXED: Volume math is straightforward, true zero to max. Minimum 5% width to keep text visible.
+            barPx = Math.max(5, (set.volume / sessionMaxVol) * 100) + "%";
+            // FIXED: Directly inject physical weight and reps instead of calculated volume
+            barLabel = `${set.weight} lbs x ${set.reps}`;
         } else {
-            barPx = Math.min(100, (set.maxBpm / globalMaxBpm) * 100) + "%";
+            // FIXED: Added a 50 BPM baseline floor to the percentage calculation to exaggerate changes in max effort sets
+            let dynamicRange = sessionMaxBpm - 50; 
+            let adjustedEffort = Math.max(0, set.maxBpm - 50);
+            barPx = Math.max(5, (adjustedEffort / dynamicRange) * 100) + "%";
             barLabel = set.maxBpm + " BPM";
         }
 
@@ -345,6 +349,13 @@ function renderDynamicSetList() {
         label.className = 'intensity-label';
         label.innerText = `Set ${set.id}`;
 
+        // FIXED: The track container. This is what handles the width geometry safely, giving the percentage a container to fill.
+        const track = document.createElement('div');
+        track.style.flexGrow = '1';
+        track.style.marginRight = '10px';
+        track.style.background = 'rgba(255,255,255,0.05)';
+        track.style.borderRadius = '4px';
+
         const bar = document.createElement('div');
         bar.className = 'set-bar';
         
@@ -353,6 +364,8 @@ function renderDynamicSetList() {
         inner.innerText = barLabel;
         bar.appendChild(inner);
         
+        track.appendChild(bar);
+
         const actionContainer = document.createElement('div');
         actionContainer.style.display = 'flex';
         
@@ -364,7 +377,7 @@ function renderDynamicSetList() {
             actionBtn.style.background = 'var(--glow-blue)';
             actionBtn.style.color = '#000';
             actionBtn.style.border = 'none';
-            actionBtn.style.fontSize = '0.9rem';
+            actionBtn.style.fontSize = '1.1rem';
         } else {
             actionBtn.innerText = '+';
         }
@@ -373,7 +386,7 @@ function renderDynamicSetList() {
         actionContainer.appendChild(actionBtn);
 
         item.appendChild(label);
-        item.appendChild(bar);
+        item.appendChild(track);
         item.appendChild(actionContainer);
         container.appendChild(item);
 
@@ -768,21 +781,18 @@ function animateLiftParticles() {
                     velX = -(0.8 + Math.random() * 1.2); 
                     velY = (Math.random() - 0.5) * 0.8;
                 } else {
-                    // NEW: Precise Funneling Algorithm for REPAIR state
                     startX = canvasL.width * -0.05; 
                     
-                    // 1. Start Wide
                     let screenCenterY = canvasL.height / 2;
                     startY = screenCenterY + (Math.random() * canvasL.height * 0.8) - (canvasL.height * 0.4);
                     
                     velX = (1.2 + Math.random() * 1.5); 
                     
-                    // 2. Converge Small
                     let targetX = spawnArea.left + (Math.random() * spawnArea.width * 0.5);
                     let targetY = spawnArea.top + (Math.random() * spawnArea.height);
                     
                     let ticksToTarget = (targetX - startX) / velX;
-                    velY = (targetY - startY) / ticksToTarget; // 3. Dynamically set exact vertical trajectory
+                    velY = (targetY - startY) / ticksToTarget; 
                 }
 
                 liftParticles.push({
