@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BioStack Elite v12.45 STABLE</title>
+    <title>BioStack Elite v12.50 STABLE</title>
     <style>
         :root { --glow-blue: #00f2ff; --bg-dark: #05070a; --glass: rgba(15, 20, 30, 0.95); --border: #30363d; }
         body { margin: 0; background: var(--bg-dark); color: white; font-family: -apple-system, system-ui, sans-serif; overflow: hidden; height: 100vh; }
@@ -43,29 +43,27 @@
 
         #stage-area { position: fixed; top: 120px; right: 0; width: 85vw; height: calc(100vh - 230px); display: flex; align-items: center; justify-content: flex-end; z-index: 10; }
         
-        /* FIXED: Exact pixel math mapping to 20px from screen-left, 55vw width to hit ~50% + spillover, and 0 padding for flush alignment */
         #set-bar-sidebar { position: absolute; left: calc(20px - 15vw); width: 55vw; min-width: 180px; height: calc(100% - 90px); max-height: 480px; display: flex; flex-direction: column; padding: 0; box-sizing: border-box; justify-content: flex-start; align-items: flex-start; margin-top: 90px; z-index: 50; pointer-events: none; }
         
-        #sets-list { flex-grow: 1; overflow-y: auto; width: 100%; display: flex; flex-direction: column; gap: 12px; margin-bottom: 10px; padding-right: 5px; z-index: 40; pointer-events: auto; }
+        #sets-list { flex-grow: 1; overflow-y: auto; width: 100%; display: flex; flex-direction: column; gap: 14px; margin-bottom: 10px; padding-right: 5px; z-index: 40; pointer-events: auto; }
         
         .intensity-item { width: 100%; display: flex; align-items: center; justify-content: flex-start; gap: 8px; }
         .intensity-label { font-size: 0.7rem; color: #fff; font-weight: 600; flex-shrink: 0; width: 40px; }
         
-        /* FIXED: Restored strict 85px clearance for the "+" button so it physically cannot wrap or overflow */
-        .set-bar { height: 18px; background: var(--glow-blue); border-radius: 4px; transition: width 0.5s cubic-bezier(0.1, 0.7, 1.0, 0.1); width: 0px; max-width: calc(100% - 85px); display: flex; align-items: center; justify-content: center; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); }
+        /* FIXED: Removed max-width hack, heightened slightly, ready for wrapper flex-track */
+        .set-bar { height: 22px; background: var(--glow-blue); border-radius: 4px; transition: width 0.5s cubic-bezier(0.1, 0.7, 1.0, 0.1); width: 0px; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); }
         
         .bar-inner-label { font-size: 0.65rem; color: #000; font-weight: 900; opacity: 0; transition: opacity 0.3s ease 0.3s; white-space: nowrap; padding: 0 5px; }
         .set-bar.revealed .bar-inner-label { opacity: 1; }
 
-        .edit-set-btn { background: transparent; border: 1px solid var(--glow-blue); color: var(--glow-blue); border-radius: 6px; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; font-weight: 900; cursor: pointer; flex-shrink: 0; transition: all 0.2s ease; padding: 0; margin: 0; line-height: 1; }
+        /* FIXED: Massive +60% hotspot hit area for intense workout accuracy */
+        .edit-set-btn { background: transparent; border: 1px solid var(--glow-blue); color: var(--glow-blue); border-radius: 8px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; font-weight: 900; cursor: pointer; flex-shrink: 0; transition: all 0.2s ease; padding: 0; margin: 0; line-height: 1; }
         .edit-set-btn:hover { background: var(--glow-blue); color: #000; }
+        
         .modal-row { display: flex; gap: 10px; width: 100%; margin-bottom: 10px; }
 
         #hud-in-flow { width: 100%; display: none; flex-shrink: 0; z-index: 40; position: relative; padding-bottom: 15px; pointer-events: auto; }
-        
-        /* FIXED: Helper text forced to left-align with the rest of the HUD block */
         #rest-helper-text { display:none; font-size:0.65rem; color:#ffaa00; font-weight:800; text-transform:uppercase; margin-bottom: 8px; text-align: left; width: 100%; line-height: 1.3; }
-        
         .flow-btn { width: 100%; padding: 14px; border-radius: 12px; border: none; font-weight: 800; text-transform: uppercase; cursor: pointer; margin-bottom: 10px; transition: all 0.3s ease; }
         #new-ex-btn { background: transparent; border: 1px solid #444; color: #888; font-size: 0.7rem; }
 
@@ -124,6 +122,8 @@
         .settings-label { font-weight:700; font-size:0.9rem; }
         .settings-val { color:var(--glow-blue); font-weight:800; font-size: 1.1rem; }
         .settings-desc { font-size:0.75rem; color:#888; margin-bottom:20px; line-height:1.4; }
+        
+        /* FIXED: Input minimum dynamically handles down to 50 BPM in UI */
         input[type="range"] { -webkit-appearance: none; background: #222; height: 8px; border-radius: 4px; outline: none; padding: 0; border: none; }
         input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 24px; height: 24px; border-radius: 50%; background: var(--glow-blue); cursor: pointer; box-shadow: 0 0 10px rgba(0, 242, 255, 0.5); }
         
@@ -150,7 +150,7 @@
             <input type="number" id="user-age" placeholder="Age">
             <button id="init-btn" onclick="initSystem()">Initialize & Link</button>
         </div>
-        <div class="login-version">v12.45 STABLE<br><span style="font-size: 0.5rem;">(GHOST MODE: WT 999)</span></div>
+        <div class="login-version">v12.50 STABLE<br><span style="font-size: 0.5rem;">(GHOST MODE: WT 999)</span></div>
     </div>
 
     <div id="main-dashboard">
@@ -275,7 +275,7 @@
                         <span id="trigger-val-display" class="settings-val">110 BPM</span>
                     </div>
                     <p class="settings-desc">Target heart rate threshold for automatic rest timers. When your BPM drops below this number, the system will instantly log your set and mark you as recovered.</p>
-                    <input type="range" id="trigger-slider" min="80" max="140" value="110" style="width:100%;" oninput="updateTriggerSetting(this.value)">
+                    <input type="range" id="trigger-slider" min="50" max="140" value="110" style="width:100%;" oninput="updateTriggerSetting(this.value)">
                 </div>
 
                 <div class="settings-card">
@@ -289,7 +289,7 @@
                     <button class="flow-btn" style="background:#222; color:#fff; border: 1px solid #444; margin-top:15px; margin-bottom:0;" onclick="saveZoneSettings()">SAVE ZONES</button>
                 </div>
                 
-                <div class="version-footer">BIOSTACK_v12.45_STABLE</div>
+                <div class="version-footer">BIOSTACK_v12.50_STABLE</div>
             </div>
         </div>
 
@@ -301,6 +301,6 @@
         </nav>
 
     </div>
-    <script src="js/biostack.js?v=245"></script>
+    <script src="js/biostack.js?v=250"></script>
 </body>
 </html>
